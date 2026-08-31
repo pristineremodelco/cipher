@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Calculator">
+  <!-- The masked variant. Android guarantees only the inner circle of radius
+       21.3 survives its crop, and the far edge of the cinnabar disc sits 28.8
+       out from the centre, so the whole arrangement is eased to 0.74 to clear
+       it. Four marks in a square lose far more to a round mask than one
+       crescent does, which is why this shrinks and the almanac's barely did.
+       The ground is square to the edge so the launcher cuts its own shape. -->
+  <rect width="64" height="64" fill="#241C13"/>
+  <g transform="translate(32 32) scale(0.74) translate(-32 -32)">
+  <!-- Four operations in a square, which is what a calculator looks like from
+         across a room. Paper white on ink, the almanac's own two colours.
+
+         The gaps are set from where the ink actually ends, not from where the
+         path does: a round cap adds half the stroke beyond each endpoint, and
+         plus and minus drawn to touching endpoints read as one long bar. -->
+    <g stroke="#EFE6D0" stroke-width="5.4" stroke-linecap="round" fill="none">
+      <path d="M10 20H26M18 12V28"/>
+      <path d="M36 20H52"/>
+      <path d="M12.3 37.3L23.7 48.7M23.7 37.3L12.3 48.7"/>
+    </g>
+
+    <!-- The rubric again, and the reason the mark has any pop at all: one of the
+         four is picked out in cinnabar, the way the almanac's crescent is. -->
+    <circle cx="44" cy="43" r="12.5" fill="#8C3B26"/>
+    <g stroke="#EFE6D0" stroke-width="4.2" stroke-linecap="round" fill="none">
+      <path d="M37.5 39.6H50.5M37.5 46.4H50.5"/>
+    </g>
+  </g>
+</svg>

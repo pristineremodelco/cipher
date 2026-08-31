@@ -1,0 +1,702 @@
+/* ============================================================
+   Palettes
+   A palette is the whole surface: ground, panel, key face, type,
+   and the one accent that picks out the operators and equals.
+   Everything below reads from these and never names a colour.
+   ============================================================ */
+:root {
+  --bg: #ede4d0;
+  --panel: #f6efe0;
+  --key: #fbf6ea;
+  --text: #241c13;
+  --muted: #6d6049;
+  --line: #d8c9a9;
+  --accent: #8c3b26;
+  --on-accent: #fbf6ea;
+  --danger: #9d2c22;
+  --lift: 0 1px 2px rgba(36, 28, 19, 0.08), 0 2px 8px rgba(36, 28, 19, 0.07);
+  --lift-high: 0 12px 40px rgba(36, 28, 19, 0.24);
+}
+
+[data-palette='paper'] {
+  --bg: #ede4d0; --panel: #f6efe0; --key: #fbf6ea;
+  --text: #241c13; --muted: #6d6049; --line: #d8c9a9;
+  --accent: #8c3b26; --on-accent: #fbf6ea; --danger: #9d2c22;
+}
+[data-palette='snow'] {
+  --bg: #eef0f3; --panel: #ffffff; --key: #ffffff;
+  --text: #16181c; --muted: #61686f; --line: #dee2e7;
+  --accent: #2f6feb; --on-accent: #ffffff; --danger: #d3302f;
+}
+[data-palette='linen'] {
+  --bg: #e7e9e6; --panel: #f4f6f3; --key: #fafbf9;
+  --text: #1d2320; --muted: #626b66; --line: #d3d8d2;
+  --accent: #3f6d80; --on-accent: #ffffff; --danger: #b3372c;
+}
+
+/* The dark ones share one shadow scale: a soft shadow on a dark ground reads
+   as fog, so they lean on the key face being lighter than the ground instead. */
+[data-palette='espresso'],
+[data-palette='graphite'],
+[data-palette='carbon'],
+[data-palette='midnight'],
+[data-palette='moss'],
+[data-palette='plum'] {
+  --lift: 0 1px 2px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.28);
+  --lift-high: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+[data-palette='espresso'] {
+  --bg: #191309; --panel: #241c13; --key: #2e241a;
+  --text: #efe6d0; --muted: #a2937a; --line: #3a2e20;
+  --accent: #b4502f; --on-accent: #fff3e6; --danger: #c4553f;
+}
+[data-palette='graphite'] {
+  --bg: #131416; --panel: #1b1d20; --key: #24272b;
+  --text: #edeff2; --muted: #99a1aa; --line: #2d3136;
+  --accent: #7aa2f7; --on-accent: #0b1020; --danger: #f07178;
+}
+[data-palette='carbon'] {
+  --bg: #000000; --panel: #0c0c0c; --key: #161616;
+  --text: #f4f4f4; --muted: #9a9a9a; --line: #232323;
+  --accent: #ff8a3d; --on-accent: #1a0e04; --danger: #ff5c5c;
+}
+[data-palette='midnight'] {
+  --bg: #0b1020; --panel: #131b33; --key: #1a2440;
+  --text: #e7ecfa; --muted: #94a0c0; --line: #26314f;
+  --accent: #5ac8fa; --on-accent: #06101f; --danger: #ff6b81;
+}
+[data-palette='moss'] {
+  --bg: #0e1512; --panel: #16201b; --key: #1e2b24;
+  --text: #e6f0e9; --muted: #93a89a; --line: #27362d;
+  --accent: #7fbf6a; --on-accent: #0b1710; --danger: #e2725b;
+}
+[data-palette='plum'] {
+  --bg: #16101f; --panel: #1f1730; --key: #29203d;
+  --text: #f0e9f8; --muted: #a897be; --line: #362b4d;
+  --accent: #c77dff; --on-accent: #180f24; --danger: #ff6b9d;
+}
+
+/* ============================================================
+   Scales
+   ============================================================ */
+[data-textsize='sm'] { --tx: 0.92; }
+[data-textsize='md'] { --tx: 1; }
+[data-textsize='lg'] { --tx: 1.12; }
+[data-textsize='xl'] { --tx: 1.26; }
+
+[data-keyshape='sharp'] { --key-radius: 4px; }
+[data-keyshape='soft'] { --key-radius: 14px; }
+[data-keyshape='round'] { --key-radius: 24px; }
+[data-keyshape='circle'] { --key-radius: 999px; }
+
+:root {
+  --tx: 1;
+  --key-radius: 14px;
+  --display-scale: 1;
+  --radius: 16px;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --fast: 120ms;
+  --base: 220ms;
+  --ring: color-mix(in srgb, var(--accent) 55%, transparent);
+  font-family: var(--font-stack, ui-sans-serif, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+  font-synthesis-weight: none;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-stack, ui-sans-serif, system-ui, sans-serif);
+  /* A keypad is not a document. Selecting a key on a long press is never what
+     was meant, and on a phone it puts a magnifier over the number. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+[data-bold='true'] body,
+[data-bold='true'] .key,
+[data-bold='true'] .hint { font-weight: 600; }
+[data-bold='true'] .answer,
+[data-bold='true'] h1,
+[data-bold='true'] h2 { font-weight: 900; }
+
+:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ============================================================
+   Shell
+   One column: a slim bar, then everything else. The keypad takes
+   whatever height is left rather than sitting at a fixed size,
+   so the keys grow with the screen instead of leaving a band of
+   nothing under them.
+   ============================================================ */
+.app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  gap: 10px;
+}
+
+.bar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 2px;
+}
+.brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.brand h1 {
+  margin: 0;
+  font-size: calc(17px * var(--tx));
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mark { width: 26px; height: 26px; color: var(--text); flex: none; }
+.bar-actions { display: flex; gap: 6px; align-items: center; }
+
+.chip {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: calc(12.5px * var(--tx));
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  min-height: 38px;
+  min-width: 38px;
+  transition: background-color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.chip:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.chip[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  color: var(--accent);
+}
+.chip:disabled { opacity: 0.42; cursor: not-allowed; }
+
+.work {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ============================================================
+   Display
+   ============================================================ */
+.display {
+  flex: none;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(150px * var(--display-scale));
+}
+.expression {
+  flex: 1;
+  min-height: 24px;
+  text-align: right;
+  font-size: calc(19px * var(--tx) * var(--display-scale));
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  word-break: break-all;
+  overflow-y: auto;
+  font-variant-numeric: tabular-nums;
+  /* The one place text is worth selecting: a long expression someone wants to
+     paste somewhere else. */
+  -webkit-user-select: text;
+  user-select: text;
+}
+.expression span[data-kind='operator'] { color: var(--accent); padding: 0 3px; }
+.expression span[data-kind='paren'],
+.expression span[data-kind='function'],
+.expression span[data-kind='constant'],
+.expression span[data-kind='postfix'] { color: var(--accent); }
+/* The working, still on show above the answer it produced. Set back from the
+   text colour so the answer below is plainly the result and not a repeat. */
+.expression span[data-kind='worked'] { color: var(--muted); }
+
+.answer {
+  border: 0;
+  background: none;
+  padding: 4px 0 0;
+  text-align: right;
+  font-size: calc(34px * var(--tx) * var(--display-scale));
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  color: var(--muted);
+  min-height: calc(40px * var(--display-scale));
+  word-break: break-all;
+  font-variant-numeric: tabular-nums;
+}
+/* Once equals has been pressed the answer is the thing on the display, so it
+   stops being a preview and takes the full weight of the text colour. */
+.answer[data-settled='true'] { color: var(--text); }
+
+.error {
+  margin: 2px 0 0;
+  text-align: right;
+  color: var(--danger);
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+}
+
+.utility {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+.util {
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-size: calc(20px * var(--tx));
+  font-weight: 800;
+  line-height: 1;
+  padding: 8px 14px;
+  border-radius: 12px;
+  min-height: 40px;
+}
+.util:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.rub {
+  background: var(--accent);
+  color: var(--on-accent);
+  /* The tag is filled with the key's own text colour, so the cross inside it
+     is cut in the colour behind the tag rather than drawn in the same one. */
+  --key-face: var(--accent);
+  display: grid;
+  place-items: center;
+  padding: 8px 16px;
+}
+
+.memory {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.memory-value {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.memory-value[data-on='true'] { color: var(--accent); }
+
+/* ============================================================
+   Keypad
+   ============================================================ */
+.pads { flex: 1; min-height: 0; display: flex; gap: 8px; }
+.pad {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 8px;
+}
+.row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+/* Out on the desk where there is room for it, behind the ⋯ key where there is
+   not. A width, not a setting: nobody wants to be asked. */
+.sci-pad { display: none; }
+@media (min-width: 900px) {
+  .sci-pad {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(64px, 1fr));
+    grid-auto-rows: 1fr;
+    gap: 8px;
+    flex: 0 1 auto;
+  }
+  .sci-pad .key { font-size: calc(15px * var(--tx)); }
+  .more { visibility: hidden; }
+}
+
+.key {
+  border: 1px solid transparent;
+  background: var(--key);
+  color: var(--text);
+  border-radius: var(--key-radius);
+  font-size: calc(21px * var(--tx));
+  font-weight: 700;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  min-height: 42px;
+  padding: 4px;
+  transition:
+    background-color var(--fast) var(--ease),
+    border-color var(--fast) var(--ease),
+    transform var(--fast) var(--ease),
+    opacity var(--fast) var(--ease);
+}
+.key[data-span='two'] { grid-column: span 2; }
+.key[data-kind='operator'],
+.key[data-kind='action'] { color: var(--accent); font-weight: 800; }
+.key:hover:not(:disabled) { filter: brightness(1.06); }
+.key:active:not(:disabled) { transform: scale(0.96); }
+.key:disabled { opacity: 0.42; cursor: not-allowed; }
+
+/* How a key sits on the surface. Colour is the palette's business; this is
+   only about whether the key is raised off the page, cut into it or drawn. */
+[data-keystyle='raised'] .key { background: var(--key); box-shadow: var(--lift); }
+[data-keystyle='flat'] .key { background: var(--panel); box-shadow: none; }
+[data-keystyle='outline'] .key {
+  background: transparent;
+  border-color: var(--line);
+  box-shadow: none;
+}
+[data-keystyle='outline'] .key[data-kind='operator'],
+[data-keystyle='outline'] .key[data-kind='action'] {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+[data-keystyle='contrast'] .key {
+  background: color-mix(in srgb, var(--text) 10%, var(--panel));
+  box-shadow: none;
+}
+[data-keystyle='contrast'] .key[data-kind='operator'],
+[data-keystyle='contrast'] .key[data-kind='action'] {
+  background: color-mix(in srgb, var(--accent) 20%, var(--panel));
+}
+
+/* Equals is filled whatever the keys around it are doing. It is the one key
+   that has to be found without looking, and an outline style would otherwise
+   leave its label the same colour as the space behind it. Stated once, after
+   every style above, rather than repeated inside each of them. */
+[data-keystyle] .key[data-kind='equals'],
+.key[data-kind='equals'] {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* ============================================================
+   Sheets
+   ============================================================ */
+.scrim {
+  position: fixed;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 60%, rgba(0, 0, 0, 0.55));
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: end center;
+  z-index: 8;
+  animation: fade var(--base) var(--ease);
+}
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+.sheet {
+  width: min(560px, 100%);
+  max-height: 92dvh;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--lift-high);
+  padding: 16px 16px max(16px, env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+  animation: rise var(--base) var(--ease);
+}
+@keyframes rise { from { transform: translateY(100%); } to { transform: none; } }
+.sheet h2 { margin: 0; font-size: calc(19px * var(--tx)); letter-spacing: -0.03em; }
+.sheet-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sheet-head-actions { display: flex; gap: 6px; }
+.sheet-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+.sheet-foot { flex: none; border-top: 1px solid var(--line); padding-top: 12px; }
+
+.ghost {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 9px 14px;
+  font-size: calc(14px * var(--tx));
+  font-weight: 700;
+}
+.ghost:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.ghost:disabled { opacity: 0.42; cursor: not-allowed; }
+
+.sci-sheet .sci-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  overflow-y: auto;
+}
+.sci-sheet .key { min-height: 50px; font-size: calc(17px * var(--tx)); }
+
+.tape-list { list-style: none; margin: 0; padding: 0; }
+.tape-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.tape-expr {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font-size: calc(13px * var(--tx));
+  text-align: left;
+  padding: 4px 0;
+  word-break: break-all;
+}
+.tape-value {
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-weight: 800;
+  font-size: calc(16px * var(--tx));
+  padding: 4px 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.tape-expr:hover, .tape-value:hover { color: var(--accent); }
+.tape-sheet .sheet-body, .tape-sheet ul { min-height: 0; }
+.tape-sheet { min-height: 40dvh; }
+
+/* ============================================================
+   Settings
+   ============================================================ */
+.settings-sheet { height: 88dvh; }
+@media (min-width: 760px) {
+  .scrim { place-items: center; }
+  .sheet { border-radius: var(--radius); border-bottom: 1px solid var(--line); }
+  .settings-sheet { height: min(760px, 88dvh); }
+  @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+}
+
+.tabs { flex: none; display: flex; gap: 6px; }
+.tab {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  border-radius: 12px;
+  padding: 9px 10px;
+  font-size: calc(13.5px * var(--tx));
+  font-weight: 800;
+}
+.tab[data-active='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.preview {
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  pointer-events: none;
+}
+.preview-display {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 8px 10px;
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+.preview-display em { font-style: normal; color: var(--muted); font-size: 12px; }
+.preview-display strong {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.preview .pad { display: grid; gap: 6px; }
+.preview .key { min-height: 36px; font-size: 15px; }
+
+.field { display: grid; gap: 6px; margin-bottom: 16px; }
+.field > span {
+  font-size: calc(11.5px * var(--tx));
+  font-weight: 800;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.field select {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: calc(15px * var(--tx));
+}
+.hint {
+  color: var(--muted);
+  font-size: calc(12.5px * var(--tx));
+  line-height: 1.55;
+  margin: 6px 0 14px;
+}
+.row.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 11px 12px;
+  margin-bottom: 10px;
+  font-size: calc(14px * var(--tx));
+  font-weight: 700;
+  cursor: pointer;
+}
+.row.toggle-row input { accent-color: var(--accent); width: 18px; height: 18px; }
+
+.palette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 8px;
+}
+.palette-card, .style-card, .font-card {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 10px;
+}
+.palette-card[data-active='true'],
+.style-card[data-active='true'],
+.font-card[data-active='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+.palette-card strong, .style-card strong, .font-card strong { font-size: calc(14px * var(--tx)); }
+.palette-hint, .style-card span, .font-card span {
+  color: var(--muted);
+  font-size: calc(12px * var(--tx));
+}
+.palette-swatch {
+  display: flex;
+  height: 26px;
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  margin-bottom: 3px;
+}
+.palette-swatch i { flex: 1; }
+/* The accent is the point of the swatch, so it gets less of the strip than the
+   ground does and still reads: a third of it would be a stripe, not an accent. */
+.palette-swatch i:last-child { flex: 0 0 30%; }
+
+.style-grid, .font-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.size-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.size-btn {
+  flex: 1 1 auto;
+  min-width: 70px;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 10px 8px;
+  font-weight: 700;
+  font-size: calc(13.5px * var(--tx));
+}
+.size-btn small { color: var(--muted); font-size: 11px; font-weight: 600; }
+.size-btn[data-active='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.span-row { display: flex; align-items: center; gap: 10px; }
+.span-row input[type='range'] { flex: 1; accent-color: var(--accent); }
+.span-row output { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 46px; text-align: right; }
+
+.accent-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.accent-preview {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+.accent-row input[type='color'] {
+  width: 52px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+}
+
+/* A short screen has no room for a 150px display and five rows of keys, so the
+   display gives way first: the keys are the part a thumb has to hit. */
+@media (max-height: 620px) {
+  .display { min-height: calc(104px * var(--display-scale)); }
+  .answer { font-size: calc(26px * var(--tx) * var(--display-scale)); }
+  .brand h1 { display: none; }
+}
+
+/* Wide and short, which is a laptop: the keypad would otherwise stretch into
+   letterboxes. Hold it to a sensible column and centre the lot. */
+@media (min-width: 620px) {
+  .app { max-width: 1100px; margin: 0 auto; width: 100%; }
+}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- SVG first for anything that takes it, PNG behind for anything that
+         does not. iOS accepts neither an SVG nor a rounded icon on the home
+         screen, so apple-touch-icon is a square PNG it can mask itself. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!-- Replaced at runtime from the palette's ground, so the status bar
+         follows whatever is worn. -->
+    <meta name="theme-color" content="#241C13" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Calculator" />
+    <meta name="description" content="A calculator that works the whole expression out, with no ads and nothing sent anywhere." />
+    <title>Calculator</title>
+    <style>
+      /* The ground, inline, so the first paint is already the right colour.
+         Which of the two it is has to be guessed from the device here, because
+         the saved palette is not readable until the script runs; both guesses
+         are one of the mark's own colours, so a wrong one is a shade out for a
+         frame rather than a white flash in a dark room. */
+      html { background: #ede4d0; color-scheme: light; }
+      @media (prefers-color-scheme: dark) {
+        html { background: #191309; color-scheme: dark; }
+      }
+      body { margin: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
