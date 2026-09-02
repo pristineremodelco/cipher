@@ -60,8 +60,9 @@ export const ROWS: { main: Key[]; side: Key }[] = [
 
 /**
  * The scientific set, three to a row so a thumb can reach any of them on a
- * phone, grouped the way they are learned: constants, logs, roots, then the
- * trig families in order.
+ * phone, and nine rows exactly, so no row is left half full. Grouped the way
+ * they are learned: constants, logs, roots, the powers, then the trig families
+ * in order.
  */
 export const SCIENTIFIC: { label: string; press: string; aria?: string }[] = [
   { label: 'π', press: 'π', aria: 'Pi' },
@@ -73,6 +74,14 @@ export const SCIENTIFIC: { label: string; press: string; aria?: string }[] = [
   { label: '√', press: '√(', aria: 'Square root' },
   { label: '∛', press: '∛(', aria: 'Cube root' },
   { label: '|x|', press: 'abs(', aria: 'Absolute value' },
+  // Written as the glyph rather than as ^2, so the display reads 5² and a
+  // single rub-out takes the whole thing off again.
+  { label: 'x²', press: '²', aria: 'Squared' },
+  { label: 'x³', press: '³', aria: 'Cubed' },
+  { label: 'x⁻¹', press: '⁻¹', aria: 'Reciprocal' },
+  { label: 'x!', press: '!', aria: 'Factorial' },
+  { label: 'mod', press: 'mod', aria: 'Remainder' },
+  { label: 'Ans', press: 'ans', aria: 'The last answer' },
   { label: 'sin', press: 'sin(' },
   { label: 'cos', press: 'cos(' },
   { label: 'tan', press: 'tan(' },
@@ -85,9 +94,6 @@ export const SCIENTIFIC: { label: string; press: string; aria?: string }[] = [
   { label: 'sinh⁻¹', press: 'sinh⁻¹(', aria: 'Inverse hyperbolic sine' },
   { label: 'cosh⁻¹', press: 'cosh⁻¹(', aria: 'Inverse hyperbolic cosine' },
   { label: 'tanh⁻¹', press: 'tanh⁻¹(', aria: 'Inverse hyperbolic tangent' },
-  { label: 'x²', press: '^2', aria: 'Squared' },
-  { label: 'x!', press: '!', aria: 'Factorial' },
-  { label: 'mod', press: 'mod', aria: 'Remainder' },
 ]
 
 /**

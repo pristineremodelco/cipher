@@ -9,6 +9,13 @@
 
 const OPERATORS = ['+', '−', '×', '÷', '^']
 
+/**
+ * Keys that modify the value already keyed in rather than starting a new one.
+ * They need a value in front of them, and none of them may have an implied
+ * multiplication put before it: "5" then squared is 5², not 5 times a square.
+ */
+const POSTFIX = ['%', '!', '²', '³', '⁻¹']
+
 /** Written by a key, read by the parser. Both spellings mean the same thing. */
 export const OPERATOR_KEYS: Record<string, string> = {
   '+': '+',
@@ -41,7 +48,7 @@ export function kindOf(raw: string): ChunkKind {
   if (isOperator(chunk) || chunk === 'mod') return 'operator'
   if (chunk === '(' || chunk === ')') return 'paren'
   if (isOpener(chunk)) return 'function'
-  if (chunk === '%' || chunk === '!') return 'postfix'
+  if (POSTFIX.includes(chunk)) return 'postfix'
   if (/^[0-9.]+$/.test(chunk)) return 'digit'
   return 'constant'
 }
@@ -129,7 +136,7 @@ export function press(chunks: string[], key: string): string[] {
     return [...chunks, ' mod ']
   }
 
-  if (key === '%' || key === '!') {
+  if (POSTFIX.includes(key)) {
     if (!endsValue(last)) return chunks
     return [...chunks, key]
   }

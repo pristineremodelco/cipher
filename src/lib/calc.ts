@@ -112,6 +112,9 @@ function canonical(source: string): string {
     .split(',').join('')
     .split('²').join('^2')
     .split('³').join('^3')
+    // Runs after the named glyphs above, so sin⁻¹ has already become asin and
+    // only a bare reciprocal is left to read.
+    .split('⁻¹').join('^-1')
 }
 
 function tokenize(source: string): Token[] {

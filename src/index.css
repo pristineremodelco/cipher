@@ -28,10 +28,14 @@
   --text: #16181c; --muted: #61686f; --line: #dee2e7;
   --accent: #2f6feb; --on-accent: #ffffff; --danger: #d3302f;
 }
+/* A stone grey with green in it, and the darkest of the three light grounds.
+   It used to be a hair off Snow: two near-white key faces one and nine apart,
+   which is under the threshold anyone can see, so the only thing telling them
+   apart was the accent. Now the ground, the key and the type all differ. */
 [data-palette='linen'] {
-  --bg: #e7e9e6; --panel: #f4f6f3; --key: #fafbf9;
-  --text: #1d2320; --muted: #626b66; --line: #d3d8d2;
-  --accent: #3f6d80; --on-accent: #ffffff; --danger: #b3372c;
+  --bg: #d2dad6; --panel: #e2e8e5; --key: #e9efec;
+  --text: #172220; --muted: #55635e; --line: #bcc7c2;
+  --accent: #356b60; --on-accent: #ffffff; --danger: #a83a2c;
 }
 
 /* The dark ones share one shadow scale: a soft shadow on a dark ground reads
@@ -636,7 +640,15 @@ button { cursor: pointer; }
   border: 1px solid var(--line);
   margin-bottom: 3px;
 }
-.palette-swatch i { flex: 1; }
+.palette-swatch i {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
 /* The accent is the point of the swatch, so it gets less of the strip than the
    ground does and still reads: a third of it would be a stripe, not an accent. */
 .palette-swatch i:last-child { flex: 0 0 30%; }

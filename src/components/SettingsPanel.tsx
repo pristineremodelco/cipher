@@ -259,9 +259,11 @@ function Swatches({
             onClick={() => onPick(palette.id)}
           >
             <span className="palette-swatch" aria-hidden="true">
-              {palette.swatch.map((colour) => (
-                <i key={colour} style={{ background: colour }} />
-              ))}
+              <i style={{ background: palette.swatch[0] }} />
+              {/* A numeral in the type colour on the key colour, which is what
+                  the whole palette is for. */}
+              <i style={{ background: palette.swatch[1], color: palette.swatch[2] }}>12</i>
+              <i style={{ background: palette.swatch[3] }} />
             </span>
             <strong>{palette.name}</strong>
             <span className="palette-hint">{palette.hint}</span>

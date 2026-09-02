@@ -17,14 +17,16 @@ be next to each other.
 
 - **The whole expression**, parsed rather than accumulated, so brackets and
   precedence work and the answer is there before equals is pressed
-- **Scientific**: π, e, φ, log, ln, log₂, √, ∛, |x|, x², x!, mod, the trig
-  families with their inverses and hyperbolics, degrees or radians
+- **Scientific**: π, e, φ, log, ln, log₂, √, ∛, |x|, x², x³, x⁻¹, x!, mod, Ans,
+  the trig families with their inverses and hyperbolics, degrees or radians
 - **Percent that reads its neighbour**: `200+10%` is 220, because the ten means
   ten percent of the two hundred beside it. Beside a times or a divide it is a
   plain hundredth, so `200×10%` is 20
 - **Memory**: MC, MR, M+, M-
-- **History**: every answer, kept, with the working. Tap the working to put it
-  back on the display, or the answer to carry it into the next sum
+- **History**: the last 200 answers, each with the working that produced it.
+  Tap the working to put it back on the display, or the answer to carry it into
+  the next sum. Nothing expires with time: the 201st sum pushes the oldest off
+  and that is the only way one leaves, short of Clear or turning history off
 - **Hold the rub-out** to clear the lot
 - **Tap the answer** to copy it
 - A **keyboard** works: digits, `+ - * / ^ ( ) . %`, Enter for equals,
@@ -33,8 +35,8 @@ be next to each other.
 
 ## What it looks like
 
-Nine palettes, and the device's own light or dark setting picks between a pair
-of them unless you say otherwise. On top of that: an accent of any colour, seven
+Nine palettes, three light and six dark, and the device's own light or dark
+setting picks between a pair of them unless you say otherwise. On top of that: an accent of any colour, seven
 typefaces, four text sizes, a heavier weight, four key styles, four key corner
 shapes, the answer's size, the operator column on either side, and a bottom row
 with a double zero or one wide one. All under Settings, with a preview that

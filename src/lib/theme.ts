@@ -13,20 +13,25 @@ export type Palette = {
   name: string
   hint: string
   scheme: 'light' | 'dark'
-  /** Ground, key face and accent, in that order, for the settings swatch. */
-  swatch: [string, string, string]
+  /**
+   * Ground, key face, type and accent, for the settings swatch. Type is in
+   * there because the light palettes differ mostly in their ground, and a
+   * strip of three pale bands tells nobody anything: a numeral drawn in the
+   * type colour on the key colour is the thing being chosen between.
+   */
+  swatch: [string, string, string, string]
 }
 
 export const PALETTES: Palette[] = [
-  { id: 'paper', name: 'Paper', hint: 'Warm stock, espresso ink', scheme: 'light', swatch: ['#EDE4D0', '#FBF6EA', '#8C3B26'] },
-  { id: 'snow', name: 'Snow', hint: 'Plain white, graphite type', scheme: 'light', swatch: ['#EEF0F3', '#FFFFFF', '#2F6FEB'] },
-  { id: 'linen', name: 'Linen', hint: 'Cool grey stock', scheme: 'light', swatch: ['#E7E9E6', '#FAFBF9', '#3F6D80'] },
-  { id: 'espresso', name: 'Espresso', hint: "The mark's own ground", scheme: 'dark', swatch: ['#191309', '#2E241A', '#B4502F'] },
-  { id: 'graphite', name: 'Graphite', hint: 'Neutral dark', scheme: 'dark', swatch: ['#131416', '#24272B', '#7AA2F7'] },
-  { id: 'carbon', name: 'Carbon', hint: 'True black, for OLED', scheme: 'dark', swatch: ['#000000', '#161616', '#FF8A3D'] },
-  { id: 'midnight', name: 'Midnight', hint: 'Blue black', scheme: 'dark', swatch: ['#0B1020', '#1A2440', '#5AC8FA'] },
-  { id: 'moss', name: 'Moss', hint: 'Deep green', scheme: 'dark', swatch: ['#0E1512', '#1E2B24', '#7FBF6A'] },
-  { id: 'plum', name: 'Plum', hint: 'Late harvest', scheme: 'dark', swatch: ['#16101F', '#29203D', '#C77DFF'] },
+  { id: 'paper', name: 'Paper', hint: 'Warm stock, espresso ink', scheme: 'light', swatch: ['#EDE4D0', '#FBF6EA', '#241C13', '#8C3B26'] },
+  { id: 'snow', name: 'Snow', hint: 'Plain white, graphite type', scheme: 'light', swatch: ['#EEF0F3', '#FFFFFF', '#16181C', '#2F6FEB'] },
+  { id: 'linen', name: 'Linen', hint: 'Grey-green stone', scheme: 'light', swatch: ['#D2DAD6', '#E9EFEC', '#172220', '#356B60'] },
+  { id: 'espresso', name: 'Espresso', hint: "The mark's own ground", scheme: 'dark', swatch: ['#191309', '#2E241A', '#EFE6D0', '#B4502F'] },
+  { id: 'graphite', name: 'Graphite', hint: 'Neutral dark', scheme: 'dark', swatch: ['#131416', '#24272B', '#EDEFF2', '#7AA2F7'] },
+  { id: 'carbon', name: 'Carbon', hint: 'True black, for OLED', scheme: 'dark', swatch: ['#000000', '#161616', '#F4F4F4', '#FF8A3D'] },
+  { id: 'midnight', name: 'Midnight', hint: 'Blue black', scheme: 'dark', swatch: ['#0B1020', '#1A2440', '#E7ECFA', '#5AC8FA'] },
+  { id: 'moss', name: 'Moss', hint: 'Deep green', scheme: 'dark', swatch: ['#0E1512', '#1E2B24', '#E6F0E9', '#7FBF6A'] },
+  { id: 'plum', name: 'Plum', hint: 'Late harvest', scheme: 'dark', swatch: ['#16101F', '#29203D', '#F0E9F8', '#C77DFF'] },
 ]
 
 export const PALETTE_IDS = PALETTES.map((palette) => palette.id)
