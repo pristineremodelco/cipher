@@ -13,6 +13,11 @@ a room. Paper white on espresso, with equals picked out in cinnabar, so it sits
 beside Almanac's crescent as one family rather than as two apps that happen to
 be next to each other.
 
+## Two surfaces
+
+**Calculate** and **Convert**, one switch apart at the top of the screen. Which
+one you were on is remembered, so an app opened to convert opens to convert.
+
 ## What it does
 
 - **The whole expression**, parsed rather than accumulated, so brackets and
@@ -32,6 +37,30 @@ be next to each other.
 - A **keyboard** works: digits, `+ - * / ^ ( ) . %`, Enter for equals,
   Backspace, Delete to clear. Letters are deliberately not bound; the named
   functions are one tap away instead
+
+## Converting
+
+Thirteen categories and 103 units: length, area, volume, mass, temperature,
+speed, time, data, pressure, energy, power, angle and fuel economy.
+
+Type into either row and the other one follows, so a conversion runs in
+whichever direction you happen to want it. Under the pair sits the same
+quantity in every other unit the category holds, which is usually the thing you
+did not know you wanted until it was there; tapping one makes it the unit being
+converted to. The pair you used in a category is remembered, so feet to inches
+stays feet to inches.
+
+Every factor is the exact defined value rather than one rounded off a chart: a
+foot is 0.3048 metres, a pound is 0.45359237 kilograms, a US gallon is
+3.785411784 litres. Readings are shown to eight significant figures rather than
+to a fixed number of decimal places, because a conversion is a measurement and
+not a sum: twelve feet in yards wants 3.3333333, and 304,800,000 nanometres
+wants every digit it has.
+
+Temperature carries an offset and fuel economy is a reciprocal, so those two
+convert through a pair of functions rather than a factor. Currency is
+deliberately absent: a rate is a live number and this app does not go near a
+network.
 
 ## What it looks like
 
@@ -81,11 +110,14 @@ src/
     calc.ts          the expression parser and the number formatter
     calcinput.ts     what each key does to what is already on the display
     calctape.ts      the history and the memory register
-    theme.ts         palettes, typefaces, key styles
+    units.ts         what one unit is in terms of another
+    theme.ts         palettes, typefaces, key styles, and deriving one
     storage.ts       settings defaults and forward migration
   components/
     keys.ts          what is on the pad, and nothing about how it is drawn
+    Converter.tsx    categories, a pair, everything else, and a pad
     SettingsPanel.tsx
+    PaletteEditor.tsx  three colours in, nine out
     Icons.tsx
 ```
 

@@ -1,4 +1,4 @@
-import type { FontId, KeyShape, KeyStyle, Settings, TextSize } from '../types'
+import type { CustomPalette, FontId, KeyShape, KeyStyle, Settings, TextSize } from '../types'
 
 /**
  * A palette is the whole surface: ground, keys, type and the one accent that
@@ -52,6 +52,77 @@ export function palettesBy(scheme: 'light' | 'dark'): Palette[] {
 export function activePalette(settings: Settings, prefersDark: boolean): string {
   if (settings.followDevice && prefersDark) return settings.nightPalette
   return settings.palette
+}
+
+/** Every palette on offer, the nine that ship and any that were made here. */
+export function allPalettes(settings: Settings): Palette[] {
+  return [...PALETTES, ...settings.customPalettes.map(asPalette)]
+}
+
+export function findPalette(settings: Settings, id: string): Palette | undefined {
+  return allPalettes(settings).find((palette) => palette.id === id)
+}
+
+export const MAX_CUSTOM_PALETTES = 12
+
+/** How light a colour is, 0 to 1, weighted the way an eye weighs it. */
+export function luminance(hex: string): number {
+  const value = (parseHex(hex) ?? '#808080').replace('#', '')
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(value.slice(i, i + 2), 16) / 255)
+  const lin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+}
+
+function channels(hex: string): [number, number, number] {
+  const value = (parseHex(hex) ?? '#808080').replace('#', '')
+  return [0, 2, 4].map((i) => parseInt(value.slice(i, i + 2), 16)) as [number, number, number]
+}
+
+function hex(rgb: [number, number, number]): string {
+  return `#${rgb.map((c) => Math.round(Math.max(0, Math.min(255, c))).toString(16).padStart(2, '0')).join('')}`
+}
+
+/** `amount` of `a` over `b`, straight down the middle of each channel. */
+function mix(a: string, b: string, amount: number): string {
+  const [ar, ag, ab] = channels(a)
+  const [br, bg, bb] = channels(b)
+  const t = Math.max(0, Math.min(1, amount))
+  return hex([ar * t + br * (1 - t), ag * t + bg * (1 - t), ab * t + bb * (1 - t)])
+}
+
+/**
+ * The other six colours, worked out from the three that were chosen.
+ *
+ * Type is the important one: it is picked for contrast against the key face
+ * rather than asked for, because a palette whose numbers cannot be read is not
+ * a palette anyone meant to make. The rest hang off it.
+ */
+export function derivePalette(custom: CustomPalette): Record<string, string> {
+  const light = luminance(custom.key) > 0.45
+  const text = light ? mix('#000000', custom.key, 0.9) : mix('#ffffff', custom.key, 0.92)
+  return {
+    '--bg': custom.ground,
+    '--panel': mix(custom.key, custom.ground, 0.55),
+    '--key': custom.key,
+    '--text': text,
+    '--muted': mix(text, custom.key, 0.58),
+    '--line': mix(text, custom.key, 0.16),
+    '--accent': custom.accent,
+    '--on-accent': contrastText(custom.accent) === '#111' ? '#111111' : '#ffffff',
+    '--danger': light ? '#b3261e' : '#ff6b6b',
+  }
+}
+
+/** Enough of a Palette for the settings list to name and preview one. */
+export function asPalette(custom: CustomPalette): Palette {
+  const derived = derivePalette(custom)
+  return {
+    id: custom.id,
+    name: custom.name,
+    hint: 'Yours',
+    scheme: luminance(custom.ground) > 0.45 ? 'light' : 'dark',
+    swatch: [custom.ground, custom.key, derived['--text'], custom.accent],
+  }
 }
 
 /**

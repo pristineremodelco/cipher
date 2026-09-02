@@ -1,5 +1,6 @@
-import { FONT_IDS, PALETTE_IDS, TEXT_SIZES, parseHex } from './theme'
-import type { Settings } from '../types'
+import { FONT_IDS, MAX_CUSTOM_PALETTES, PALETTE_IDS, TEXT_SIZES, parseHex } from './theme'
+import { CATEGORIES, categoryOf } from './units'
+import type { CustomPalette, Settings } from '../types'
 
 const KEY = 'calculator.v1'
 
@@ -10,6 +11,7 @@ const KEY = 'calculator.v1'
  */
 export function defaultSettings(): Settings {
   return {
+    customPalettes: [],
     palette: 'paper',
     nightPalette: 'espresso',
     followDevice: true,
@@ -29,6 +31,10 @@ export function defaultSettings(): Settings {
     haptics: true,
     keepHistory: true,
     memoryRow: false,
+
+    mode: 'calculate',
+    convertCategory: 'length',
+    convertPairs: {},
   }
 }
 
@@ -42,8 +48,23 @@ export function migrateSettings(raw: unknown): Settings {
   if (!raw || typeof raw !== 'object') return base
   const merged = { ...base, ...(raw as Partial<Settings>) }
 
-  if (!PALETTE_IDS.includes(merged.palette)) merged.palette = base.palette
-  if (!PALETTE_IDS.includes(merged.nightPalette)) merged.nightPalette = base.nightPalette
+  merged.customPalettes = Array.isArray(merged.customPalettes)
+    ? merged.customPalettes
+        .filter((p): p is CustomPalette => Boolean(p) && typeof p.name === 'string')
+        .slice(0, MAX_CUSTOM_PALETTES)
+        .map((p) => ({
+          id: typeof p.id === 'string' && p.id ? p.id : crypto.randomUUID(),
+          name: p.name.slice(0, 30) || 'Untitled',
+          ground: parseHex(String(p.ground)) ?? '#efefef',
+          key: parseHex(String(p.key)) ?? '#ffffff',
+          accent: parseHex(String(p.accent)) ?? '#2f6feb',
+        }))
+    : []
+  // A palette that was deleted leaves whatever chose it pointing at nothing,
+  // so both slots fall back rather than rendering an app with no colours.
+  const known = [...PALETTE_IDS, ...merged.customPalettes.map((p) => p.id)]
+  if (!known.includes(merged.palette)) merged.palette = base.palette
+  if (!known.includes(merged.nightPalette)) merged.nightPalette = base.nightPalette
   merged.followDevice = merged.followDevice !== false
   merged.accent = typeof merged.accent === 'string' ? (parseHex(merged.accent) ?? '') : ''
   if (!FONT_IDS.includes(merged.fontId)) merged.fontId = base.fontId
@@ -69,6 +90,25 @@ export function migrateSettings(raw: unknown): Settings {
   merged.haptics = merged.haptics !== false
   merged.keepHistory = merged.keepHistory !== false
   merged.memoryRow = Boolean(merged.memoryRow)
+
+  merged.mode = merged.mode === 'convert' ? 'convert' : 'calculate'
+  if (!CATEGORIES.some((c) => c.id === merged.convertCategory)) {
+    merged.convertCategory = base.convertCategory
+  }
+  // A pair naming a unit that no longer exists would silently convert the
+  // wrong thing, so each one is checked against its category rather than
+  // trusted because it parsed.
+  merged.convertPairs =
+    merged.convertPairs && typeof merged.convertPairs === 'object'
+      ? Object.fromEntries(
+          Object.entries(merged.convertPairs).filter(([id, pair]) => {
+            if (!CATEGORIES.some((c) => c.id === id) || typeof pair !== 'string') return false
+            const [from, to] = pair.split('>')
+            const units = categoryOf(id).units
+            return units.some((u) => u.id === from) && units.some((u) => u.id === to)
+          }),
+        )
+      : {}
 
   return merged
 }

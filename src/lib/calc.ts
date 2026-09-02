@@ -436,6 +436,33 @@ export function formatNumber(value: number, format: NumberFormat): string {
   return /^-[0.,]*$/.test(text) ? text.slice(1) : text
 }
 
+/**
+ * A measurement, rather than an answer.
+ *
+ * A conversion is a measured quantity, so what matters is significant figures
+ * and not decimal places: twelve feet in yards is 3.3333333333 and nobody
+ * wants eleven threes, while 34,137,600,000 nanometres wants every digit it
+ * has. Eight significant figures gives both, and the count of decimals falls
+ * out of how large the number is rather than being fixed in advance.
+ */
+const MEASURE_DIGITS = 8
+
+export function formatMeasure(value: number, grouping: boolean): string {
+  if (!Number.isFinite(value)) return Number.isNaN(value) ? 'Undefined' : '∞'
+  const settled = settle(value)
+  const size = Math.abs(settled)
+  if (size !== 0 && (size >= BIG || size < SMALL)) return formatNumber(settled, { decimals: -1, grouping })
+
+  const integerDigits = size >= 1 ? Math.floor(Math.log10(size)) + 1 : 1 + Math.floor(Math.log10(size || 1))
+  const places = Math.max(0, Math.min(20, MEASURE_DIGITS - (size >= 1 ? integerDigits : integerDigits)))
+  const text = new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: places,
+    useGrouping: grouping,
+  }).format(settled)
+  return /^-[0.,]*$/.test(text) ? text.slice(1) : text
+}
+
 /** What the history list and the clipboard get: no grouping, full precision. */
 export function plainNumber(value: number): string {
   if (!Number.isFinite(value)) return Number.isNaN(value) ? 'Undefined' : '∞'

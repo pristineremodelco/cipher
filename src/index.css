@@ -125,6 +125,13 @@ body {
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 
+/* Changing palette should settle rather than snap. Only the surfaces get this,
+   never the keys' own hover and press feedback, which has to be immediate. */
+body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
+  transition: background-color var(--base) var(--ease), color var(--base) var(--ease),
+    border-color var(--base) var(--ease);
+}
+
 [data-bold='true'] body,
 [data-bold='true'] .key,
 [data-bold='true'] .hint { font-weight: 600; }
@@ -180,6 +187,47 @@ button { cursor: pointer; }
 }
 .mark { width: 26px; height: 26px; color: var(--text); flex: none; }
 .bar-actions { display: flex; gap: 6px; align-items: center; }
+
+/* One control, two states, and it never moves. A segmented switch beats a
+   menu here because the whole point is that both surfaces are one tap away. */
+.modes {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 999px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.mode {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  border-radius: 999px;
+  /* A primary control wants a thumb's worth of height. At the padding this
+     first had, the two of them came out at twenty-nine pixels tall, which is
+     under every guideline either platform publishes. */
+  padding: 11px 15px;
+  min-height: 40px;
+  font-size: calc(13px * var(--tx));
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transition: background-color var(--base) var(--ease), color var(--base) var(--ease);
+}
+.mode[data-active='true'] {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+/* The wordmark is the first thing to go: the icon has already said whose app
+   this is, and the switch has not. */
+@media (max-width: 519px) {
+  .brand h1 { display: none; }
+}
+@media (max-width: 359px) {
+  .mode { padding: 11px 10px; font-size: calc(12px * var(--tx)); }
+}
 
 .chip {
   border: 1px solid var(--line);
@@ -295,6 +343,13 @@ button { cursor: pointer; }
   min-height: 40px;
 }
 .util:hover { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.util.angle {
+  font-size: calc(12.5px * var(--tx));
+  letter-spacing: 0.05em;
+  padding: 8px 10px;
+  color: var(--muted);
+}
+.util.angle[aria-pressed='true'] { color: var(--accent); }
 .rub {
   background: var(--accent);
   color: var(--on-accent);
@@ -342,9 +397,11 @@ button { cursor: pointer; }
   gap: 8px;
 }
 /* Out on the desk where there is room for it, behind the ⋯ key where there is
-   not. A width, not a setting: nobody wants to be asked. */
+   not. A width, not a setting: nobody wants to be asked. The height matters as
+   much as the width, because a phone turned sideways clears 900 across and has
+   nowhere to put nine more rows. */
 .sci-pad { display: none; }
-@media (min-width: 900px) {
+@media (min-width: 900px) and (min-height: 640px) {
   .sci-pad {
     display: grid;
     grid-template-columns: repeat(3, minmax(64px, 1fr));
@@ -707,8 +764,402 @@ button { cursor: pointer; }
   .brand h1 { display: none; }
 }
 
-/* Wide and short, which is a laptop: the keypad would otherwise stretch into
-   letterboxes. Hold it to a sensible column and centre the lot. */
+/* ============================================================
+   Converter
+   Categories, a pair, everything else, and a pad. The pair is
+   the answer; the list under it is the one you did not know you
+   wanted until you saw it.
+   ============================================================ */
+.convert {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.categories {
+  flex: none;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+  /* Snap so a flick lands on a category rather than between two. */
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+.categories::-webkit-scrollbar { height: 0; }
+/* The strip runs off the edge on purpose, and a hard cut looks like a bug.
+   Fading the last few pixels says "there is more" without a scrollbar. */
+@supports (mask-image: linear-gradient(#000, #000)) {
+  .categories {
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  }
+}
+.category {
+  flex: none;
+  scroll-snap-align: start;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 9px 15px;
+  font-size: calc(13.5px * var(--tx));
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.category[data-active='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.convert-pair {
+  flex: none;
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+.convert-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  transition: border-color var(--base) var(--ease), background-color var(--base) var(--ease);
+}
+/* The row being typed into is the one wearing the accent. Without that there
+   is no telling which number a key is about to change. */
+.convert-row[data-active='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.convert-reading {
+  flex: 1;
+  min-width: 0;
+  /* The row is tall enough; the button inside it was not, so half the row was
+     padding that did nothing when tapped. */
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+  font-size: calc(27px * var(--tx) * var(--display-scale));
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.convert-row[data-active='false'] .convert-reading { color: var(--muted); }
+.convert-unit { position: relative; display: grid; place-items: center; flex: none; }
+.convert-unit select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  /* The native picker is the right control on a phone, so it is kept and only
+     made invisible: the pill underneath is what gets drawn. */
+  -webkit-appearance: none;
+  appearance: none;
+}
+.convert-unit em {
+  font-style: normal;
+  font-weight: 800;
+  font-size: calc(14px * var(--tx));
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 999px;
+  padding: 7px 13px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.convert-unit::after {
+  content: '';
+  width: 0;
+  height: 0;
+  margin-left: 6px;
+  border: 4px solid transparent;
+  border-top-color: var(--muted);
+  pointer-events: none;
+}
+.swap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  background: var(--key);
+  color: var(--accent);
+  border-radius: 999px;
+  box-shadow: var(--lift);
+  transition: transform var(--base) var(--ease);
+}
+.swap:hover { transform: translate(-50%, -50%) rotate(180deg); }
+.swap:active { transform: translate(-50%, -50%) scale(0.92); }
+
+.convert-all {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+  align-content: start;
+}
+.convert-other {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid transparent;
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 9px 12px;
+  text-align: left;
+  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease);
+}
+.convert-other[data-active='true'] { border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.convert-other:hover { background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
+.convert-other-value {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: calc(14.5px * var(--tx));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.convert-other-unit { color: var(--muted); font-size: calc(12.5px * var(--tx)); font-weight: 700; }
+
+/* A share of what is left rather than a fixed height, so the keys grow with
+   the screen the way the calculator's do and no dead band opens up between
+   the list and the pad on a tall phone. */
+.convert-pad {
+  flex: 0 0 auto;
+  height: clamp(210px, 38%, 330px);
+  grid-auto-rows: 1fr;
+}
+.convert-pad .key { min-height: 44px; }
+.convert-rub { --key-face: var(--key); }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Making a palette
+   ============================================================ */
+.own-list { display: grid; gap: 6px; margin-bottom: 8px; }
+.own-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.own-row strong { flex: 1; min-width: 0; font-size: calc(14px * var(--tx)); overflow: hidden; text-overflow: ellipsis; }
+.own-row .palette-swatch { width: 74px; height: 28px; margin: 0; flex: none; }
+.ghost.tiny { padding: 6px 10px; font-size: calc(12.5px * var(--tx)); border-radius: 10px; }
+
+.text-input {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: calc(15px * var(--tx));
+  width: 100%;
+}
+.text-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--ring); }
+
+.colour-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.colour-label { display: grid; gap: 1px; min-width: 0; }
+.colour-label strong { font-size: calc(14px * var(--tx)); }
+.colour-label span { color: var(--muted); font-size: calc(12px * var(--tx)); }
+.colour-controls { display: flex; align-items: center; gap: 8px; }
+.colour-controls input[type='color'] {
+  width: 46px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  cursor: pointer;
+}
+.hex {
+  width: 96px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: calc(13.5px * var(--tx));
+  text-transform: lowercase;
+}
+.hex:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--ring); }
+.pipette { padding: 10px 12px; display: grid; place-items: center; }
+
+/* What the six colours nobody chose came out as, before anything is saved. */
+.palette-proof {
+  border: 1px solid;
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 14px;
+}
+.palette-proof-keys { display: flex; gap: 8px; }
+.palette-proof-keys span {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  height: 46px;
+  border-radius: var(--key-radius);
+  font-weight: 800;
+  font-size: 17px;
+}
+.palette-proof p { margin: 0; font-size: calc(12.5px * var(--tx)); line-height: 1.5; }
+.editor-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.editor-head h3 {
+  margin: 0;
+  font-size: calc(17px * var(--tx));
+  letter-spacing: -0.03em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.editor-head span {
+  flex: none;
+  color: var(--muted);
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+}
+.editor-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.primary {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: calc(14px * var(--tx));
+  font-weight: 800;
+}
+.primary:disabled { opacity: 0.42; cursor: not-allowed; }
+
+/* ============================================================
+   Sizes
+   A keypad as wide as a tablet is a keypad nobody can reach
+   across, so past a phone the whole thing becomes a column and
+   the column is what grows, not the keys.
+   ============================================================ */
 @media (min-width: 620px) {
-  .app { max-width: 1100px; margin: 0 auto; width: 100%; }
+  .app { width: 100%; max-width: 1100px; margin: 0 auto; }
+  .work { width: 100%; max-width: 620px; margin: 0 auto; }
+  /* The converter earns more room than the keypad does: its list of every
+     other unit goes from one column to three, which is the whole point of it. */
+  [data-mode='convert'] .work { max-width: 880px; }
+
+  /* Past a phone the pad goes beside the readings rather than under them.
+     Stacked on a tablet it sits in the bottom third with a band of nothing
+     above it, because eleven units do not fill nine hundred pixels, and a
+     band of nothing is the difference between an app that was laid out and
+     one that was merely made to fit. */
+  .convert {
+    display: grid;
+    grid-template-columns: 1fr minmax(240px, 320px);
+    grid-template-rows: auto auto 1fr;
+    gap: 10px;
+  }
+  .categories { grid-area: 1 / 1 / 2 / 3; }
+  .convert-pair { grid-area: 2 / 1 / 3 / 2; }
+  .convert-all { grid-area: 3 / 1 / 4 / 2; }
+  /* Held to a height rather than stretched down the column: a key two hundred
+     pixels tall is not a key, it is a panel with a number on it. */
+  .convert-pad {
+    grid-area: 2 / 2 / 4 / 3;
+    align-self: start;
+    height: min(100%, 430px);
+  }
+  .convert-all { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+}
+/* With the scientific set out beside it there are seven columns to fit, not
+   four, so the column opens up to match. */
+@media (min-width: 900px) and (min-height: 640px) {
+  .work { max-width: 980px; }
+}
+
+/* A phone on its side. Almost all the height is gone, so the display gives up
+   most of what it has and the keys keep theirs. */
+@media (max-height: 460px) and (orientation: landscape) {
+  .app { gap: 6px; padding-top: 4px; }
+  .bar { padding: 0 2px; }
+  .display { min-height: 78px; padding: 8px 12px 4px; }
+  .expression { min-height: 18px; font-size: calc(15px * var(--tx) * var(--display-scale)); }
+  .answer { font-size: calc(22px * var(--tx) * var(--display-scale)); min-height: 26px; }
+  .utility { margin-top: 2px; }
+  .util { min-height: 32px; padding: 4px 10px; }
+  .key { min-height: 32px; font-size: calc(17px * var(--tx)); }
+  .pad, .row, .pads { gap: 5px; }
+  .categories { padding-bottom: 0; }
+  .mode { min-height: 34px; padding: 8px 13px; }
+  .chip { min-height: 34px; }
+
+  /* Sideways there is width to spare and no height at all, so the pad goes
+     beside the readings rather than under them. Stacked, four rows of keys
+     plus a pair of readings plus a list does not fit in 393 pixels and the
+     page starts scrolling, which a keypad must never do. */
+  .convert {
+    display: grid;
+    grid-template-columns: 1fr minmax(210px, 300px);
+    grid-template-rows: auto auto 1fr;
+    gap: 8px;
+  }
+  .categories { grid-area: 1 / 1 / 2 / 3; }
+  .convert-pair { grid-area: 2 / 1 / 3 / 2; }
+  .convert-all { grid-area: 3 / 1 / 4 / 2; }
+  .convert-pad { grid-area: 2 / 2 / 4 / 3; height: auto; gap: 5px; }
+  .convert-pad .key { min-height: 30px; }
+  .convert-row { padding: 7px 12px; }
+  .convert-reading { font-size: calc(20px * var(--tx) * var(--display-scale)); min-height: 32px; }
+  .swap { width: 34px; height: 34px; }
 }

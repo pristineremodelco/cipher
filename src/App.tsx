@@ -5,6 +5,7 @@ import { MAX_TAPE, loadTape, saveTape, type Tape, type TapeEntry } from './lib/c
 import { ROWS, SCIENTIFIC, TYPED, type Key } from './components/keys'
 import { Backspace, Clock, Gear, Mark } from './components/Icons'
 import { SettingsPanel } from './components/SettingsPanel'
+import { Converter } from './components/Converter'
 import { useSettings } from './store'
 
 export default function App() {
@@ -123,9 +124,9 @@ export default function App() {
         else setSettingsOpen(false)
         return
       }
-      // The panels are ordinary screens with their own controls; the pad
-      // should not be taking keys out from under them.
-      if (settingsOpen) return
+      // The panels and the converter are ordinary screens with their own
+      // controls; the pad should not be taking keys out from under them.
+      if (settingsOpen || settings.mode === 'convert') return
       if (event.key === 'Enter' || event.key === '=') {
         event.preventDefault()
         equals()
@@ -154,7 +155,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [clear, equals, key, rub, sciOpen, settingsOpen, tapeOpen])
+  }, [clear, equals, key, rub, sciOpen, settings.mode, settingsOpen, tapeOpen])
 
   /** Holding the rub-out clears the lot, which is the one gesture worth having. */
   function holdStart() {
@@ -211,16 +212,29 @@ export default function App() {
           <Mark />
           <h1>Calculator</h1>
         </div>
-        <div className="bar-actions">
+        {/* Two surfaces, one switch, always in the same place. Converting is
+            not a thing buried behind a menu here: for plenty of people it is
+            the reason the app is installed at all. */}
+        <nav className="modes" aria-label="What this is showing">
           <button
-            className="chip"
-            aria-pressed={settings.angle === 'rad'}
-            title="Degrees or radians"
-            onClick={() => set({ angle: settings.angle === 'deg' ? 'rad' : 'deg' })}
+            className="mode"
+            aria-pressed={settings.mode === 'calculate'}
+            data-active={settings.mode === 'calculate'}
+            onClick={() => set({ mode: 'calculate' })}
           >
-            {settings.angle === 'deg' ? 'DEG' : 'RAD'}
+            Calculate
           </button>
-          {settings.keepHistory ? (
+          <button
+            className="mode"
+            aria-pressed={settings.mode === 'convert'}
+            data-active={settings.mode === 'convert'}
+            onClick={() => set({ mode: 'convert' })}
+          >
+            Convert
+          </button>
+        </nav>
+        <div className="bar-actions">
+          {settings.mode === 'calculate' && settings.keepHistory ? (
             <button
               className="chip"
               aria-pressed={tapeOpen}
@@ -238,6 +252,9 @@ export default function App() {
       </header>
 
       <main className="work">
+        {settings.mode === 'convert' ? <Converter /> : null}
+        {settings.mode === 'calculate' ? (
+        <>
         <section className="display">
           <div className="expression" aria-label="Expression">
             {settled ? (
@@ -264,6 +281,17 @@ export default function App() {
             <p className="error">{result.error}</p>
           ) : null}
           <div className="utility">
+            {/* Degrees or radians sits with the maths rather than in the bar:
+                it means nothing until a trig key is pressed, and the key that
+                opens those is the one beside it. */}
+            <button
+              className="util angle"
+              aria-pressed={settings.angle === 'rad'}
+              title="Degrees or radians"
+              onClick={() => set({ angle: settings.angle === 'deg' ? 'rad' : 'deg' })}
+            >
+              {settings.angle === 'deg' ? 'DEG' : 'RAD'}
+            </button>
             <button
               className="util more"
               aria-label="Scientific functions"
@@ -339,6 +367,8 @@ export default function App() {
             ))}
           </div>
         </div>
+        </>
+        ) : null}
       </main>
 
       {sciOpen ? (

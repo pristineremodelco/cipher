@@ -13,7 +13,25 @@ export type Layout = 'right' | 'left'
 /** The bottom row: a zero and a double zero, or one wide zero. */
 export type ZeroKey = 'double' | 'wide'
 
+/**
+ * A palette somebody made. Three colours are asked for and the rest are worked
+ * out: nobody wants to be handed nine colour pickers, and the six that are not
+ * asked for are the ones with a right answer given the three that are.
+ */
+export type CustomPalette = {
+  id: string
+  name: string
+  /** Behind everything. */
+  ground: string
+  /** The face of a key. */
+  key: string
+  /** Operators, brackets and the equals key. */
+  accent: string
+}
+
 export type Settings = {
+  /** Looks made here, offered alongside the nine that ship. */
+  customPalettes: CustomPalette[]
   /** The palette worn by day, or at all times when the device is not followed. */
   palette: string
   /** The one worn when the device says it is dark and followDevice is on. */
@@ -46,4 +64,15 @@ export type Settings = {
   keepHistory: boolean
   /** The memory row: MC, MR, M+, M-. */
   memoryRow: boolean
+
+  /** Which surface is showing: the keypad or the converter. */
+  mode: 'calculate' | 'convert'
+  /** The converter's last category, so it reopens where it was left. */
+  convertCategory: string
+  /**
+   * The pair last used in each category, as "from>to". A person who converts
+   * feet to inches wants feet to inches again next time, not whatever the
+   * first two units in the list happen to be.
+   */
+  convertPairs: Record<string, string>
 }

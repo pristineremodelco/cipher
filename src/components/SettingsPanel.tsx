@@ -3,16 +3,19 @@ import {
   FONTS,
   KEY_SHAPES,
   KEY_STYLES,
+  MAX_CUSTOM_PALETTES,
   PALETTES,
   TEXT_SCALES,
   TEXT_SIZES,
   TEXT_SIZE_LABELS,
+  asPalette,
   parseHex,
 } from '../lib/theme'
+import { PaletteEditor } from './PaletteEditor'
 import { defaultSettings } from '../lib/storage'
 import { useSettings } from '../store'
 import { formatNumber } from '../lib/calc'
-import type { Settings } from '../types'
+import type { CustomPalette, Settings } from '../types'
 
 const TABS = [
   { id: 'look', label: 'Look' },
@@ -38,11 +41,29 @@ const PREVIEW: { label: string; kind: string }[][] = [
   ],
 ]
 
+/**
+ * What putting everything back leaves alone.
+ *
+ * A palette somebody made is theirs, not a setting: forgetting a dozen of them
+ * because someone wanted the default corners back would be a trap. The
+ * converter's remembered pairs and which surface is showing are not looks
+ * either, and resetting the mode would throw you out of the panel you are
+ * standing in.
+ */
+const KEPT: (keyof Settings)[] = ['customPalettes', 'mode', 'convertCategory', 'convertPairs']
+
+/** Arrays and objects need reading, not comparing by reference. */
+function same(a: unknown, b: unknown): boolean {
+  if (typeof a === 'object' && a !== null) return JSON.stringify(a) === JSON.stringify(b)
+  return a === b
+}
+
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const { settings, set } = useSettings()
   const [tab, setTab] = useState<TabId>('look')
   const fresh = defaultSettings()
-  const changed = (Object.keys(fresh) as (keyof Settings)[]).some((key) => settings[key] !== fresh[key])
+  const resettable = (Object.keys(fresh) as (keyof Settings)[]).filter((key) => !KEPT.includes(key))
+  const changed = resettable.some((key) => !same(settings[key], fresh[key]))
 
   const sample = formatNumber(1234.5678, { decimals: settings.decimals, grouping: settings.grouping })
 
@@ -112,7 +133,12 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
             nothing still has to be read and dismissed every time. */}
         {changed ? (
           <div className="sheet-foot">
-            <button className="ghost" onClick={() => set(defaultSettings())}>
+            <button
+              className="ghost"
+              onClick={() =>
+                set(Object.fromEntries(resettable.map((key) => [key, fresh[key]])) as Partial<Settings>)
+              }
+            >
               Put everything back
             </button>
           </div>
@@ -124,9 +150,49 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
 type TabProps = { settings: Settings; set: (patch: Partial<Settings>) => void }
 
+function blankPalette(): CustomPalette {
+  return { id: crypto.randomUUID(), name: '', ground: '#101418', key: '#1b2026', accent: '#4da3ff' }
+}
+
 function LookTab({ settings, set }: TabProps) {
-  const light = PALETTES.filter((palette) => palette.scheme === 'light')
-  const dark = PALETTES.filter((palette) => palette.scheme === 'dark')
+  const [draft, setDraft] = useState<CustomPalette | null>(null)
+  const own = settings.customPalettes.map(asPalette)
+  const light = [...PALETTES, ...own].filter((palette) => palette.scheme === 'light')
+  const dark = [...PALETTES, ...own].filter((palette) => palette.scheme === 'dark')
+  const all = [...PALETTES, ...own]
+
+  function save() {
+    if (!draft) return
+    const name = draft.name.trim()
+    if (!name) return
+    const exists = settings.customPalettes.some((p) => p.id === draft.id)
+    const customPalettes = exists
+      ? settings.customPalettes.map((p) => (p.id === draft.id ? { ...draft, name } : p))
+      : [...settings.customPalettes, { ...draft, name }].slice(0, MAX_CUSTOM_PALETTES)
+    /**
+     * A new one goes straight on, into whichever slot its own lightness fits.
+     * Making a dark palette and having nothing happen because the phone is in
+     * light mode is the sort of thing that reads as a bug rather than as a
+     * setting, and the two slots are explained right above this.
+     */
+    const wear = exists
+      ? {}
+      : settings.followDevice && asPalette({ ...draft, name }).scheme === 'dark'
+        ? { nightPalette: draft.id }
+        : { palette: draft.id }
+    set({ customPalettes, ...wear })
+    setDraft(null)
+  }
+
+  function forget(id: string) {
+    set({ customPalettes: settings.customPalettes.filter((p) => p.id !== id) })
+  }
+
+  if (draft) {
+    return (
+      <PaletteEditor draft={draft} onChange={setDraft} onSave={save} onCancel={() => setDraft(null)} />
+    )
+  }
 
   return (
     <>
@@ -145,7 +211,7 @@ function LookTab({ settings, set }: TabProps) {
 
       <Swatches
         label={settings.followDevice ? 'By day' : 'Palette'}
-        palettes={settings.followDevice ? light : PALETTES}
+        palettes={settings.followDevice ? light : all}
         chosen={settings.palette}
         onPick={(id) => set({ palette: id })}
       />
@@ -153,6 +219,44 @@ function LookTab({ settings, set }: TabProps) {
       {settings.followDevice ? (
         <Swatches label="After dark" palettes={dark} chosen={settings.nightPalette} onPick={(id) => set({ nightPalette: id })} />
       ) : null}
+
+      <div className="field">
+        <span>Your palettes</span>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Three colours: the ground, the face of a key, and the accent. Type, lines
+          and the muted shade are worked out from those, because a palette whose
+          numbers cannot be read is not one anybody meant to make.
+        </p>
+        {settings.customPalettes.length ? (
+          <div className="own-list">
+            {settings.customPalettes.map((palette) => (
+              <div className="own-row" key={palette.id}>
+                <span className="palette-swatch" aria-hidden="true">
+                  <i style={{ background: palette.ground }} />
+                  <i style={{ background: palette.key, color: asPalette(palette).swatch[2] }}>12</i>
+                  <i style={{ background: palette.accent }} />
+                </span>
+                <strong>{palette.name}</strong>
+                <button className="ghost tiny" onClick={() => setDraft({ ...palette })}>
+                  Edit
+                </button>
+                <button className="ghost tiny" aria-label={`Delete ${palette.name}`} onClick={() => forget(palette.id)}>
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <button
+          className="ghost"
+          disabled={settings.customPalettes.length >= MAX_CUSTOM_PALETTES}
+          onClick={() => setDraft(blankPalette())}
+        >
+          {settings.customPalettes.length >= MAX_CUSTOM_PALETTES
+            ? `That is all ${MAX_CUSTOM_PALETTES} of them`
+            : 'Make a palette'}
+        </button>
+      </div>
 
       <div className="field">
         <span>Accent</span>
