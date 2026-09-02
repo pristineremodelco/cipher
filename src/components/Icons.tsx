@@ -67,3 +67,35 @@ export function Gear() {
     </svg>
   )
 }
+
+/**
+ * Reception, or the lack of it. One mark with two states rather than two
+ * marks, so the eye reads the same shape and only notices the slash.
+ */
+export function Signal({ on }: { on: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" className="signal" data-on={on}>
+      <path
+        d="M2.5 8.6a14 14 0 0 1 19 0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+        opacity={on ? 1 : 0.32}
+      />
+      <path
+        d="M6 12.2a9 9 0 0 1 12 0"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.1"
+        strokeLinecap="round"
+        opacity={on ? 1 : 0.5}
+      />
+      <path d="M9.4 15.8a4.2 4.2 0 0 1 5.2 0" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
+      <circle cx="12" cy="19.2" r="1.5" fill="currentColor" />
+      {on ? null : (
+        <path d="M4 20.5 20.5 4" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" />
+      )}
+    </svg>
+  )
+}

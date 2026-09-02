@@ -65,8 +65,17 @@ export type Settings = {
   /** The memory row: MC, MR, M+, M-. */
   memoryRow: boolean
 
-  /** Which surface is showing: the keypad or the converter. */
-  mode: 'calculate' | 'convert'
+  /** Which surface is showing. */
+  mode: 'calculate' | 'convert' | 'tools'
+  /** The tool last opened, so it reopens on that one. Empty means the grid. */
+  tool: string
+  /** Places kept in World Time, in the order they are shown. */
+  worldZones: string[]
+  /** Twelve or twenty four hour clocks, in World Time. */
+  timeFormat: '12' | '24'
+  /** The currency pair last used, remembered the way the converter's is. */
+  currencyFrom: string
+  currencyTo: string
   /** The converter's last category, so it reopens where it was left. */
   convertCategory: string
   /**

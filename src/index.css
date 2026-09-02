@@ -1135,7 +1135,8 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   .bar { padding: 0 2px; }
   .display { min-height: 78px; padding: 8px 12px 4px; }
   .expression { min-height: 18px; font-size: calc(15px * var(--tx) * var(--display-scale)); }
-  .answer { font-size: calc(22px * var(--tx) * var(--display-scale)); min-height: 26px; }
+  /* Still a tappable thing, even squeezed: the whole width is the copy button. */
+  .answer { font-size: calc(22px * var(--tx) * var(--display-scale)); min-height: 32px; }
   .utility { margin-top: 2px; }
   .util { min-height: 32px; padding: 4px 10px; }
   .key { min-height: 32px; font-size: calc(17px * var(--tx)); }
@@ -1163,3 +1164,250 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   .convert-reading { font-size: calc(20px * var(--tx) * var(--display-scale)); min-height: 32px; }
   .swap { width: 34px; height: 34px; }
 }
+
+/* ============================================================
+   Tools
+   A grid of cards, then one screen at a time. Every screen is
+   the same shape: fields at the top, the answer underneath,
+   and a note where the sum needs one.
+   ============================================================ */
+.tools {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.tool-grid { display: grid; gap: 18px; padding-bottom: 8px; }
+.group-name {
+  margin: 0 0 8px;
+  font-size: calc(11.5px * var(--tx));
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.card {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 13px 14px;
+  min-height: 62px;
+  align-content: center;
+  transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+}
+.card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.card:active { transform: scale(0.985); }
+.card-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: calc(14.5px * var(--tx));
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.card-hint { color: var(--muted); font-size: calc(12px * var(--tx)); }
+.card[data-offline='true'] .card-hint { color: var(--danger); }
+.card-signal { display: inline-grid; color: var(--accent); }
+.card-signal[data-on='false'] { color: var(--danger); }
+
+.tool-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tool-title { flex: 1; min-width: 0; }
+.tool-title h2 {
+  margin: 0;
+  font-size: calc(18px * var(--tx));
+  letter-spacing: -0.03em;
+}
+.tool-title span { color: var(--muted); font-size: calc(12.5px * var(--tx)); }
+.needs-signal { display: grid; place-items: center; color: var(--accent); }
+.needs-signal[data-on='false'] { color: var(--danger); }
+.tool-body { flex: 1; min-height: 0; }
+
+.tool { display: grid; gap: 12px; }
+.tool-fields { display: grid; gap: 12px; }
+/* minmax(0, 1fr) and not 1fr: a bare fr floors at the content's own minimum,
+   and a text input's intrinsic width is about twenty characters, so two of
+   them side by side push the column wider than the screen. */
+.tool-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tool-field { display: grid; gap: 5px; min-width: 0; }
+.tool-label {
+  font-size: calc(11.5px * var(--tx));
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.tool-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 13px;
+  padding: 0 12px;
+  min-height: 48px;
+  transition: border-color var(--fast) var(--ease);
+}
+.tool-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+.tool-input input,
+.tool-input select {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: none;
+  outline: none;
+  padding: 12px 0;
+  font-size: calc(16px * var(--tx));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  /* A field is the one place text is worth selecting. */
+  -webkit-user-select: text;
+  user-select: text;
+}
+.tool-input select { font-weight: 700; }
+.tool-input input[type='date'] { min-height: 24px; }
+.tool-input .affix {
+  flex: none;
+  font-style: normal;
+  font-weight: 800;
+  font-size: calc(13.5px * var(--tx));
+  color: var(--muted);
+}
+.tool-hint { color: var(--muted); font-size: calc(12px * var(--tx)); }
+.tool-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: calc(12.5px * var(--tx));
+  line-height: 1.55;
+}
+
+.segment {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 13px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.segment::-webkit-scrollbar { height: 0; }
+.segment-item {
+  flex: 1 0 auto;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  border-radius: 10px;
+  padding: 10px 12px;
+  min-height: 40px;
+  font-size: calc(13px * var(--tx));
+  font-weight: 800;
+  white-space: nowrap;
+  transition: background-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.segment-item[data-active='true'] { background: var(--accent); color: var(--on-accent); }
+
+/* The answer. Always in the same place and always the same shape, so the eye
+   knows where to go before the screen has finished being read. */
+.readout {
+  display: grid;
+  gap: 2px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 6px 14px;
+}
+.readout-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.readout-row:last-child { border-bottom: 0; }
+.readout-label { color: var(--muted); font-size: calc(13px * var(--tx)); font-weight: 700; }
+.readout-value {
+  font-weight: 800;
+  font-size: calc(16px * var(--tx));
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+.readout-row[data-lead='true'] { padding: 12px 0; }
+.readout-row[data-lead='true'] .readout-value {
+  font-size: calc(24px * var(--tx));
+  color: var(--accent);
+}
+.readout-note {
+  flex: none;
+  color: var(--muted);
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+}
+
+.grade-rows { display: grid; gap: 10px; }
+.grade-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)) auto; gap: 8px; align-items: end; }
+.grade-row .ghost.tiny { min-height: 48px; }
+
+.clocks { display: grid; gap: 6px; }
+.clock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 13px;
+  padding: 11px 13px;
+}
+.clock[data-here='true'] { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.clock-where { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.clock-where strong { font-size: calc(14.5px * var(--tx)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clock-where span { color: var(--muted); font-size: calc(12px * var(--tx)); font-weight: 700; }
+.clock-when { display: grid; justify-items: end; gap: 1px; }
+.clock-when strong { font-size: calc(17px * var(--tx)); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.clock-when span { color: var(--muted); font-size: calc(11.5px * var(--tx)); }
+
+.rates-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 13px;
+  padding: 9px 12px;
+  color: var(--accent);
+}
+.rates-bar[data-state='stale'], .rates-bar[data-state='nothing'] { color: var(--danger); }
+.rates-when { flex: 1; min-width: 0; color: var(--muted); font-size: calc(12.5px * var(--tx)); font-weight: 700; }
+
+.offline {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 28px 20px;
+  color: var(--danger);
+}
+.offline strong { font-size: calc(16px * var(--tx)); color: var(--text); }
+.offline p { margin: 0; color: var(--muted); font-size: calc(12.5px * var(--tx)); line-height: 1.6; max-width: 42ch; }

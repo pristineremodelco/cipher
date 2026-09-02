@@ -1,5 +1,7 @@
 import { FONT_IDS, MAX_CUSTOM_PALETTES, PALETTE_IDS, TEXT_SIZES, parseHex } from './theme'
 import { CATEGORIES, categoryOf } from './units'
+import { TOOLS } from './tools'
+import { isValidZone } from './zones'
 import type { CustomPalette, Settings } from '../types'
 
 const KEY = 'calculator.v1'
@@ -33,6 +35,11 @@ export function defaultSettings(): Settings {
     memoryRow: false,
 
     mode: 'calculate',
+    tool: '',
+    worldZones: [],
+    timeFormat: '12',
+    currencyFrom: 'USD',
+    currencyTo: 'EUR',
     convertCategory: 'length',
     convertPairs: {},
   }
@@ -91,7 +98,14 @@ export function migrateSettings(raw: unknown): Settings {
   merged.keepHistory = merged.keepHistory !== false
   merged.memoryRow = Boolean(merged.memoryRow)
 
-  merged.mode = merged.mode === 'convert' ? 'convert' : 'calculate'
+  if (!['calculate', 'convert', 'tools'].includes(merged.mode)) merged.mode = base.mode
+  merged.tool = typeof merged.tool === 'string' && TOOLS.some((t) => t.id === merged.tool) ? merged.tool : ''
+  merged.worldZones = Array.isArray(merged.worldZones)
+    ? [...new Set(merged.worldZones.filter((id): id is string => typeof id === 'string' && isValidZone(id)))].slice(0, 12)
+    : []
+  merged.timeFormat = merged.timeFormat === '24' ? '24' : '12'
+  merged.currencyFrom = /^[A-Z]{3}$/.test(String(merged.currencyFrom)) ? merged.currencyFrom : base.currencyFrom
+  merged.currencyTo = /^[A-Z]{3}$/.test(String(merged.currencyTo)) ? merged.currencyTo : base.currencyTo
   if (!CATEGORIES.some((c) => c.id === merged.convertCategory)) {
     merged.convertCategory = base.convertCategory
   }

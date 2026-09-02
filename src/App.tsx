@@ -6,6 +6,7 @@ import { ROWS, SCIENTIFIC, TYPED, type Key } from './components/keys'
 import { Backspace, Clock, Gear, Mark } from './components/Icons'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Converter } from './components/Converter'
+import { Tools } from './components/Tools'
 import { useSettings } from './store'
 
 export default function App() {
@@ -126,7 +127,7 @@ export default function App() {
       }
       // The panels and the converter are ordinary screens with their own
       // controls; the pad should not be taking keys out from under them.
-      if (settingsOpen || settings.mode === 'convert') return
+      if (settingsOpen || settings.mode !== 'calculate') return
       if (event.key === 'Enter' || event.key === '=') {
         event.preventDefault()
         equals()
@@ -232,6 +233,14 @@ export default function App() {
           >
             Convert
           </button>
+          <button
+            className="mode"
+            aria-pressed={settings.mode === 'tools'}
+            data-active={settings.mode === 'tools'}
+            onClick={() => set({ mode: 'tools' })}
+          >
+            Tools
+          </button>
         </nav>
         <div className="bar-actions">
           {settings.mode === 'calculate' && settings.keepHistory ? (
@@ -253,6 +262,7 @@ export default function App() {
 
       <main className="work">
         {settings.mode === 'convert' ? <Converter /> : null}
+        {settings.mode === 'tools' ? <Tools /> : null}
         {settings.mode === 'calculate' ? (
         <>
         <section className="display">

@@ -13,10 +13,11 @@ a room. Paper white on espresso, with equals picked out in cinnabar, so it sits
 beside Almanac's crescent as one family rather than as two apps that happen to
 be next to each other.
 
-## Two surfaces
+## Three surfaces
 
-**Calculate** and **Convert**, one switch apart at the top of the screen. Which
-one you were on is remembered, so an app opened to convert opens to convert.
+**Calculate**, **Convert** and **Tools**, one switch apart at the top of the
+screen. Which one you were on is remembered, and so is the tool you were in, so
+an app opened to work something out opens on it.
 
 ## What it does
 
@@ -61,6 +62,43 @@ Temperature carries an offset and fuel economy is a reciprocal, so those two
 convert through a pair of functions rather than a factor. Currency is
 deliberately absent: a rate is a live number and this app does not go near a
 network.
+
+## The tools
+
+Sixteen of them, grouped by what they are for rather than listed alphabetically
+in a drawer.
+
+**Money.** Discount, Sales Tax, Tip, Unit Price, Loan, Savings, Currencies.
+**Everyday.** Percent, Date, World Time, Hex, Grade Average.
+**Vehicle.** Fuel Cost, Fuel Efficiency.
+**Health.** Body Metrics, Ovulation.
+
+Every one of them has the same shape: the fields at the top, the answer in a
+block underneath with the figure you came for drawn large, and a note where the
+sum needs one. Sales Tax runs backwards as well as forwards, because taking 8%
+off a total that already includes 8% does not give the price before tax and
+plenty of tools get that wrong. Loan is a level payment amortisation and says
+so. Ovulation says out loud that every date on it is an average of other
+people's cycles.
+
+### The one that needs a signal
+
+Fifteen of the sixteen work with the aeroplane mode on. **Currencies** cannot:
+an exchange rate is a live number, and inventing one would be worse than saying
+so. It carries a signal mark on its card, crossed through when the device
+reports no connection, so the reason a tap will disappoint is visible before
+the tap.
+
+Rates come from the European Central Bank through Frankfurter, which is free,
+needs no key and answers cross-origin, so the browser asks directly and no
+server sits in the middle holding anybody's traffic. The ECB publishes once a
+working day, so a set fetched this morning is the set everybody has: what was
+last fetched is kept, still converts offline, and says how old it is rather
+than pretending to be current.
+
+World Time looks as though it should need a signal and does not. Every browser
+ships the whole IANA time zone database, so what time it is in Tokyo is a
+question the device can already answer, daylight saving included.
 
 ## What it looks like
 
@@ -111,11 +149,17 @@ src/
     calcinput.ts     what each key does to what is already on the display
     calctape.ts      the history and the memory register
     units.ts         what one unit is in terms of another
+    tools.ts         the sums behind the tools, and nothing that draws
+    rates.ts         exchange rates, and what to do when there are none
+    zones.ts         world time, worked out on the device
     theme.ts         palettes, typefaces, key styles, and deriving one
     storage.ts       settings defaults and forward migration
   components/
     keys.ts          what is on the pad, and nothing about how it is drawn
     Converter.tsx    categories, a pair, everything else, and a pad
+    Tools.tsx        the grid, and one screen at a time
+    Form.tsx         the field, the choice and the answer block they all share
+    tools/           one file per group: Money, Everyday, Vehicle, Health, Currency
     SettingsPanel.tsx
     PaletteEditor.tsx  three colours in, nine out
     Icons.tsx
