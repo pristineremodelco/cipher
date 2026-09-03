@@ -211,7 +211,7 @@ export default function App() {
       <header className="bar">
         <div className="brand">
           <Mark />
-          <h1>Calculator</h1>
+          <h1>Cipher</h1>
         </div>
         {/* Two surfaces, one switch, always in the same place. Converting is
             not a thing buried behind a menu here: for plenty of people it is

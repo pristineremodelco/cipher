@@ -19,8 +19,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Calculator',
-        short_name: 'Calculator',
+        name: 'Cipher',
+        short_name: 'Cipher',
         description: 'A calculator that works the whole expression out, with no ads and nothing sent anywhere.',
         // The mark's own ground, so the splash and the status bar match the
         // icon that was tapped rather than the palette that happens to be on.

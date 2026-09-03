@@ -220,10 +220,18 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   background: var(--accent);
   color: var(--on-accent);
 }
-/* The wordmark is the first thing to go: the icon has already said whose app
-   this is, and the switch has not. */
+/* On a phone the mark goes with the wordmark rather than sitting on alone.
+   Three modes and two buttons is already the whole width, and the icon on the
+   home screen has said whose app this is more clearly than 26 pixels of it in
+   a corner ever will. The switch is what the bar is for; it gets the room. */
+/* On a phone the mark goes with the wordmark rather than sitting on alone.
+   Three modes and two buttons is already the whole width, and the icon on the
+   home screen has said whose app this is more clearly than 26 pixels of it in
+   a corner ever will. The switch is what the bar is for; it gets the room. */
 @media (max-width: 519px) {
-  .brand h1 { display: none; }
+  .brand { display: none; }
+  .modes { margin: 0 auto; }
+  .bar { gap: 8px; }
 }
 @media (max-width: 359px) {
   .mode { padding: 11px 10px; font-size: calc(12px * var(--tx)); }

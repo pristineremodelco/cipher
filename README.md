@@ -1,10 +1,17 @@
-# Calculator
+# Cipher
 
 A calculator that works the whole expression out. No ads, no account, no
 network. Everything stays in the browser it runs in.
 
 It is its own app: its own build, its own service worker, its own icon on the
 home screen. It shares a repository with Almanac and nothing else.
+
+## The name
+
+To cipher meant to do arithmetic, and in the trades it still does. It is the
+right word for this one in particular: it works an expression out rather than
+accumulating a running total, which is the difference between reading a sum and
+adding up.
 
 ## The mark
 

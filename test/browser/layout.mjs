@@ -1,9 +1,16 @@
 /**
  * Every size, every surface, every tool.
  *
- * Three rules, and every one of them was written after something broke it: the
- * page may not scroll sideways, nothing outside a box that scrolls may sit past
- * the edge, and nothing a finger has to hit may be smaller than a finger.
+ * Four rules: the page may not scroll sideways, nothing outside a box that
+ * scrolls may sit past the edge, nothing a finger has to hit may be smaller
+ * than a finger, and nothing along the top bar may run into what is beside it.
+ *
+ * The first three were each written after something broke them. The fourth
+ * catches overlap and touching, which is a real class of fault, but it is not
+ * a judge of whether a row looks crowded: the bar has been through a version
+ * that measured a legal ten pixels between the switch and the buttons and
+ * still read as cramped. That one was fixed by looking at it, and no threshold
+ * here would have found it without also failing the narrowest screen.
  */
 import { browser as launch, open, tally } from './harness.mjs'
 
@@ -52,16 +59,29 @@ async function inspect(page, where) {
       const box = el.getBoundingClientRect()
       return box.width > 0 && (box.height < 30 || box.width < 24)
     })
+    // The bar is one row of things that must not run into each other. Boxes
+    // that merely touch still read as broken, so this asks for a little gap
+    // rather than only for an absence of overlap.
+    const bar = document.querySelector('.bar')
+    const along = bar ? [...bar.children].map((el) => ({ name: named(el), box: el.getBoundingClientRect() })) : []
+    const crowded = []
+    for (let i = 1; i < along.length; i += 1) {
+      const gap = along[i].box.left - along[i - 1].box.right
+      if (gap < 6) crowded.push(`${along[i - 1].name} and ${along[i].name} are ${Math.round(gap)}px apart`)
+    }
+
     return {
       sideways: document.documentElement.scrollWidth > innerWidth + 1,
       loose: [...new Set(loose.map(named))].slice(0, 4),
       small: [...new Set(small.map(named))].slice(0, 4),
+      crowded,
     }
   })
   if (found.sideways) t.note(`${where}: the page scrolls sideways`)
   if (found.loose.length) t.note(`${where}: past the edge, loose on the page: ${found.loose.join(', ')}`)
   if (found.small.length) t.note(`${where}: too small to hit: ${found.small.join(', ')}`)
-  t.ok(where, !found.sideways && !found.loose.length && !found.small.length)
+  for (const problem of found.crowded) t.note(`${where}: ${problem}`)
+  t.ok(where, !found.sideways && !found.loose.length && !found.small.length && !found.crowded.length)
 }
 
 for (const [name, width, height] of SIZES) {
