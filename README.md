@@ -122,6 +122,39 @@ npm run dev
 Then open the local URL Vite prints. `npm run build` writes `dist`, which is
 static files: any host that serves a directory will do.
 
+## Checking it
+
+```bash
+npm test
+```
+
+The sums, run under node with no test framework and no dependency: node runs
+TypeScript and ships a test runner, so there is nothing to install. 151 of
+them, covering the expression parser, what each key does to what is already on
+the display, all 103 unit factors with every pair round tripped, and every one
+of the tools' formulas. The awkward cases are in there by name: percent reading
+its neighbour, sales tax taken back off a total, a base refusing a digit it
+cannot hold, and 4,000 random key sequences that must never crash the parser.
+`npm run build` typechecks them alongside the app, so a rename that breaks one
+fails the build rather than waiting to be noticed.
+
+```bash
+npm i --no-save playwright && npx playwright install chromium
+npm run dev
+npm run test:browser
+```
+
+The rest, which needs a browser: 374 checks across five suites. Every key on
+the pad pressed with the answer read back off the screen; what carries forward
+between presses and how far the history goes; a palette made from three colours
+and worn; every tool opened and answered, with the one that needs a signal put
+through all three of the states it can be in; and the layout swept over twelve
+screen sizes in all three surfaces and every tool.
+
+Playwright is deliberately not a dependency, the same way sharp is not: both
+are check-once tools, and adding a browser download to the install for
+something that runs before a release is a cost with no return.
+
 ## The icons
 
 ```bash
@@ -163,6 +196,12 @@ src/
     SettingsPanel.tsx
     PaletteEditor.tsx  three colours in, nine out
     Icons.tsx
+```
+
+```
+test/
+  *.test.ts        the sums, under node, no framework
+  browser/         the rest, needing playwright and a running dev server
 ```
 
 Settings live under the `calculator.v1` key and the history under

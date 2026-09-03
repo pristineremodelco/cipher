@@ -1,0 +1,14 @@
+# Kept here as well as in the repository root, so this directory is a whole
+# project on its own and can be lifted out without leaving its rules behind.
+node_modules
+dist
+dist-ssr
+*.local
+
+*.log
+npm-debug.log*
+
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store

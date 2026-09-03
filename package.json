@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "test:browser": "node test/browser/run.mjs",
     "lint": "oxlint",
     "preview": "vite preview",
     "icons": "node icons/generate.mjs"

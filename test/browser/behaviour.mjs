@@ -1,0 +1,109 @@
+/**
+ * How the keypad behaves between presses: what carries forward, what starts
+ * again, what is remembered, and how far back the history goes.
+ */
+import { browser as launch, open, tally } from './harness.mjs'
+
+const browser = await launch()
+const { context, page, noise } = await open(browser, {
+  settings: { memoryRow: true },
+  extra: { permissions: ['clipboard-read', 'clipboard-write'] },
+})
+const t = tally('behaviour')
+
+const answer = () => page.textContent('.answer').then((s) => s.trim())
+const expression = () => page.textContent('.expression').then((s) => s.trim())
+const tap = (label) => page.click(`.pad .key[aria-label="${label}"]`)
+
+for (const key of ['9', 'Divide', '4']) await tap(key)
+t.is('the answer is there before equals', await answer(), '2.25')
+await tap('Equals')
+t.is('the working stays on show', await expression(), '9÷4')
+t.is('under its answer', await answer(), '2.25')
+
+await tap('Plus')
+await tap('1')
+t.is('an operator carries the answer on', await answer(), '3.25')
+await tap('Equals')
+await tap('7')
+t.is('a digit starts again', await expression(), '7')
+
+// Holding the rub-out clears everything.
+const rub = await page.$('.rub')
+await rub.dispatchEvent('pointerdown')
+await page.waitForTimeout(600)
+await rub.dispatchEvent('pointerup')
+t.is('holding the rub-out clears the lot', await expression(), '')
+
+// Memory
+await tap('5')
+await tap('0')
+await page.click('button:has-text("M+")')
+await tap('Clear')
+t.is('memory holds what was added', (await page.textContent('.memory-value')).trim(), 'M 50')
+await page.click('button:has-text("MR")')
+t.is('and recalls it', await expression(), '50')
+await page.click('button:has-text("MC")')
+t.is('and clears', (await page.textContent('.memory-value')).trim(), 'M 0')
+
+// The answer copies
+await tap('Clear')
+await tap('8')
+await tap('Multiply')
+await tap('8')
+await tap('Equals')
+await page.click('.answer')
+t.is('tapping the answer copies it', await page.evaluate(() => navigator.clipboard.readText()), '64')
+t.is('and says so', await answer(), 'Copied')
+
+// Degrees against radians
+await tap('Clear')
+await page.click('.util[aria-label="Scientific functions"]')
+await page.click('.sci-sheet .key[aria-label="sin"]')
+await tap('3')
+await tap('0')
+t.is('sine of thirty degrees', await answer(), '0.5')
+await page.click('button[title="Degrees or radians"]')
+t.is('the unit switches', (await page.textContent('button[title="Degrees or radians"]')).trim(), 'RAD')
+t.is('and the answer with it', await answer(), '-0.988031624093')
+await page.click('button[title="Degrees or radians"]')
+
+// History: how deep, and for how long
+await tap('Clear')
+await page.click('button[aria-label="History"]')
+const before = await page.$$eval('.tape-list li', (rows) => rows.length)
+t.ok('answers are written down', before > 0)
+await page.click('button:has-text("Done")')
+await page.reload({ waitUntil: 'networkidle' })
+await page.click('button[aria-label="History"]')
+t.is('and survive a reload', await page.$$eval('.tape-list li', (rows) => rows.length), before)
+await page.click('.tape-list li:first-child .tape-value')
+t.ok('and can be put back on the display', (await expression()).length > 0)
+
+// The cap, and the absence of any time limit.
+await page.evaluate(() => localStorage.removeItem('calculator.tape.v1'))
+await page.reload({ waitUntil: 'networkidle' })
+for (let i = 1; i <= 210; i += 1) {
+  await page.keyboard.type(`${i}+1`)
+  await page.keyboard.press('Enter')
+  await page.keyboard.press('Delete')
+}
+const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('calculator.tape.v1')).entries)
+t.is('the history keeps two hundred', kept.length, 200)
+t.is('newest first', kept[0].expression, '210+1')
+t.is('and drops the oldest', kept[kept.length - 1].expression, '11+1')
+
+await page.evaluate(() => {
+  const tape = JSON.parse(localStorage.getItem('calculator.tape.v1'))
+  tape.entries = tape.entries.map((entry) => ({ ...entry, at: entry.at - 365 * 24 * 3600 * 1000 }))
+  localStorage.setItem('calculator.tape.v1', JSON.stringify(tape))
+})
+await page.reload({ waitUntil: 'networkidle' })
+await page.click('button[aria-label="History"]')
+t.is('nothing expires with time', await page.$$eval('.tape-list li', (rows) => rows.length), 200)
+await page.click('button:has-text("Clear")')
+t.is('clearing empties it', await page.evaluate(() => JSON.parse(localStorage.getItem('calculator.tape.v1')).entries.length), 0)
+
+t.done(noise)
+await context.close()
+await browser.close()
