@@ -110,11 +110,20 @@ export function WorldTime() {
     return () => window.clearInterval(id)
   }, [])
 
-  // Memoised, or the list below is rebuilt on every tick of the clock.
-  const chosen = useMemo(
-    () => (settings.worldZones.length ? settings.worldZones : [here]),
+  /**
+   * Wherever this device is, first and always.
+   *
+   * Every other row's offset is measured against it, so a list without it is a
+   * list of numbers with nothing to be relative to. It used to be removable
+   * and, since the picker only offers the places in the list above, removing
+   * it put it out of reach for good. Kept out of what is stored and put back
+   * on the front here, which also repairs any settings that lost it.
+   */
+  const others = useMemo(
+    () => settings.worldZones.filter((id) => id !== here),
     [settings.worldZones, here],
   )
+  const chosen = useMemo(() => [here, ...others], [here, others])
   const rows = useMemo(
     () =>
       chosen.map((id) => ({
@@ -151,15 +160,15 @@ export function WorldTime() {
               <strong>{row.time}</strong>
               <span>{row.day}</span>
             </div>
-            {chosen.length > 1 ? (
+            {row.id === here ? null : (
               <button
                 className="ghost tiny"
                 aria-label={`Remove ${row.zone.city}`}
-                onClick={() => set({ worldZones: chosen.filter((id) => id !== row.id) })}
+                onClick={() => set({ worldZones: others.filter((id) => id !== row.id) })}
               >
                 ✕
               </button>
-            ) : null}
+            )}
           </div>
         ))}
       </div>
@@ -171,7 +180,7 @@ export function WorldTime() {
               value=""
               onChange={(e) => {
                 if (!e.target.value) return
-                set({ worldZones: [...chosen, e.target.value].slice(0, 12) })
+                set({ worldZones: [...others, e.target.value].slice(0, 12) })
               }}
             >
               <option value="">Choose one</option>

@@ -1,9 +1,14 @@
 /**
  * Every size, every surface, every tool.
  *
- * Four rules: the page may not scroll sideways, nothing outside a box that
+ * Five rules: the page may not scroll sideways, nothing outside a box that
  * scrolls may sit past the edge, nothing a finger has to hit may be smaller
- * than a finger, and nothing along the top bar may run into what is beside it.
+ * than a finger, nothing along the top bar may run into what is beside it, and
+ * no segment of named choices may hide an option off its own edge.
+ *
+ * The fifth was written after ten of them were found clipped across five
+ * tools, one cut mid-word at every phone width there is: a strip that scrolls
+ * hides half of itself behind a gesture nobody thinks to try.
  *
  * The first three were each written after something broke them. The fourth
  * catches overlap and touching, which is a real class of fault, but it is not
@@ -62,6 +67,13 @@ async function inspect(page, where) {
     // The bar is one row of things that must not run into each other. Boxes
     // that merely touch still read as broken, so this asks for a little gap
     // rather than only for an absence of overlap.
+    // A segment names its choices, so every one of them has to be on screen.
+    // The converter's category strip is exempt: thirteen of them are meant to
+    // scroll, and it says so with a fade at its edge.
+    const clipped = [...document.querySelectorAll('.segment')]
+      .filter((el) => el.scrollWidth > el.clientWidth + 1)
+      .map((el) => `a segment hides ${el.scrollWidth - el.clientWidth}px of its options`)
+
     const bar = document.querySelector('.bar')
     const along = bar ? [...bar.children].map((el) => ({ name: named(el), box: el.getBoundingClientRect() })) : []
     const crowded = []
@@ -75,13 +87,15 @@ async function inspect(page, where) {
       loose: [...new Set(loose.map(named))].slice(0, 4),
       small: [...new Set(small.map(named))].slice(0, 4),
       crowded,
+      clipped,
     }
   })
   if (found.sideways) t.note(`${where}: the page scrolls sideways`)
   if (found.loose.length) t.note(`${where}: past the edge, loose on the page: ${found.loose.join(', ')}`)
   if (found.small.length) t.note(`${where}: too small to hit: ${found.small.join(', ')}`)
   for (const problem of found.crowded) t.note(`${where}: ${problem}`)
-  t.ok(where, !found.sideways && !found.loose.length && !found.small.length && !found.crowded.length)
+  for (const problem of found.clipped) t.note(`${where}: ${problem}`)
+  t.ok(where, !found.sideways && !found.loose.length && !found.small.length && !found.crowded.length && !found.clipped.length)
 }
 
 for (const [name, width, height] of SIZES) {

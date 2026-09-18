@@ -1272,6 +1272,11 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   transition: border-color var(--fast) var(--ease);
 }
 .tool-input:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+/* The wrapper draws the ring, so the control inside it must not draw a second
+   one: the global rule below would otherwise put two concentric rings around
+   every field, one on the box and one on the input three pixels inside it. */
+.tool-input input:focus-visible,
+.tool-input select:focus-visible { box-shadow: none; }
 .tool-input input,
 .tool-input select {
   flex: 1;
@@ -1305,19 +1310,24 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   line-height: 1.55;
 }
 
+/* Wraps rather than scrolls. A strip of two or four named choices that runs
+   off the edge hides half of itself behind a gesture nobody thinks to try, and
+   a label cut mid-word reads as damage: "Kilograms and centimetre". Wrapping
+   costs a second row on a narrow screen and shows every option at every width,
+   however long the words get. The converter's category strip still scrolls,
+   because thirteen of them wrapped would be most of the screen. */
 .segment {
   display: flex;
+  flex-wrap: wrap;
   gap: 4px;
   padding: 4px;
   border: 1px solid var(--line);
   background: var(--panel);
   border-radius: 13px;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
-.segment::-webkit-scrollbar { height: 0; }
 .segment-item {
-  flex: 1 0 auto;
+  flex: 1 1 auto;
+  min-width: max-content;
   border: 0;
   background: none;
   color: var(--muted);

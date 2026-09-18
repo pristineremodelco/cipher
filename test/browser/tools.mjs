@@ -63,9 +63,14 @@ const browser = await launch()
   await page.waitForSelector('.clock')
   const clocks = await page.$$eval('.clock', (els) => els.length)
   t.ok('world time starts on this device', clocks >= 1)
+  t.is('which is the first row', await page.getAttribute('.clock:first-child', 'data-here'), 'true')
+  // It used to carry a remove button, and since the picker below only offers
+  // the places in its own list, removing it put this device out of reach.
+  t.is('and cannot be removed', await page.$('.clock[data-here="true"] button'), null)
   await page.selectOption('.tool-field:has-text("Add a place") select', 'Asia/Tokyo')
   await page.waitForTimeout(200)
   t.is('and a place can be added', await page.$$eval('.clock', (els) => els.length), clocks + 1)
+  t.ok('which can be removed again', Boolean(await page.$('.clock:nth-child(2) button')))
   await page.click('button[aria-label="Back to the tools"]')
 
   await page.click('.card:has-text("Tip")')
