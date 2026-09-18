@@ -2,7 +2,19 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+/**
+ * Where the app will be served from.
+ *
+ * A host that gives it a whole domain serves it at the root and needs nothing
+ * set. GitHub Pages gives a project its own folder instead, so everything has
+ * to be addressed from `/cipher/` and the manifest has to agree, or the
+ * installed app opens on a page that is not there. Left unset it is the root,
+ * which is what the dev server and any root host want.
+ */
+const base = process.env.BASE_PATH ?? '/'
+
 export default defineConfig({
+  base,
   server: {
     // Vite doesn't read PORT on its own, so an assigned port would be ignored
     // and it would grab 5173 anyway. Fall back to 5174, one clear of the
@@ -27,7 +39,10 @@ export default defineConfig({
         theme_color: '#241C13',
         background_color: '#241C13',
         display: 'standalone',
-        start_url: '/',
+        // Both of these are where the app lives, not where its files live, so
+        // they follow the base rather than being written down once.
+        start_url: base,
+        scope: base,
         orientation: 'portrait-primary',
         // 'any' and 'maskable' are separate entries on purpose. A maskable
         // icon is cropped to whatever shape the launcher uses, so the rounded

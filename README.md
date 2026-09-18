@@ -129,6 +129,24 @@ npm run dev
 Then open the local URL Vite prints. `npm run build` writes `dist`, which is
 static files: any host that serves a directory will do.
 
+## Putting it somewhere
+
+`npm run build` writes `dist`, which is static files: any host that serves a
+directory will do, and the app needs no server of its own.
+
+Pushing to `main` builds it and puts it on GitHub Pages, at
+`https://pristineremodelco.github.io/cipher/`. The tests run first and the
+deploy waits on them, so a push that breaks the parser never reaches a phone.
+
+A host that gives the app a whole domain rather than a folder needs nothing
+set. One that gives it a folder needs to say so, because the manifest has to
+agree about where the app lives or the installed icon opens on a page that is
+not there:
+
+```bash
+BASE_PATH=/cipher/ npm run build
+```
+
 ## Checking it
 
 ```bash
