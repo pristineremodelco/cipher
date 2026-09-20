@@ -1,0 +1,84 @@
+/**
+ * The typefaces, carried rather than hoped for.
+ *
+ * These used to be lists of names the device might have, and on Android it
+ * mostly had none of them: no Helvetica, no Segoe UI, and no support for the
+ * ui-rounded keyword, so Grotesk, Humanist and Rounded all fell through to
+ * Roboto and stood there looking identical to System. A setting that changes
+ * nothing on the most common phone in the world is not a setting.
+ *
+ * So the files ship with the app. Latin subsets, two weights each, 226 KB for
+ * the lot, precached by the service worker with everything else, which keeps
+ * the promise that this works with the network off. `swap` is deliberate: a
+ * calculator that will not draw a 7 until a font arrives has its priorities
+ * wrong, so the fallback draws first and the real face replaces it.
+ *
+ * All six are SIL Open Font License 1.1. See fonts/README.md for who made
+ * them and where the licence lives.
+ */
+
+@font-face {
+  font-family: 'Cipher Inter';
+  src: url('./assets/fonts/inter-latin-400-normal.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Cipher Inter';
+  src: url('./assets/fonts/inter-latin-700-normal.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cipher Source Sans';
+  src: url('./assets/fonts/source-sans-3-latin-400-normal.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Cipher Source Sans';
+  src: url('./assets/fonts/source-sans-3-latin-700-normal.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cipher Nunito';
+  src: url('./assets/fonts/nunito-latin-400-normal.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Cipher Nunito';
+  src: url('./assets/fonts/nunito-latin-700-normal.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cipher Lora';
+  src: url('./assets/fonts/lora-latin-400-normal.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Cipher Lora';
+  src: url('./assets/fonts/lora-latin-700-normal.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cipher JetBrains Mono';
+  src: url('./assets/fonts/jetbrains-mono-latin-400-normal.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Cipher JetBrains Mono';
+  src: url('./assets/fonts/jetbrains-mono-latin-700-normal.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cipher Atkinson';
+  src: url('./assets/fonts/atkinson-hyperlegible-latin-400-normal.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Cipher Atkinson';
+  src: url('./assets/fonts/atkinson-hyperlegible-latin-700-normal.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}

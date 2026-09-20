@@ -429,6 +429,12 @@ export type NumberFormat = {
   /** Fixed places, or -1 to keep whatever the answer has. */
   decimals: number
   grouping: boolean
+  /**
+   * Whether a fixed number of places is padded out when the answer does not
+   * need it. Off, two places shows 100 as 100 and 1.5 as 1.50; on, 100 reads
+   * 100.00, which is what a ledger wants and what most people do not.
+   */
+  padDecimals?: boolean
 }
 
 /**
@@ -453,7 +459,7 @@ export function formatNumber(value: number, format: NumberFormat): string {
 
   const digits = format.decimals >= 0 ? format.decimals : 12
   const text = new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: format.decimals >= 0 ? format.decimals : 0,
+    minimumFractionDigits: format.decimals >= 0 && format.padDecimals ? format.decimals : 0,
     maximumFractionDigits: Math.min(20, digits),
     useGrouping: format.grouping,
   }).format(settled)

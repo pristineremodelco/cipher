@@ -212,7 +212,7 @@ export function Loan() {
   const result = loan(Number(amount), Number(rate), Number(years))
   const ready = Number(amount) > 0 && Number(years) > 0
   return (
-    <Tool note="A level payment loan, compounded monthly, with no fees, insurance or escrow in it. A lender's figure will be higher for those reasons and not because the arithmetic differs.">
+    <Tool note="A level payment loan, compounded monthly. No fees, insurance or escrow, so a lender's figure will be higher.">
       <Field label="Amount borrowed" prefix="$" value={amount} onChange={setAmount} placeholder="0.00" />
       <div className="tool-pair">
         <Field label="Interest" suffix="%/yr" value={rate} onChange={setRate} />
@@ -239,7 +239,7 @@ export function Savings() {
   const result = savings(Number(start) || 0, Number(monthly) || 0, Number(rate), Number(years))
   const ready = Number(years) > 0 && (Number(start) > 0 || Number(monthly) > 0)
   return (
-    <Tool note="Compounded monthly, with the monthly amount paid in at the end of each month. Nothing here knows about tax or inflation.">
+    <Tool note="Compounded monthly, paid in at each month's end. No tax, no inflation.">
       <Field label="Starting with" prefix="$" value={start} onChange={setStart} placeholder="0.00" />
       <Field label="Adding each month" prefix="$" value={monthly} onChange={setMonthly} placeholder="0.00" />
       <div className="tool-pair">

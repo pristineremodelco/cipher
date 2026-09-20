@@ -58,6 +58,7 @@ export type Settings = {
   decimals: number
   /** Thousands separators in the answer. Never in the expression. */
   grouping: boolean
+  padDecimals: boolean
   /** A short buzz under each key, where the device can do one. */
   haptics: boolean
   /** Whether working is kept as a tape. Off means nothing is written down. */

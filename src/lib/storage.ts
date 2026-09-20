@@ -30,6 +30,7 @@ export function defaultSettings(): Settings {
     angle: 'deg',
     decimals: -1,
     grouping: true,
+    padDecimals: false,
     haptics: true,
     keepHistory: true,
     memoryRow: false,

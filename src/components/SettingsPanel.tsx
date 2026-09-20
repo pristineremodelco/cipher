@@ -65,7 +65,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const resettable = (Object.keys(fresh) as (keyof Settings)[]).filter((key) => !KEPT.includes(key))
   const changed = resettable.some((key) => !same(settings[key], fresh[key]))
 
-  const sample = formatNumber(1234.5678, { decimals: settings.decimals, grouping: settings.grouping })
+  const sample = formatNumber(1234.5678, {
+    decimals: settings.decimals,
+    grouping: settings.grouping,
+    padDecimals: settings.padDecimals,
+  })
 
   return (
     <div className="scrim" onClick={onClose}>
@@ -150,16 +154,45 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
 type TabProps = { settings: Settings; set: (patch: Partial<Settings>) => void }
 
-function blankPalette(): CustomPalette {
-  return { id: crypto.randomUUID(), name: '', ground: '#101418', key: '#1b2026', accent: '#4da3ff' }
+/**
+ * A blank to start from. Made for the night slot it starts dark, for the day
+ * slot light, so the first thing on screen is already the right side of the
+ * line and only the colours are left to choose.
+ */
+function blankPalette(slot: Slot = 'night'): CustomPalette {
+  const base =
+    slot === 'day'
+      ? { ground: '#f4f1ea', key: '#ffffff', accent: '#3b6ea5' }
+      : { ground: '#101418', key: '#1b2026', accent: '#4da3ff' }
+  return { id: crypto.randomUUID(), name: '', ...base }
 }
+
+/** Which of the two the editor was opened from, or neither. */
+type Slot = 'day' | 'night' | 'either'
 
 function LookTab({ settings, set }: TabProps) {
   const [draft, setDraft] = useState<CustomPalette | null>(null)
+  // Which slot a new one is being made for, so it lands there rather than
+  // wherever its own lightness would have filed it.
+  const [slot, setSlot] = useState<Slot>('either')
   const own = settings.customPalettes.map(asPalette)
-  const light = [...PALETTES, ...own].filter((palette) => palette.scheme === 'light')
-  const dark = [...PALETTES, ...own].filter((palette) => palette.scheme === 'dark')
-  const all = [...PALETTES, ...own]
+  const everything = [...PALETTES, ...own]
+  /**
+   * A slot lists the palettes on its own side of the line, plus whatever it is
+   * currently wearing. That last part matters: a dark palette can be chosen
+   * for the day slot on purpose, and filtering strictly by lightness would
+   * drop it out of the list it is selected in, which reads as it vanishing.
+   */
+  const forSlot = (scheme: 'light' | 'dark', chosen: string) =>
+    everything.filter((palette) => palette.scheme === scheme || palette.id === chosen)
+  const light = forSlot('light', settings.palette)
+  const dark = forSlot('dark', settings.nightPalette)
+  const all = everything
+
+  function start(next: Slot) {
+    setSlot(next)
+    setDraft(blankPalette(next))
+  }
 
   function save() {
     if (!draft) return
@@ -177,11 +210,16 @@ function LookTab({ settings, set }: TabProps) {
      */
     const wear = exists
       ? {}
-      : settings.followDevice && asPalette({ ...draft, name }).scheme === 'dark'
-        ? { nightPalette: draft.id }
-        : { palette: draft.id }
+      : slot === 'day'
+        ? { palette: draft.id }
+        : slot === 'night' && settings.followDevice
+          ? { nightPalette: draft.id }
+          : settings.followDevice && asPalette({ ...draft, name }).scheme === 'dark'
+            ? { nightPalette: draft.id }
+            : { palette: draft.id }
     set({ customPalettes, ...wear })
     setDraft(null)
+    setSlot('either')
   }
 
   function forget(id: string) {
@@ -190,7 +228,15 @@ function LookTab({ settings, set }: TabProps) {
 
   if (draft) {
     return (
-      <PaletteEditor draft={draft} onChange={setDraft} onSave={save} onCancel={() => setDraft(null)} />
+      <PaletteEditor
+        draft={draft}
+        onChange={setDraft}
+        onSave={save}
+        onCancel={() => {
+          setDraft(null)
+          setSlot('either')
+        }}
+      />
     )
   }
 
@@ -204,28 +250,28 @@ function LookTab({ settings, set }: TabProps) {
         />
         Follow the device between light and dark
       </label>
-      <p className="hint">
-        On, this wears the first palette by day and the second when the device turns
-        dark. Off, the first one stands whatever the device says.
-      </p>
-
       <Swatches
         label={settings.followDevice ? 'By day' : 'Palette'}
         palettes={settings.followDevice ? light : all}
         chosen={settings.palette}
         onPick={(id) => set({ palette: id })}
+        onMake={settings.customPalettes.length >= MAX_CUSTOM_PALETTES ? undefined : () => start('day')}
       />
 
       {settings.followDevice ? (
-        <Swatches label="After dark" palettes={dark} chosen={settings.nightPalette} onPick={(id) => set({ nightPalette: id })} />
+        <Swatches
+          label="After dark"
+          palettes={dark}
+          chosen={settings.nightPalette}
+          onPick={(id) => set({ nightPalette: id })}
+          onMake={settings.customPalettes.length >= MAX_CUSTOM_PALETTES ? undefined : () => start('night')}
+        />
       ) : null}
 
       <div className="field">
         <span>Your palettes</span>
         <p className="hint" style={{ marginTop: 0 }}>
-          Three colours: the ground, the face of a key, and the accent. Type, lines
-          and the muted shade are worked out from those, because a palette whose
-          numbers cannot be read is not one anybody meant to make.
+          The ground, a key face and the accent. The rest is worked out from those.
         </p>
         {settings.customPalettes.length ? (
           <div className="own-list">
@@ -250,7 +296,7 @@ function LookTab({ settings, set }: TabProps) {
         <button
           className="ghost"
           disabled={settings.customPalettes.length >= MAX_CUSTOM_PALETTES}
-          onClick={() => setDraft(blankPalette())}
+          onClick={() => start('either')}
         >
           {settings.customPalettes.length >= MAX_CUSTOM_PALETTES
             ? `That is all ${MAX_CUSTOM_PALETTES} of them`
@@ -295,7 +341,6 @@ function LookTab({ settings, set }: TabProps) {
             </button>
           ))}
         </div>
-        <p className="hint">Every one of these is already on the device, so nothing is fetched.</p>
       </div>
 
       <div className="field">
@@ -313,6 +358,15 @@ function LookTab({ settings, set }: TabProps) {
               <small>{TEXT_SIZE_LABELS[size]}</small>
             </button>
           ))}
+        </div>
+        {/* Four buttons marked Aa say how big the letters on the buttons are
+            and nothing about how big the app will be. This line is drawn at
+            the sizes the app actually uses, so the choice can be read rather
+            than guessed at, and it stays up while the screen is open. */}
+        <div className="size-sample" aria-hidden="true">
+          <strong>Answer 1,234.57</strong>
+          <span>Labels, tool names and the history read at this size.</span>
+          <small>Notes and hints read at this one.</small>
         </div>
       </div>
 
@@ -345,11 +399,14 @@ function Swatches({
   palettes,
   chosen,
   onPick,
+  onMake,
 }: {
   label: string
   palettes: typeof PALETTES
   chosen: string
   onPick: (id: string) => void
+  /** Absent when there is no room left for another one. */
+  onMake?: () => void
 }) {
   return (
     <div className="field">
@@ -373,6 +430,18 @@ function Swatches({
             <span className="palette-hint">{palette.hint}</span>
           </button>
         ))}
+        {/* Sitting in the grid rather than under it, because this is one more
+            thing the slot can be, and the colour wheel and the eyedropper are
+            on the other side of it. */}
+        {onMake ? (
+          <button className="palette-card palette-make" onClick={onMake}>
+            <span className="palette-swatch" aria-hidden="true">
+              <i className="palette-make-mark">+</i>
+            </span>
+            <strong>Make one</strong>
+            <span className="palette-hint">Your own colours</span>
+          </button>
+        ) : null}
       </div>
     </div>
   )
@@ -417,14 +486,13 @@ function KeysTab({ settings, set }: TabProps) {
       <div className="field">
         <span>Operator column</span>
         <div className="size-row">
-          <button className="size-btn" data-active={settings.layout === 'right'} onClick={() => set({ layout: 'right' })}>
-            Right
-          </button>
           <button className="size-btn" data-active={settings.layout === 'left'} onClick={() => set({ layout: 'left' })}>
             Left
           </button>
+          <button className="size-btn" data-active={settings.layout === 'right'} onClick={() => set({ layout: 'right' })}>
+            Right
+          </button>
         </div>
-        <p className="hint">Left puts the operators under a left thumb. The digits stay put.</p>
       </div>
 
       <div className="field">
@@ -453,6 +521,13 @@ function KeysTab({ settings, set }: TabProps) {
 }
 
 function MathsTab({ settings, set }: TabProps) {
+  // A whole number is the only one that shows what padding does, so the switch
+  // carries one worked the way the switch would work it.
+  const whole = formatNumber(100, {
+    decimals: settings.decimals,
+    grouping: settings.grouping,
+    padDecimals: settings.padDecimals,
+  })
   return (
     <>
       <label className="field">
@@ -475,6 +550,17 @@ function MathsTab({ settings, set }: TabProps) {
         </select>
       </label>
 
+      {settings.decimals > 0 ? (
+        <label className="row toggle-row">
+          <input
+            type="checkbox"
+            checked={settings.padDecimals}
+            onChange={(e) => set({ padDecimals: e.target.checked })}
+          />
+          Keep the places on a whole answer ({whole})
+        </label>
+      ) : null}
+
       <label className="row toggle-row">
         <input type="checkbox" checked={settings.grouping} onChange={(e) => set({ grouping: e.target.checked })} />
         Group thousands in the answer
@@ -485,15 +571,6 @@ function MathsTab({ settings, set }: TabProps) {
         Keep a history of what was worked out
       </label>
 
-      <p className="hint">
-        Percent reads its neighbour: 200+10% is 220, because the ten means ten percent
-        of the two hundred beside it. Beside a times or a divide it is a plain
-        hundredth, so 200×10% is 20.
-      </p>
-      <p className="hint">
-        Everything stays in this browser. There is no account, and nothing is sent
-        anywhere.
-      </p>
     </>
   )
 }

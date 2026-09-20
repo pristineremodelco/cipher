@@ -139,7 +139,7 @@ export function WorldTime() {
   const available = ZONES.filter((zone) => !chosen.includes(zone.id))
 
   return (
-    <Tool note="Worked out on this device from the time zone database the browser already ships, so it needs no signal. Daylight saving is the browser's to know, not this app's.">
+    <Tool>
       <Segment
         label="Clock"
         value={settings.timeFormat}
@@ -203,7 +203,7 @@ export function Hex() {
   const value = parseBase(text, base)
 
   return (
-    <Tool note="Anything the chosen base cannot hold is refused rather than quietly truncated: 19 is not an octal number, and a calculator that reads it as 1 has told you something false.">
+    <Tool note="A digit the base cannot hold is refused rather than truncated.">
       <Segment
         label="Reading it as"
         value={String(base)}
@@ -234,7 +234,7 @@ export function GradeAverage() {
   }
 
   return (
-    <Tool note="Weighted by whatever is in the second column, which is usually credits or hours. A row left blank is a row not filled in yet, not a zero.">
+    <Tool note="Weighted by the second column, usually credits or hours. A blank row counts for nothing rather than zero.">
       <div className="grade-rows">
         {rows.map((row, index) => (
           <div className="grade-row" key={row.id}>

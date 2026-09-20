@@ -44,8 +44,8 @@ export default function App() {
   }, [tape])
 
   const format = useMemo(
-    () => ({ decimals: settings.decimals, grouping: settings.grouping }),
-    [settings.decimals, settings.grouping],
+    () => ({ decimals: settings.decimals, grouping: settings.grouping, padDecimals: settings.padDecimals }),
+    [settings.decimals, settings.grouping, settings.padDecimals],
   )
 
   const expression = expressionOf(chunks)

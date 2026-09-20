@@ -102,7 +102,25 @@ test('writes the very large and the very small as powers', () => {
 })
 
 test('a negative that rounds onto zero reads as zero', () => {
-  assert.equal(formatNumber(-0.0004, { decimals: 2, grouping: false }), '0.00')
+  assert.equal(formatNumber(-0.0004, { decimals: 2, grouping: false }), '0')
+  assert.equal(formatNumber(-0.0004, { decimals: 2, grouping: false, padDecimals: true }), '0.00')
+})
+
+/**
+ * A fixed number of places says how far to round, not how much to write out.
+ * Padding the rest with zeros is a separate wish, so it is a separate switch.
+ */
+test('places are a limit, and padding them out is opt in', () => {
+  assert.equal(formatNumber(100, { decimals: 2, grouping: false }), '100')
+  assert.equal(formatNumber(100, { decimals: 2, grouping: false, padDecimals: true }), '100.00')
+  assert.equal(formatNumber(1.5, { decimals: 2, grouping: false }), '1.5')
+  assert.equal(formatNumber(1.5, { decimals: 2, grouping: false, padDecimals: true }), '1.50')
+  // Rounding is unaffected either way.
+  assert.equal(formatNumber(1 / 3, { decimals: 2, grouping: false }), '0.33')
+  assert.equal(formatNumber(1 / 3, { decimals: 2, grouping: false, padDecimals: true }), '0.33')
+  // Nothing to pad at all places, and nothing to pad when places are automatic.
+  assert.equal(formatNumber(100, { decimals: 0, grouping: false, padDecimals: true }), '100')
+  assert.equal(formatNumber(100, { decimals: -1, grouping: false, padDecimals: true }), '100')
 })
 
 test('a measurement is significant figures, not decimal places', () => {

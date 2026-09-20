@@ -171,7 +171,7 @@ export function PaletteEditor({
           <span style={{ background: derived['--accent'], color: derived['--on-accent'] }}>=</span>
         </div>
         <p style={{ color: derived['--muted'] }}>
-          Reads as a {scheme} palette. Type and lines follow the keys.
+          Reads as a {scheme} palette.
         </p>
       </div>
 

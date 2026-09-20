@@ -60,7 +60,7 @@ export function FuelEfficiency() {
   const ready = Number(distance) > 0 && Number(fuel) > 0
 
   return (
-    <Tool note="One trip and one fill, said every way it is usually said. The three figures are worked out from the same pair, so they cannot disagree with each other.">
+    <Tool note="One trip and one fill, said three ways.">
       <Segment value={units} onChange={setUnits} options={UNITS} />
       <Field label="Distance driven" suffix={us ? 'mi' : 'km'} value={distance} onChange={setDistance} />
       <Field label="Fuel used" suffix={us ? 'gal' : 'L'} value={fuel} onChange={setFuel} />

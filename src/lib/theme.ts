@@ -130,14 +130,19 @@ export function asPalette(custom: CustomPalette): Palette {
  * webfont before it can draw a 7 has got its priorities wrong, and this one is
  * meant to work with the network off.
  */
+/**
+ * Every one but System is a file this app carries, so the choice lands the
+ * same on every device. Asking for whatever the device happened to own meant
+ * Android answered Roboto six times out of seven; see fonts.css.
+ */
 export const FONTS: { id: FontId; name: string; hint: string; stack: string }[] = [
-  { id: 'system', name: 'System', hint: "Whatever this device uses", stack: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
-  { id: 'grotesk', name: 'Grotesk', hint: 'Neutral and tight', stack: '"Helvetica Neue", Helvetica, Arial, ui-sans-serif, sans-serif' },
-  { id: 'humanist', name: 'Humanist', hint: 'Warm and readable', stack: '"Segoe UI", Roboto, "Noto Sans", ui-sans-serif, sans-serif' },
-  { id: 'rounded', name: 'Rounded', hint: 'Soft and friendly', stack: 'ui-rounded, "SF Pro Rounded", "Hiragino Maru Gothic ProN", system-ui, sans-serif' },
-  { id: 'serif', name: 'Serif', hint: 'Editorial', stack: 'ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif' },
-  { id: 'mono', name: 'Mono', hint: 'Columns line up', stack: 'ui-monospace, SFMono-Regular, Menlo, "Cascadia Mono", monospace' },
-  { id: 'legible', name: 'Hyperlegible', hint: 'Maximum clarity', stack: '"Atkinson Hyperlegible", Verdana, Tahoma, sans-serif' },
+  { id: 'system', name: 'System', hint: 'Whatever this device uses', stack: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' },
+  { id: 'grotesk', name: 'Grotesk', hint: 'Neutral and tight', stack: '"Cipher Inter", ui-sans-serif, system-ui, sans-serif' },
+  { id: 'humanist', name: 'Humanist', hint: 'Warm and readable', stack: '"Cipher Source Sans", ui-sans-serif, system-ui, sans-serif' },
+  { id: 'rounded', name: 'Rounded', hint: 'Soft and friendly', stack: '"Cipher Nunito", ui-rounded, system-ui, sans-serif' },
+  { id: 'serif', name: 'Serif', hint: 'Editorial', stack: '"Cipher Lora", ui-serif, Georgia, serif' },
+  { id: 'mono', name: 'Mono', hint: 'Columns line up', stack: '"Cipher JetBrains Mono", ui-monospace, SFMono-Regular, monospace' },
+  { id: 'legible', name: 'Hyperlegible', hint: 'Maximum clarity', stack: '"Cipher Atkinson", Verdana, Tahoma, sans-serif' },
 ]
 
 export const FONT_IDS: FontId[] = FONTS.map((font) => font.id)

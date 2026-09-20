@@ -127,7 +127,7 @@ export function Currency() {
           { label: currencyName(to), value: amount ? `${money(converted)} ${to}` : '', lead: true },
           { label: `One ${from}`, value: `${money(one)} ${to}` },
         ]}
-        note="European Central Bank reference rates, published once a working day. They are a reference, not what a bank or a card will actually give you."
+        note="European Central Bank reference rates, published once a working day. Not what a bank or card will give you."
       />
     </Tool>
   )

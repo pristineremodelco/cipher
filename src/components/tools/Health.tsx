@@ -35,7 +35,7 @@ export function BodyMetrics() {
   const factor = ACTIVITY.find((item) => item.id === activity)?.factor ?? 1.375
 
   return (
-    <Tool note="BMI is a rough screen and says nothing about how much of the weight is muscle. Daily energy uses Mifflin St Jeor, which is an estimate for an average body and not a prescription.">
+    <Tool note="BMI is a rough screen and cannot tell muscle from fat. Daily energy uses Mifflin St Jeor, an estimate for an average body.">
       <Segment
         value={units}
         onChange={(next) => {
@@ -88,7 +88,7 @@ export function Ovulation() {
   const result = start ? ovulation(start, Number(cycle)) : null
 
   return (
-    <Tool note="Ovulation is taken as fourteen days before the next period is due, and the due date as two hundred and eighty days from the last one. Both are averages of other people's cycles, so treat every date here as a rough guide rather than a fact about yours.">
+    <Tool note="Ovulation is taken as fourteen days before the next period, the due date as 280 days from the last. Both are averages, not facts about your cycle.">
       <DateField label="First day of the last period" value={last} onChange={setLast} />
       <Field label="Cycle length" suffix="days" value={cycle} onChange={setCycle} hint="Usually 21 to 35" />
       <Readout

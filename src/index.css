@@ -83,17 +83,14 @@
 
 /* ============================================================
    Scales
+
+   The defaults come first on purpose. Both of the blocks below are attribute
+   selectors on the same element this rule matches, so they carry exactly the
+   same weight and the later one simply wins. Written the other way round,
+   :root won every time and the key corners and the text size did nothing at
+   all: the setting saved, the attribute appeared on the element, and the page
+   drew the default regardless.
    ============================================================ */
-[data-textsize='sm'] { --tx: 0.92; }
-[data-textsize='md'] { --tx: 1; }
-[data-textsize='lg'] { --tx: 1.12; }
-[data-textsize='xl'] { --tx: 1.26; }
-
-[data-keyshape='sharp'] { --key-radius: 4px; }
-[data-keyshape='soft'] { --key-radius: 14px; }
-[data-keyshape='round'] { --key-radius: 24px; }
-[data-keyshape='circle'] { --key-radius: 999px; }
-
 :root {
   --tx: 1;
   --key-radius: 14px;
@@ -107,6 +104,16 @@
   -webkit-font-smoothing: antialiased;
   font-synthesis-weight: none;
 }
+
+[data-textsize='sm'] { --tx: 0.92; }
+[data-textsize='md'] { --tx: 1; }
+[data-textsize='lg'] { --tx: 1.12; }
+[data-textsize='xl'] { --tx: 1.26; }
+
+[data-keyshape='sharp'] { --key-radius: 4px; }
+[data-keyshape='soft'] { --key-radius: 14px; }
+[data-keyshape='round'] { --key-radius: 24px; }
+[data-keyshape='circle'] { --key-radius: 999px; }
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
@@ -132,10 +139,16 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
     border-color var(--base) var(--ease);
 }
 
+/* Each of these is a step up from what it already weighs, which is not one
+   number. A key is drawn at 700 to begin with, so the 600 it used to be given
+   here made it lighter: the setting marked "heavier" thinned the keypad. */
 [data-bold='true'] body,
-[data-bold='true'] .key,
 [data-bold='true'] .hint { font-weight: 600; }
+[data-bold='true'] .key { font-weight: 800; }
 [data-bold='true'] .answer,
+/* The settings preview stands in for the answer, and a preview that does not
+   move when the setting above it moves is worse than no preview. */
+[data-bold='true'] .preview-display strong,
 [data-bold='true'] h1,
 [data-bold='true'] h2 { font-weight: 900; }
 
@@ -1429,3 +1442,48 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 }
 .offline strong { font-size: calc(16px * var(--tx)); color: var(--text); }
 .offline p { margin: 0; color: var(--muted); font-size: calc(12.5px * var(--tx)); line-height: 1.6; max-width: 42ch; }
+
+/* The text size sample. Drawn with the same scale the rest of the app uses, so
+   it grows and shrinks with the choice rather than describing it. */
+.size-sample {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.size-sample strong {
+  font-size: calc(20px * var(--tx));
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.size-sample span {
+  font-size: calc(14px * var(--tx));
+  color: var(--text);
+}
+.size-sample small {
+  font-size: calc(12px * var(--tx));
+  color: var(--muted);
+}
+
+/* "Make one", which sits in the palette grid as one more thing the slot can
+   be. Drawn as an outline so it reads as an opening rather than as a colour. */
+.palette-make {
+  border-style: dashed;
+}
+.palette-make .palette-swatch {
+  display: grid;
+  place-items: center;
+}
+.palette-make-mark {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--muted);
+  background: transparent;
+}
