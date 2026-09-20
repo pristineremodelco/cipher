@@ -38,11 +38,11 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /cipher/
-      # Turns Pages on for the repository if it is off, so the first deploy does
-      # not need a visit to the settings page. It is a no-op once it is on.
+      # Pages has to be switched on for the repository by hand, once, under
+      # Settings -> Pages with GitHub Actions as the source. The token this job
+      # runs with cannot create the site itself whatever permissions it is
+      # given, so asking the action to do it only trades one error for another.
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
