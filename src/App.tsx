@@ -24,6 +24,13 @@ export default function App() {
    */
   const [settled, setSettled] = useState(false)
   /**
+   * Set only by pressing equals on an expression that has not finished. Every
+   * expression is unfinished while it is being typed, so saying so on each key
+   * is noise; saying it when somebody asks for an answer and there is none to
+   * give is the one moment it is worth saying.
+   */
+  const [asked, setAsked] = useState(false)
+  /**
    * What was keyed in to produce the answer now on the display. Kept so the
    * working stays legible above the result rather than being replaced by it
    * the instant equals is pressed.
@@ -58,6 +65,7 @@ export default function App() {
     (pressed: string) => {
       buzz()
       setCopied(false)
+      setAsked(false)
       setChunks((current) => {
         // After an answer, a digit or a constant starts again; an operator
         // keeps the answer and works on from it.
@@ -73,6 +81,7 @@ export default function App() {
   const clear = useCallback(() => {
     buzz()
     setCopied(false)
+    setAsked(false)
     setChunks([])
     setSettled(false)
   }, [buzz])
@@ -80,14 +89,23 @@ export default function App() {
   const rub = useCallback(() => {
     buzz()
     setCopied(false)
+    setAsked(false)
     setChunks((current) => backspace(current))
     setSettled(false)
   }, [buzz])
 
   const equals = useCallback(() => {
-    if (!result.ok) return
+    if (!result.ok) {
+      // Asking for an answer that cannot be given is the moment to say why.
+      if (result.unfinished) {
+        buzz()
+        setAsked(true)
+      }
+      return
+    }
     buzz()
     setCopied(false)
+    setAsked(false)
     const entry: TapeEntry = {
       id: crypto.randomUUID(),
       expression,
@@ -198,7 +216,10 @@ export default function App() {
         data-kind={item.kind}
         data-span={settings.zeroKey === 'wide' && label === '0' ? 'two' : undefined}
         aria-label={item.aria ?? label}
-        disabled={label === '=' && !result.ok}
+        // Equals stays live on an expression that is merely unfinished, so
+        // pressing it gets an answer to why rather than nothing at all. A dead
+        // key on a touchscreen tells you neither that it did nothing nor why.
+        disabled={label === '=' && !result.ok && !result.unfinished}
         onClick={onPress}
       >
         {label}
@@ -287,7 +308,7 @@ export default function App() {
           >
             {copied ? 'Copied' : answer}
           </button>
-          {!result.ok && result.error && chunks.length ? (
+          {!result.ok && result.error && chunks.length && (!result.unfinished || asked) ? (
             <p className="error">{result.error}</p>
           ) : null}
           <div className="utility">

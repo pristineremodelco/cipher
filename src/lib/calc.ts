@@ -11,7 +11,13 @@
 export type AngleUnit = 'deg' | 'rad'
 
 export type CalcOk = { ok: true; value: number }
-export type CalcErr = { ok: false; error: string }
+/**
+ * `unfinished` marks the one failure that is not a mistake: the expression ran
+ * out before it meant anything, which is what every expression looks like
+ * while it is being typed. A caller showing a preview holds those back; a
+ * caller answering a press of equals says them.
+ */
+export type CalcErr = { ok: false; error: string; unfinished?: true }
 export type CalcResult = CalcOk | CalcErr
 
 const PHI = (1 + Math.sqrt(5)) / 2
@@ -86,10 +92,21 @@ type Node =
   | { k: 'fact'; a: Node }
   | { k: 'fn'; name: string; a: Node }
 
-class CalcError extends Error {}
+class CalcError extends Error {
+  readonly unfinished: boolean
+  constructor(message: string, unfinished = false) {
+    super(message)
+    this.unfinished = unfinished
+  }
+}
 
 function fail(message: string): never {
   throw new CalcError(message)
+}
+
+/** Failed only because there is no more to read; another key could put it right. */
+function unfinished(message: string): never {
+  throw new CalcError(message, true)
 }
 
 /** One canonical spelling for the several a glyph, a keyboard or a paste can use. */
@@ -249,7 +266,7 @@ function parse(tokens: Token[]): Node {
 
   function primary(): Node {
     const token = peek()
-    if (!token) fail('The expression stops early')
+    if (!token) unfinished('The expression stops early')
 
     if (token.t === 'num') {
       pos += 1
@@ -263,7 +280,12 @@ function parse(tokens: Token[]): Node {
       if (name in FUNCTIONS) {
         // A function with no brackets takes the value beside it, so sqrt9+1
         // is 4 rather than the root of 10.
-        if (!startsValue() && !isOp('-')) fail(`${name} has nothing to work on`)
+        if (!startsValue() && !isOp('-')) {
+          // Nothing at all after it is a half typed name; something that
+          // cannot be worked on is a mistake, and the two read differently.
+          if (!peek()) unfinished(`${name} has nothing to work on`)
+          fail(`${name} has nothing to work on`)
+        }
         return { k: 'fn', name, a: unary() }
       }
       fail(`"${name}" is not a name this knows`)
@@ -380,7 +402,11 @@ export function calculate(expression: string, angle: AngleUnit = 'deg'): CalcRes
     }
     return { ok: true, value }
   } catch (error) {
-    if (error instanceof CalcError) return { ok: false, error: error.message }
+    if (error instanceof CalcError) {
+      return error.unfinished
+        ? { ok: false, error: error.message, unfinished: true }
+        : { ok: false, error: error.message }
+    }
     return { ok: false, error: 'That expression cannot be worked out' }
   }
 }

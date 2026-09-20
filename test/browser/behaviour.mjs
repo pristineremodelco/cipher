@@ -104,6 +104,28 @@ t.is('nothing expires with time', await page.$$eval('.tape-list li', (rows) => r
 await page.click('button:has-text("Clear")')
 t.is('clearing empties it', await page.evaluate(() => JSON.parse(localStorage.getItem('calculator.tape.v1')).entries.length), 0)
 
+// The error line: quiet while an expression is being typed, and said the
+// moment somebody presses equals and there is no answer to give.
+await page.keyboard.press('Escape') // the history panel is still open above
+await tap('Clear')
+const shown = () => page.$eval('.display', (d) => d.querySelector('.error')?.textContent.trim() ?? '')
+
+await tap('5')
+await tap('Plus')
+t.is('nothing is said midway through typing', await shown(), '')
+await tap('Equals')
+t.is('equals on an unfinished sum says why', await shown(), 'The expression stops early')
+await tap('3')
+t.is('and typing on takes it back', await shown(), '')
+await tap('Equals')
+t.is('which then answers as normal', await answer(), '8')
+
+await tap('Clear')
+await tap('1')
+await tap('Divide')
+await tap('0')
+t.is('a sum that is wrong rather than unfinished still says so at once', await shown(), 'Nothing divides by zero')
+
 t.done(noise)
 await context.close()
 await browser.close()

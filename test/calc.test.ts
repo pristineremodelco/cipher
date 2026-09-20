@@ -116,3 +116,36 @@ test('a measurement is significant figures, not decimal places', () => {
 test('the clipboard gets the number and not the presentation', () => {
   assert.equal(plainNumber(1234567.891), '1234567.891')
 })
+
+/**
+ * An expression that merely ran out is what every expression looks like
+ * halfway through being typed, so it is told apart from one that is wrong.
+ * The preview line leans on this to stay quiet until equals is pressed.
+ */
+const UNFINISHED = ['1+', '2*', '3-', '5^', '1+2*', 'sin(', '(1+2)*(', '7÷', 'sqrt']
+
+for (const expression of UNFINISHED) {
+  test(`${expression} is unfinished rather than wrong`, () => {
+    const result = calculate(expression, 'deg')
+    assert.equal(result.ok, false)
+    assert.equal(result.ok === false && result.unfinished, true)
+  })
+}
+
+/** These cannot be put right by typing more, so they are said straight away. */
+const WRONG = ['1÷0', 'sin⁻¹(5)', '(-1)^0.5', '171!', '2.5!', '1+2)3', 'wibble(2)']
+
+for (const expression of WRONG) {
+  test(`${expression} is wrong rather than unfinished`, () => {
+    const result = calculate(expression, 'deg')
+    assert.equal(result.ok, false)
+    assert.equal(result.ok === false && result.unfinished, undefined)
+  })
+}
+
+test('an empty expression is neither wrong nor unfinished, it is nothing', () => {
+  const result = calculate('', 'deg')
+  assert.equal(result.ok, false)
+  assert.equal(result.ok === false && result.error, '')
+  assert.equal(result.ok === false && result.unfinished, undefined)
+})
