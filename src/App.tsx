@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { calculate, formatNumber, plainNumber } from './lib/calc'
-import { backspace, chunksOf, displayRuns, expressionOf, press, seed } from './lib/calcinput'
+import { backspaceAt, chunkRuns, chunksOf, displayRuns, expressionOf, pressAt, seed, type Caret } from './lib/calcinput'
 import { MAX_TAPE, loadTape, saveTape, type Tape, type TapeEntry } from './lib/calctape'
 import { ROWS, SCIENTIFIC, TYPED, type Key } from './components/keys'
 import { Backspace, Clock, Gear, Mark } from './components/Icons'
@@ -13,6 +13,8 @@ import { useSettings } from './store'
 export default function App() {
   const { settings, set } = useSettings()
   const [chunks, setChunks] = useState<string[]>([])
+  /** Where the next key lands, when somebody has tapped into the sum; null is the end. */
+  const [caret, setCaret] = useState<Caret>(null)
   const [tape, setTape] = useState<Tape>(() => loadTape())
   const [sciOpen, setSciOpen] = useState(false)
   const [tapeOpen, setTapeOpen] = useState(false)
@@ -86,8 +88,16 @@ export default function App() {
   // key lands, whenever what it shows changes.
   useEffect(() => {
     const line = workingLine.current
-    if (line) line.scrollTop = line.scrollHeight
-  }, [expression, settled, worked])
+    if (!line) return
+    const mark = line.querySelector('.caret')
+    if (!mark) {
+      line.scrollTop = line.scrollHeight
+      return
+    }
+    const box = line.getBoundingClientRect()
+    const at = mark.getBoundingClientRect()
+    if (at.top < box.top || at.bottom > box.bottom) line.scrollTop += at.top - box.top - (box.height - at.height) / 2
+  }, [expression, settled, worked, caret])
 
   const buzz = useCallback(() => {
     if (!settings.haptics) return
@@ -103,16 +113,16 @@ export default function App() {
       buzz()
       setCopied(false)
       setAsked(false)
-      setChunks((current) => {
-        // After an answer, a digit or a constant starts again; an operator
-        // keeps the answer and works on from it.
-        const base = settled && /^[0-9.]$|^00$/.test(pressed) ? [] : current
-        const value = pressed === 'ans' ? plainNumber(lastAnswer) : pressed
-        return press(base, value)
-      })
+      // After an answer, a digit or a constant starts again; an operator
+      // keeps the answer and works on from it.
+      const base = settled && /^[0-9.]$|^00$/.test(pressed) ? [] : chunks
+      const value = pressed === 'ans' ? plainNumber(lastAnswer) : pressed
+      const next = pressAt(base, settled ? null : caret, value)
+      setChunks(next.chunks)
+      setCaret(next.caret)
       setSettled(false)
     },
-    [buzz, lastAnswer, settled],
+    [buzz, caret, chunks, lastAnswer, settled],
   )
 
   const clear = useCallback(() => {
@@ -120,6 +130,7 @@ export default function App() {
     setCopied(false)
     setAsked(false)
     setChunks([])
+    setCaret(null)
     setSettled(false)
   }, [buzz])
 
@@ -127,9 +138,41 @@ export default function App() {
     buzz()
     setCopied(false)
     setAsked(false)
-    setChunks((current) => backspace(current))
+    const next = backspaceAt(chunks, settled ? null : caret)
+    setChunks(next.chunks)
+    setCaret(next.caret)
     setSettled(false)
-  }, [buzz])
+  }, [buzz, caret, chunks, settled])
+
+  /**
+   * A tap in the working line puts the caret at the nearest gap between two
+   * pieces of the sum. After equals the working is still on show, and a tap
+   * there opens it again to be changed, the answer giving way to it; that is
+   * why this is a setting, for anyone who would rather it could not happen.
+   */
+  const placeCaret = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      if (!settings.editInSum) return
+      // A drag to select text for copying is not a tap.
+      if (window.getSelection()?.toString()) return
+      const shown = settled ? chunksOf(worked) : chunks
+      if (!shown.length) return
+      const piece = (event.target as HTMLElement).closest<HTMLElement>('[data-index]')
+      let at = shown.length
+      if (piece) {
+        const box = piece.getBoundingClientRect()
+        at = Number(piece.dataset.index) + (event.clientX > box.left + box.width / 2 ? 1 : 0)
+      }
+      if (settled) {
+        setChunks(shown)
+        setSettled(false)
+      }
+      setCaret(at >= shown.length ? null : at)
+      setAsked(false)
+      buzz()
+    },
+    [buzz, chunks, settings.editInSum, settled, worked],
+  )
 
   const equals = useCallback(() => {
     if (!result.ok) {
@@ -153,6 +196,7 @@ export default function App() {
       setTape((current) => ({ ...current, entries: [entry, ...current.entries].slice(0, MAX_TAPE) }))
     }
     setChunks(seed(plainNumber(result.value)))
+    setCaret(null)
     setWorked(expression)
     setSettled(true)
   }, [buzz, expression, result, settings.keepHistory])
@@ -188,6 +232,20 @@ export default function App() {
         equals()
         return
       }
+      if (settings.editInSum && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+        event.preventDefault()
+        const shown = settled ? chunksOf(worked) : chunks
+        if (settled) {
+          setChunks(shown)
+          setSettled(false)
+        }
+        const now = settled || caret === null ? shown.length : caret
+        const to =
+          event.key === 'Home' ? 0 : event.key === 'End' ? shown.length : now + (event.key === 'ArrowLeft' ? -1 : 1)
+        const clamped = Math.max(0, Math.min(shown.length, to))
+        setCaret(clamped >= shown.length ? null : clamped)
+        return
+      }
       if (event.key === 'Backspace') {
         event.preventDefault()
         rub()
@@ -211,7 +269,7 @@ export default function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [clear, equals, key, rub, sciOpen, settings.mode, settingsOpen, tapeOpen])
+  }, [caret, chunks, clear, equals, key, rub, sciOpen, settings.editInSum, settings.mode, settingsOpen, settled, tapeOpen, worked])
 
   /** Holding the rub-out clears the lot, which is the one gesture worth having. */
   function holdStart() {
@@ -330,21 +388,25 @@ export default function App() {
         {settings.mode === 'calculate' ? (
         <>
         <section className="display">
-          <div className="expression" aria-label="Expression" data-settled={settled} ref={workingLine}>
+          <div
+            className="expression"
+            aria-label="Expression"
+            data-settled={settled}
+            data-editable={settings.editInSum}
+            ref={workingLine}
+            onClick={placeCaret}
+          >
             <div className="expression-text">
-              {displayRuns(settled ? worked : expression, settings.grouping).map((run, index) =>
-                run.kind === 'operator' ? (
-                  // A line may break after an operator rather than inside a number.
-                  <Fragment key={index}>
-                    <span data-kind={run.kind}>{run.text}</span>
-                    <wbr />
-                  </Fragment>
-                ) : (
-                  <span key={index} data-kind={run.kind}>
+              {chunkRuns(settled ? chunksOf(worked) : chunks, settings.grouping).map((run, index) => (
+                <Fragment key={index}>
+                  {caret === index && !settled ? <span className="caret" aria-hidden="true" /> : null}
+                  <span data-kind={run.kind} data-index={index}>
                     {run.text}
                   </span>
-                ),
-              )}
+                  {/* A line may break after an operator rather than inside a number. */}
+                  {run.kind === 'operator' ? <wbr /> : null}
+                </Fragment>
+              ))}
             </div>
           </div>
           <button
@@ -509,6 +571,7 @@ export default function App() {
                         // Back in the pieces it was typed as, so it can be
                         // edited rather than only rubbed out whole.
                         setChunks(chunksOf(entry.expression))
+                        setCaret(null)
                         setSettled(false)
                         setTapeOpen(false)
                       }}
@@ -524,6 +587,7 @@ export default function App() {
                       title="Use this answer"
                       onClick={() => {
                         setChunks(seed(plainNumber(entry.value)))
+                        setCaret(null)
                         setWorked(entry.expression)
                         setSettled(true)
                         setTapeOpen(false)

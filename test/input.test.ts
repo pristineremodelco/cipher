@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { backspace, chunksOf, displayRuns, expressionOf, press } from '../src/lib/calcinput.ts'
+import { backspace, backspaceAt, chunkRuns, chunksOf, displayRuns, expressionOf, press, pressAt } from '../src/lib/calcinput.ts'
 import { calculate } from '../src/lib/calc.ts'
 
 /** Runs a sequence of presses, where `<` is the rub-out. */
@@ -119,4 +119,44 @@ test('the display groups thousands in numbers and nowhere else', () => {
   assert.equal(text('1.5e-7', true), '1.5e-7')
   assert.equal(text('7 mod 3', true), '7mod3')
   assert.deepEqual(displayRuns('sin⁻¹(0.5)', true).map((r) => r.kind), ['function', 'digit', 'paren'])
+})
+
+/** Typing into the middle of a sum, which is the same as typing at its end. */
+test('a key at the caret lands there and the rest of the sum stays', () => {
+  const typed = ['1', '2', '+', '3', '4']
+  // 12+34 with the caret after the 2: type a 5.
+  const once = pressAt(typed, 2, '5')
+  assert.equal(expressionOf(once.chunks), '125+34')
+  assert.equal(once.caret, 3)
+  // And again, so the caret follows what was typed.
+  assert.equal(expressionOf(pressAt(once.chunks, once.caret, '0').chunks), '1250+34')
+})
+
+test('an operator in the middle follows the same rules it does at the end', () => {
+  // Replacing: the caret sits after the plus, and times takes its place.
+  assert.equal(expressionOf(pressAt(['1', '+', '2'], 2, '×').chunks), '1×2')
+  // An implied times before a bracket opened against a number.
+  assert.equal(expressionOf(pressAt(['2', '+', '3'], 1, '()').chunks), expressionOf(press(['2'], '()')) + '+3')
+})
+
+test('a rub-out at the caret takes the piece before it', () => {
+  assert.deepEqual(backspaceAt(['1', '2', '+', '3'], 2), { chunks: ['1', '+', '3'], caret: 1 })
+  assert.deepEqual(backspaceAt(['1', '2'], 0), { chunks: ['1', '2'], caret: 0 })
+  assert.deepEqual(backspaceAt(['1', '2'], null), { chunks: ['1'], caret: null })
+})
+
+test('a caret at the end is no caret at all', () => {
+  assert.equal(pressAt(['1'], 1, '2').caret, null)
+  assert.equal(pressAt(['1'], null, '2').caret, null)
+})
+
+test('one run per chunk, grouped like the display', () => {
+  const runs = chunkRuns(['1', '2', '3', '4', '×', '5', '6', '7', '8', '9', '0', '.', '5'], true)
+  assert.equal(runs.length, 13)
+  assert.equal(runs.map((r) => r.text).join(''), '1,234×567,890.5')
+  for (const expression of ['1250000×1.08', 'sin⁻¹(0.5)+√(16)', '7 mod 3', '-12.5+3', '1.5e-7×2', '(1+2)×3%']) {
+    const viaChunks = chunkRuns(chunksOf(expression), true).map((r) => r.text).join('')
+    const viaString = displayRuns(expression, true).map((r) => r.text).join('')
+    assert.equal(viaChunks, viaString, expression)
+  }
 })

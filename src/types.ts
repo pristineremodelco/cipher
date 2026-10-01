@@ -59,6 +59,10 @@ export type Settings = {
   /** Thousands separators in the answer. Never in the expression. */
   grouping: boolean
   padDecimals: boolean
+  /** Whether a tap on the working line puts a cursor in it, to change one part of a sum. */
+  editInSum: boolean
+  /** American or British spelling wherever the app spells a word: meter or metre, color or colour. */
+  spelling: 'us' | 'uk'
   /** A short buzz under each key, where the device can do one. */
   haptics: boolean
   /** Whether working is kept as a tape. Off means nothing is written down. */

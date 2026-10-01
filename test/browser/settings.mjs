@@ -85,13 +85,13 @@ for (const font of FONTS) {
 }
 
 // ---- Places, padded and not -------------------------------------------
-await page.click('.tab:has-text("Maths")')
+await page.click('.tab:has-text("Math")')
 await page.selectOption('.field:has-text("Decimal places") select', '2')
 await page.click('button:has-text("Done")')
 for (const key of ['1', '0', '0', 'Equals']) await page.click(`.pad .key[aria-label="${key}"]`)
 t.is('a whole answer keeps no places by default', (await page.textContent('.answer')).trim(), '100')
 await page.click('button[aria-label="Settings"]')
-await page.click('.tab:has-text("Maths")')
+await page.click('.tab:has-text("Math")')
 await page.click('.toggle-row:has-text("Keep the places") input')
 await page.click('button:has-text("Done")')
 t.is('and keeps them when asked to', (await page.textContent('.answer')).trim(), '100.00')
@@ -220,13 +220,13 @@ t.ok(`and draws the operators in its own hue (${opInk})`, r > g && r > b)
 
 // Degrees and radians. What each one answers is covered on the pad; what
 // matters here is that the two places that set it agree with each other.
-await page.click('.tab:has-text("Maths")')
+await page.click('.tab:has-text("Math")')
 await page.click('button:has-text("Done")')
 t.is('degrees is what it starts in', await page.getAttribute('.util.angle', 'aria-pressed'), 'false')
 await page.click('.util.angle')
 t.is('the display toggle reaches radians', await page.getAttribute('.util.angle', 'aria-pressed'), 'true')
 await page.click('button[aria-label="Settings"]')
-await page.click('.tab:has-text("Maths")')
+await page.click('.tab:has-text("Math")')
 t.is('and the settings agree with it', await page.inputValue('.field:has-text("Angles") select'), 'rad')
 await page.selectOption('.field:has-text("Angles") select', 'deg')
 await page.click('button:has-text("Done")')
@@ -237,20 +237,44 @@ await page.click('.pad .key[aria-label="Clear"]')
 for (const k of ['1', '0', '0', '0', '0', 'Equals']) await page.click(`.pad .key[aria-label="${k}"]`)
 t.is('thousands are grouped', (await page.textContent('.answer')).trim(), '10,000.00')
 await page.click('button[aria-label="Settings"]')
-await page.click('.tab:has-text("Maths")')
+await page.click('.tab:has-text("Math")')
 await page.click('.toggle-row:has-text("Group thousands") input')
 await page.click('button:has-text("Done")')
 t.is('and ungrouped when asked', (await page.textContent('.answer')).trim(), '10000.00')
 
 // History can be turned off, and then records nothing.
 await page.click('button[aria-label="Settings"]')
-await page.click('.tab:has-text("Maths")')
+await page.click('.tab:has-text("Math")')
 await page.click('.toggle-row:has-text("Keep a history") input')
 await page.click('button:has-text("Done")')
 await page.click('.pad .key[aria-label="Clear"]')
 for (const k of ['8', 'Plus', '1', 'Equals']) await page.click(`.pad .key[aria-label="${k}"]`)
 const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('calculator.tape.v1') ?? '{}').entries ?? [])
 t.ok('nothing is written down once history is off', !kept.some((e) => e.expression === '8+1'))
+
+// ---- Spelling ----------------------------------------------------------
+// American by default, and British on request, everywhere a word differs.
+const tabNames = () => page.$$eval('.tab', (els) => els.map((el) => el.textContent.trim()).join(' '))
+const unitNames = async () => {
+  await page.click('button:has-text("Done")')
+  await page.click('.mode:has-text("Convert")')
+  const names = await page.$$eval('.convert-unit select option', (els) => els.map((el) => el.textContent.trim()))
+  await page.click('.mode:has-text("Calculate")')
+  await page.click('button[aria-label="Settings"]')
+  return names
+}
+await page.click('button:has-text("Done")').catch(() => {})
+await page.click('button[aria-label="Settings"]')
+t.is('the tabs say Math by default', await tabNames(), 'Look Keys Math')
+await page.click('.tab:has-text("Look")')
+t.ok('a palette says gray', (await page.textContent('.palette-card:has-text("Linen")')).includes('Gray-green'))
+t.ok('and units say meter', (await unitNames()).includes('Meter (m)'))
+await page.click('.tab:has-text("Math")')
+await page.click('.field:has-text("Spelling") .size-btn:text-is("British")')
+t.is('British says Maths', await tabNames(), 'Look Keys Maths')
+await page.click('.tab:has-text("Look")')
+t.ok('and grey', (await page.textContent('.palette-card:has-text("Linen")')).includes('Grey-green'))
+t.ok('and metre', (await unitNames()).includes('Metre (m)'))
 
 t.done(noise)
 await context.close()

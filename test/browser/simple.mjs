@@ -68,7 +68,7 @@ t.is('the top unit is remembered', await unit(1), 'psiPound per square inch')
 
 // And the setting puts the categories back.
 await page.click('button[aria-label="Settings"]')
-await page.click('.tab:has-text("Maths")')
+await page.click('.tab:has-text("Math")')
 await page.click('.field:has-text("Converter") .size-btn:text-is("By category")')
 await page.click('button:has-text("Done")')
 t.ok('by category brings the tabs back', (await page.$$eval('.categories', (e) => e.length)) === 1)

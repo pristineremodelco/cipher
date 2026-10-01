@@ -9,6 +9,7 @@ import {
 } from 'react'
 import { loadSettings, saveSettings } from './lib/storage'
 import { luminance } from './lib/theme'
+import { spell } from './lib/spelling'
 import { activePalette, contrastText, derivePalette, fontStack, mix, paletteOf, readableInk } from './lib/theme'
 import type { Settings } from './types'
 
@@ -140,6 +141,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ settings, set, palette }), [settings, set, palette])
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
+}
+
+/** The setting's spelling, as a function to pass text through on its way to the screen. */
+export function useSpell(): (text: string) => string {
+  const { settings } = useSettings()
+  return useCallback((text: string) => spell(text, settings.spelling), [settings.spelling])
 }
 
 export function useSettings(): Value {

@@ -32,6 +32,8 @@ export function defaultSettings(): Settings {
     decimals: -1,
     grouping: true,
     padDecimals: false,
+    editInSum: true,
+    spelling: 'us',
     haptics: true,
     keepHistory: true,
     memoryRow: false,
@@ -130,6 +132,8 @@ export function migrateSettings(raw: unknown): Settings {
       : {}
 
   if (merged.convertStyle !== 'simple') merged.convertStyle = 'categories'
+  merged.editInSum = merged.editInSum !== false
+  if (merged.spelling !== 'uk') merged.spelling = 'us'
   // A unit that no longer exists is no unit chosen, and two that are not the
   // same kind of thing cannot both stand.
   const simpleFrom = typeof merged.simpleFrom === 'string' ? fromKey(merged.simpleFrom) : undefined

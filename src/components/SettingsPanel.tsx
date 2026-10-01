@@ -15,7 +15,7 @@ import {
 } from '../lib/theme'
 import { PaletteEditor } from './PaletteEditor'
 import { defaultSettings } from '../lib/storage'
-import { useSettings } from '../store'
+import { useSettings, useSpell } from '../store'
 import { formatNumber } from '../lib/calc'
 import type { CustomPalette, Settings } from '../types'
 
@@ -62,6 +62,7 @@ function same(a: unknown, b: unknown): boolean {
 
 export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const { settings, set } = useSettings()
+  const t = useSpell()
   const [tab, setTab] = useState<TabId>('look')
   const fresh = defaultSettings()
   const resettable = (Object.keys(fresh) as (keyof Settings)[]).filter((key) => !KEPT.includes(key))
@@ -86,7 +87,7 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         <div className="tabs">
           {TABS.map((item) => (
             <button key={item.id} className="tab" data-active={tab === item.id} onClick={() => setTab(item.id)}>
-              {item.label}
+              {t(item.label)}
             </button>
           ))}
         </div>
@@ -413,6 +414,7 @@ function Swatches({
   /** Absent when there is no room left for another one. */
   onMake?: () => void
 }) {
+  const t = useSpell()
   return (
     <div className="field">
       <span>{label}</span>
@@ -432,7 +434,7 @@ function Swatches({
               <i style={{ background: palette.swatch[3] }} />
             </span>
             <strong>{palette.name}</strong>
-            <span className="palette-hint">{palette.hint}</span>
+            <span className="palette-hint">{t(palette.hint)}</span>
           </button>
         ))}
         {/* Sitting in the grid rather than under it, because this is one more
@@ -444,7 +446,7 @@ function Swatches({
               <i className="palette-make-mark">+</i>
             </span>
             <strong>Make one</strong>
-            <span className="palette-hint">Your own colours</span>
+            <span className="palette-hint">{t('Your own colours')}</span>
           </button>
         ) : null}
       </div>
@@ -572,6 +574,11 @@ function MathsTab({ settings, set }: TabProps) {
       </label>
 
       <label className="row toggle-row">
+        <input type="checkbox" checked={settings.editInSum} onChange={(e) => set({ editInSum: e.target.checked })} />
+        Tap the sum to edit inside it
+      </label>
+
+      <label className="row toggle-row">
         <input type="checkbox" checked={settings.keepHistory} onChange={(e) => set({ keepHistory: e.target.checked })} />
         Keep a history of what was worked out
       </label>
@@ -595,6 +602,19 @@ function MathsTab({ settings, set }: TabProps) {
           </button>
         </div>
         <p className="hint">Simple picks both units by typing, as in 5 g to lb.</p>
+      </div>
+
+      <div className="field">
+        <span>Spelling</span>
+        <div className="size-row">
+          <button className="size-btn" data-active={settings.spelling === 'us'} onClick={() => set({ spelling: 'us' })}>
+            American
+          </button>
+          <button className="size-btn" data-active={settings.spelling === 'uk'} onClick={() => set({ spelling: 'uk' })}>
+            British
+          </button>
+        </div>
+        <p className="hint">{settings.spelling === 'us' ? 'Meter, liter, color, gray.' : 'Metre, litre, colour, grey.'}</p>
       </div>
 
     </>

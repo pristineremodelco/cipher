@@ -133,6 +133,41 @@ await tap('Divide')
 await tap('0')
 t.is('a sum that is wrong rather than unfinished still says so at once', await shown(), 'Nothing divides by zero')
 
+// Editing inside a sum: a tap puts the caret between two pieces, and a key
+// lands there rather than at the end.
+await page.keyboard.press('Escape')
+await tap('Clear')
+for (const k of ['1', '2', 'Plus', '3', '4']) await tap(k)
+const tapAfter = async (index) => {
+  const box = await page.$eval(`.expression [data-index="${index}"]`, (el) => { const r = el.getBoundingClientRect(); return { w: r.width, h: r.height } })
+  await page.click(`.expression [data-index="${index}"]`, { position: { x: box.w * 0.75, y: box.h / 2 } })
+}
+await tapAfter(1)
+t.is('a tap puts a caret in the sum', await page.$$eval('.expression .caret', (e) => e.length), 1)
+await tap('5')
+t.is('a key lands at the caret', (await expression()).replace(/,/g, ''), '125+34')
+t.is('and the answer follows', await answer(), '159')
+await page.click('.rub')
+t.is('a rub-out takes the piece before the caret', (await expression()).replace(/,/g, ''), '12+34')
+await tap('Equals')
+t.is('equals answers the whole sum', await answer(), '46')
+t.is('and the caret goes', await page.$$eval('.expression .caret', (e) => e.length), 0)
+// The finished sum is still on show; a tap opens it again.
+await tapAfter(0)
+await tap('9')
+t.is('a tap on a finished sum opens it to be changed', (await expression()).replace(/,/g, ''), '192+34')
+t.is('and it is a live sum again', await answer(), '226')
+
+// Turned off, a tap does nothing at all.
+await page.click('button[aria-label="Settings"]')
+await page.click('.tab:has-text("Math")')
+await page.click('.toggle-row:has-text("Tap the sum to edit") input')
+await page.click('button:has-text("Done")')
+await tap('Equals')
+await tapAfter(0)
+t.is('with editing off a tap leaves a finished sum alone', await answer(), '226')
+t.is('and puts no caret anywhere', await page.$$eval('.expression .caret', (e) => e.length), 0)
+
 t.done(noise)
 await context.close()
 await browser.close()

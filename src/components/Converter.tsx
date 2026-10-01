@@ -3,7 +3,7 @@ import { CATEGORIES, categoryOf, convert, defaultPair, unitOf, type Category, ty
 import { findUnits, fromKey, keyOf, parsePair, type Found, type Pair } from '../lib/unitsearch'
 import { formatMeasure } from '../lib/calc'
 import { Backspace } from './Icons'
-import { useSettings } from '../store'
+import { useSettings, useSpell } from '../store'
 
 /**
  * A number being typed, held as text rather than as a number.
@@ -117,6 +117,7 @@ function ConvertPad({ onKey, onSwap }: { onKey: (key: string) => void; onSwap: (
 }
 
 function CategoryConverter() {
+  const t = useSpell()
   const { settings, set } = useSettings()
   const category = categoryOf(settings.convertCategory)
   const saved = settings.convertPairs[category.id]
@@ -185,7 +186,7 @@ function CategoryConverter() {
       <div className="convert-row" data-active={active}>
         <button
           className="convert-reading"
-          aria-label={`${active ? 'Typing' : 'Result'} in ${unit.name}. Tap to type in this one.`}
+          aria-label={`${active ? 'Typing' : 'Result'} in ${t(unit.name)}. Tap to type in this one.`}
           onClick={() => {
             if (active) return
             buzz()
@@ -202,7 +203,7 @@ function CategoryConverter() {
           <select value={unit.id} onChange={(e) => pickUnit(which, e.target.value)}>
             {category.units.map((option) => (
               <option key={option.id} value={option.id}>
-                {option.name} ({option.symbol})
+                {t(option.name)} ({option.symbol})
               </option>
             ))}
           </select>
@@ -278,6 +279,7 @@ function CategoryConverter() {
  * by showing rather than asking.
  */
 function SimpleConverter() {
+  const t = useSpell()
   const { settings, set } = useSettings()
   const buzz = useBuzz()
   const from = fromKey(settings.simpleFrom)
@@ -336,7 +338,7 @@ function SimpleConverter() {
       <div className="convert-row" data-active={active}>
         <button
           className="convert-reading"
-          aria-label={`${active ? 'Typing' : 'Result'}${found ? ` in ${found.unit.name}` : ''}. Tap to type in this one.`}
+          aria-label={`${active ? 'Typing' : 'Result'}${found ? ` in ${t(found.unit.name)}` : ''}. Tap to type in this one.`}
           onClick={() => {
             if (active) return
             buzz()
@@ -349,13 +351,13 @@ function SimpleConverter() {
         <button
           className="unit-pick"
           data-empty={!found}
-          aria-label={found ? `${which === 'from' ? 'From' : 'To'} ${found.unit.name}. Change it.` : `Choose the unit to convert ${which}`}
+          aria-label={found ? `${which === 'from' ? 'From' : 'To'} ${t(found.unit.name)}. Change it.` : `Choose the unit to convert ${which}`}
           onClick={() => setPicking(which)}
         >
           {found ? (
             <>
               <strong>{found.unit.symbol}</strong>
-              <span>{found.unit.name}</span>
+              <span>{t(found.unit.name)}</span>
             </>
           ) : (
             <span>Choose a unit</span>
@@ -438,6 +440,7 @@ function UnitPicker({
   onPair: (pair: Pair) => void
   onClose: () => void
 }) {
+  const t = useSpell()
   const [query, setQuery] = useState('')
   const field = useRef<HTMLInputElement>(null)
 
@@ -457,7 +460,7 @@ function UnitPicker({
       <li key={keyOf(item)}>
         <button className="pick-row" data-chosen={isChosen} onClick={() => onPick(item)}>
           <span className="pick-name">
-            {item.unit.name}
+            {t(item.unit.name)}
             {labelled ? <em>{item.category.name}</em> : null}
           </span>
           {worth ? <span className="pick-worth">{worth}</span> : null}
@@ -517,7 +520,7 @@ function UnitPicker({
                 {pair.from.unit.symbol} → {pair.to.unit.symbol}
               </strong>
               <span>
-                {pair.from.unit.name} to {pair.to.unit.name}
+                {t(pair.from.unit.name)} to {t(pair.to.unit.name)}
               </span>
             </button>
           ) : null}

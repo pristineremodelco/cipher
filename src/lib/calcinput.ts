@@ -228,6 +228,75 @@ export function chunksOf(expression: string): string[] {
   return chunks
 }
 
+/**
+ * Where the next key lands: between two chunks, or null for the end, which is
+ * where it lands unless somebody has tapped into the middle of a sum.
+ */
+export type Caret = number | null
+
+export type Edit = { chunks: string[]; caret: Caret }
+
+/**
+ * One press at the caret. Everything before the caret is pressed on exactly as
+ * if it were the whole sum, so the rules a key follows at the end (an implied
+ * times, which bracket the bracket key means, an operator replacing another)
+ * are the same rules it follows in the middle; what came after is put back.
+ */
+export function pressAt(chunks: string[], caret: Caret, key: string): Edit {
+  if (caret === null || caret >= chunks.length) return { chunks: press(chunks, key), caret: null }
+  const before = press(chunks.slice(0, caret), key)
+  return { chunks: [...before, ...chunks.slice(caret)], caret: before.length }
+}
+
+/** A rub-out takes off the chunk before the caret, and nothing at the very start. */
+export function backspaceAt(chunks: string[], caret: Caret): Edit {
+  if (caret === null || caret >= chunks.length) return { chunks: backspace(chunks), caret: null }
+  if (caret <= 0) return { chunks, caret: 0 }
+  return { chunks: [...chunks.slice(0, caret - 1), ...chunks.slice(caret)], caret: caret - 1 }
+}
+
+/**
+ * What the display draws, one run per chunk, so a tap on any of them can be
+ * turned back into a place in the sum. Numbers are grouped into thousands
+ * across the chunks they were typed as, each comma going with the digit
+ * before it.
+ */
+export function chunkRuns(chunks: string[], grouping: boolean): Run[] {
+  const runs: Run[] = chunks.map((chunk) => {
+    const text = chunk.trim()
+    if (/^-?(?=[0-9.])[0-9.]+(?:e[+-]?[0-9]+)?$/i.test(text)) return { text, kind: 'digit' }
+    return { text, kind: kindOf(text) }
+  })
+  if (!grouping) return runs
+  for (let start = 0; start < runs.length; ) {
+    if (runs[start].kind !== 'digit') {
+      start += 1
+      continue
+    }
+    let end = start
+    while (end < runs.length && runs[end].kind === 'digit') end += 1
+    const raw = runs.slice(start, end).map((run) => run.text).join('')
+    if (!/e/i.test(raw) && !/.-/.test(raw)) {
+      const marked = grouped(raw)
+      let at = 0
+      for (let i = start; i < end; i += 1) {
+        let text = ''
+        for (let n = 0; n < runs[i].text.length; n += 1) {
+          text += marked[at]
+          at += 1
+          while (marked[at] === ',') {
+            text += ','
+            at += 1
+          }
+        }
+        runs[i] = { ...runs[i], text }
+      }
+    }
+    start = end
+  }
+  return runs
+}
+
 /** An answer carried into the next sum arrives as one chunk, so it rubs out whole. */
 export function seed(value: string): string[] {
   return [value]

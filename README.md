@@ -42,9 +42,13 @@ an app opened to work something out opens on it.
   and that is the only way one leaves, short of Clear or turning history off
 - **Hold the rub-out** to clear the lot
 - **Tap the answer** to copy it
+- **Tap inside the sum** to put a cursor there and change one part of it, even
+  after equals. Keys and the rub-out work at the cursor. It is a setting, for
+  anyone who would rather a finished answer could not be reopened by a stray tap
 - A **keyboard** works: digits, `+ - * / ^ ( ) . %`, Enter for equals,
-  Backspace, Delete to clear. Letters are deliberately not bound; the named
-  functions are one tap away instead
+  Backspace, Delete to clear, and the arrow keys, Home and End to move the
+  cursor. Letters are deliberately not bound; the named functions are one tap
+  away instead
 
 ## Converting
 
@@ -124,7 +128,8 @@ take a palette of your own, which starts as a copy of the one it replaces. On
 top of that: an accent of any colour, seven
 typefaces, four text sizes, a heavier weight, four key styles, four key corner
 shapes, the answer's size, the operator column on either side, and a bottom row
-with a double zero or one wide one. All under Settings, with a preview that
+with a double zero or one wide one. Spelling is American or British, which
+covers the metric units, colour and grey, and the name of the Maths tab. All under Settings, with a preview that
 changes as you set it.
 
 Six of the seven typefaces ship with the app, so a choice lands the same way
@@ -168,7 +173,7 @@ npm test
 ```
 
 The sums, run under node with no test framework and no dependency: node runs
-TypeScript and ships a test runner, so there is nothing to install. 220 of
+TypeScript and ships a test runner, so there is nothing to install. 227 of
 them, covering the expression parser, what each key does to what is already on
 the display, every answer carried on reading back as itself, all 127 unit
 factors with every pair round tripped, what typing a unit finds, and every one
@@ -184,7 +189,7 @@ npm run dev
 npm run test:browser
 ```
 
-The rest, which needs a browser: 467 checks across seven suites. Every key on
+The rest, which needs a browser: 483 checks across seven suites. Every key on
 the pad pressed with the answer read back off the screen; what carries forward
 between presses and how far the history goes; a palette made from three colours
 and worn; every setting driven and its effect measured, from key corners to
@@ -229,6 +234,7 @@ src/
     rates.ts         exchange rates, and what to do when there are none
     zones.ts         world time, worked out on the device
     theme.ts         palettes, typefaces, key styles, and deriving one
+    spelling.ts      American or British, on the way to the screen
     storage.ts       settings defaults and forward migration
   components/
     keys.ts          what is on the pad, and nothing about how it is drawn

@@ -1,4 +1,10 @@
 import type { ReactNode } from 'react'
+import { useSpell } from '../store'
+
+/** Text through the spelling setting; anything that is not plain text passes untouched. */
+function spelt(t: (text: string) => string, node: ReactNode): ReactNode {
+  return typeof node === 'string' ? t(node) : node
+}
 
 /**
  * The parts every tool is built from.
@@ -27,11 +33,12 @@ export function Field({
   placeholder?: string
   hint?: string
 }) {
+  const t = useSpell()
   return (
     <label className="tool-field">
-      <span className="tool-label">{label}</span>
+      <span className="tool-label">{t(label)}</span>
       <span className="tool-input" data-prefixed={Boolean(prefix)}>
-        {prefix ? <em className="affix">{prefix}</em> : null}
+        {prefix ? <em className="affix">{spelt(t, prefix)}</em> : null}
         <input
           // The numeric keyboard, without refusing anything a person might
           // paste: type=number swallows what it dislikes rather than saying so.
@@ -42,9 +49,9 @@ export function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
-        {suffix ? <em className="affix">{suffix}</em> : null}
+        {suffix ? <em className="affix">{spelt(t, suffix)}</em> : null}
       </span>
-      {hint ? <span className="tool-hint">{hint}</span> : null}
+      {hint ? <span className="tool-hint">{t(hint)}</span> : null}
     </label>
   )
 }
@@ -58,9 +65,10 @@ export function DateField({
   value: string
   onChange: (next: string) => void
 }) {
+  const t = useSpell()
   return (
     <label className="tool-field">
-      <span className="tool-label">{label}</span>
+      <span className="tool-label">{t(label)}</span>
       <span className="tool-input">
         <input type="date" value={value} onChange={(e) => onChange(e.target.value)} />
       </span>
@@ -79,14 +87,15 @@ export function Choice<T extends string>({
   options: { id: T; name: string }[]
   onChange: (next: T) => void
 }) {
+  const t = useSpell()
   return (
     <label className="tool-field">
-      <span className="tool-label">{label}</span>
+      <span className="tool-label">{t(label)}</span>
       <span className="tool-input">
         <select value={value} onChange={(e) => onChange(e.target.value as T)}>
           {options.map((option) => (
             <option key={option.id} value={option.id}>
-              {option.name}
+              {t(option.name)}
             </option>
           ))}
         </select>
@@ -107,9 +116,10 @@ export function Segment<T extends string>({
   options: { id: T; name: string }[]
   onChange: (next: T) => void
 }) {
+  const t = useSpell()
   return (
     <div className="tool-field">
-      {label ? <span className="tool-label">{label}</span> : null}
+      {label ? <span className="tool-label">{t(label)}</span> : null}
       <div className="segment">
         {options.map((option) => (
           <button
@@ -119,7 +129,7 @@ export function Segment<T extends string>({
             aria-pressed={value === option.id}
             onClick={() => onChange(option.id)}
           >
-            {option.name}
+            {t(option.name)}
           </button>
         ))}
       </div>
@@ -141,26 +151,28 @@ export type Row = {
  * disappearing and taking the layout with it.
  */
 export function Readout({ rows, note }: { rows: Row[]; note?: ReactNode }) {
+  const t = useSpell()
   return (
     <div className="readout">
       {rows.map((row) => (
         <div className="readout-row" key={row.label} data-lead={row.lead}>
-          <span className="readout-label">{row.label}</span>
+          <span className="readout-label">{t(row.label)}</span>
           <span className="readout-value">{row.value || '—'}</span>
-          {row.note ? <span className="readout-note">{row.note}</span> : null}
+          {row.note ? <span className="readout-note">{t(row.note)}</span> : null}
         </div>
       ))}
-      {note ? <p className="tool-note">{note}</p> : null}
+      {note ? <p className="tool-note">{spelt(t, note)}</p> : null}
     </div>
   )
 }
 
 /** Every tool's outer shape, so none of them can drift from the others. */
 export function Tool({ children, note }: { children: ReactNode; note?: ReactNode }) {
+  const t = useSpell()
   return (
     <div className="tool">
       <div className="tool-fields">{children}</div>
-      {note ? <p className="tool-note">{note}</p> : null}
+      {note ? <p className="tool-note">{spelt(t, note)}</p> : null}
     </div>
   )
 }

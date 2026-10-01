@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { contrastText, derivePalette, luminance, parseHex } from '../lib/theme'
 import type { CustomPalette } from '../types'
+import { useSpell } from '../store'
 
 /**
  * Whether this browser will hand back the colour under a pointer.
@@ -44,6 +45,7 @@ function Field({
   value: string
   onChange: (colour: string) => void
 }) {
+  const t = useSpell()
   const [text, setText] = useState(value)
   const dropper = eyeDropper()
 
@@ -76,7 +78,7 @@ function Field({
       <div className="colour-controls">
         <input
           type="color"
-          aria-label={`${label} colour`}
+          aria-label={t(`${label} colour`)}
           value={value}
           onChange={(e) => {
             setText(e.target.value)
@@ -97,7 +99,7 @@ function Field({
           onBlur={() => setText(value)}
         />
         {dropper ? (
-          <button className="ghost pipette" aria-label={`Pick ${label} off the screen`} title="Pick a colour off the screen" onClick={pick}>
+          <button className="ghost pipette" aria-label={`Pick ${label} off the screen`} title={t('Pick a colour off the screen')} onClick={pick}>
             <Pipette />
           </button>
         ) : null}
