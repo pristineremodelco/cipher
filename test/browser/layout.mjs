@@ -44,7 +44,12 @@ const browser = await launch()
 const t = tally('layout')
 
 async function inspect(page, where) {
-  const found = await page.evaluate(() => {
+  // The screen's own width, not innerWidth: a phone in emulation widens the
+  // page to fit anything that runs past the edge, so innerWidth grew with the
+  // overflow and no check against it could ever see one. A 360px phone
+  // reported 496px while a converter row hung 96px off its edge.
+  const screen = page.viewportSize().width
+  const found = await page.evaluate((screen) => {
     // Something inside a box that scrolls is meant to run past the edge; that
     // is what the scrolling is for. Only things loose on the page count.
     const inAScroller = (el) => {
@@ -58,7 +63,7 @@ async function inspect(page, where) {
     const loose = [...document.querySelectorAll('*')].filter((el) => {
       const box = el.getBoundingClientRect()
       if (box.width === 0 && box.height === 0) return false
-      return (box.right > innerWidth + 1 || box.left < -1) && !inAScroller(el)
+      return (box.right > screen + 1 || box.left < -1) && !inAScroller(el)
     })
     const small = [...document.querySelectorAll('button:not([disabled]), select, input')].filter((el) => {
       const box = el.getBoundingClientRect()
@@ -83,13 +88,13 @@ async function inspect(page, where) {
     }
 
     return {
-      sideways: document.documentElement.scrollWidth > innerWidth + 1,
+      sideways: document.documentElement.scrollWidth > screen + 1,
       loose: [...new Set(loose.map(named))].slice(0, 4),
       small: [...new Set(small.map(named))].slice(0, 4),
       crowded,
       clipped,
     }
-  })
+  }, screen)
   if (found.sideways) t.note(`${where}: the page scrolls sideways`)
   if (found.loose.length) t.note(`${where}: past the edge, loose on the page: ${found.loose.join(', ')}`)
   if (found.small.length) t.note(`${where}: too small to hit: ${found.small.join(', ')}`)
@@ -105,6 +110,10 @@ for (const [name, width, height] of SIZES) {
     ['calculate', { mode: 'calculate' }],
     ['convert, standard', { mode: 'convert', convertStyle: 'categories' }],
     ['convert, simple', { mode: 'convert', convertStyle: 'simple', simpleFrom: 'mass:lb', simpleTo: 'mass:kg' }],
+    // A long reading at a large answer size, which once pushed the unit off the
+    // screen and the whole page sideways.
+    ['convert, simple, answer at 160%', { mode: 'convert', convertStyle: 'simple', simpleFrom: 'mass:lb', simpleTo: 'mass:st', displayScale: 1.6 }],
+    ['convert, standard, answer at 160%', { mode: 'convert', convertStyle: 'categories', convertCategory: 'mass', convertPairs: { mass: 'lb>st' }, displayScale: 1.6 }],
   ]
   for (const [label, settings] of surfaces) {
     const { context, page, noise } = await open(browser, { settings, viewport: { width, height } })
@@ -127,6 +136,29 @@ for (const [name, width, height] of SIZES) {
     await inspect(page, `${name}, ${tool}`)
   }
   await context.close()
+}
+
+// Chrome on Android enlarges text to follow the phone's own font size, after
+// layout has been worked out, and a desktop browser cannot be made to do the
+// same. These two stand in for it. One: a reading that insists on its full
+// width must still not widen its row, which it once did by 96px on a 360px
+// phone and dragged the whole app sideways. Two: text enlarged after the first
+// draw, as a typeface arriving or the phone's font size does, is fitted again.
+for (const [name, width, height] of [['small Samsung', 360, 772], ['larger Samsung', 384, 824]]) {
+  for (const convertStyle of ['simple', 'categories']) {
+    const settings = { mode: 'convert', convertStyle, simpleFrom: 'mass:lb', simpleTo: 'mass:st', convertCategory: 'mass', convertPairs: { mass: 'lb>st' }, displayScale: 1.6, fontId: 'serif' }
+    const { context, page } = await open(browser, { settings, viewport: { width, height } })
+    await page.addStyleTag({ content: ':root, :root[data-textsize] { --tx: 1.4 !important }' })
+    await page.evaluate(() => window.dispatchEvent(new Event('resize')))
+    await page.waitForTimeout(150)
+    const fitted = await page.$$eval('.convert-reading', (els) => els.every((el) => el.scrollWidth <= el.clientWidth + 1))
+    t.ok(`${name}, ${convertStyle}: enlarged text is fitted to its row`, fitted)
+    await page.addStyleTag({ content: '.convert-reading { min-width: max-content !important; }' })
+    await page.waitForTimeout(100)
+    const inside = await page.$$eval('.convert-row', (rows, screen) => rows.every((row) => row.getBoundingClientRect().right <= screen + 0.5), width)
+    t.ok(`${name}, ${convertStyle}: a reading that will not shrink still cannot widen its row`, inside)
+    await context.close()
+  }
 }
 
 t.done()

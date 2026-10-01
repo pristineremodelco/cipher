@@ -196,6 +196,11 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
      counting the strip under the navigation bar, and an app that height spills
      out of the page by the difference and can be dragged up and down. */
   height: min(100dvh, 100%);
+  /* An app does not pan sideways. Chrome on Android enlarges text to follow
+     the phone's own font size, which nothing here can measure in advance, and
+     once that pushed a row past the edge the whole app could be dragged left
+     and right. Rows and readings now fit their width; this is the backstop. */
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
   padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
@@ -497,7 +502,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   border: 1px solid transparent;
   background: var(--key);
   color: var(--text);
-  border-radius: var(--key-radius);
+  border-radius: calc(var(--key-radius) * var(--radius-scale, 1));
   font-size: calc(21px * var(--tx));
   font-weight: 700;
   line-height: 1;
@@ -911,9 +916,16 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   flex: none;
   position: relative;
   display: grid;
+  /* A column no wider than the screen whatever is in it. Sized to its content,
+     one long reading widened the column, the row and then the page, which
+     scrolled sideways with the unit pushed off its edge. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 .convert-row {
+  /* Allowed to be narrower than what is in it: a grid item will otherwise
+     insist on its content's width and stretch past the column holding it. */
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -941,13 +953,12 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   background: none;
   color: var(--text);
   text-align: left;
-  font-size: calc(27px * var(--tx) * var(--display-scale));
+  font-size: calc(27px * var(--tx) * var(--display-scale) * var(--fit, 1));
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 1.2;
   padding: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
@@ -1147,7 +1158,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   display: grid;
   place-items: center;
   height: 46px;
-  border-radius: var(--key-radius);
+  border-radius: calc(var(--key-radius) * var(--radius-scale, 1));
   font-weight: 800;
   font-size: 17px;
 }
@@ -1261,7 +1272,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   .convert-pad { grid-area: 2 / 2 / 4 / 3; height: auto; gap: 5px; }
   .convert-pad .key { min-height: 30px; }
   .convert-row { padding: 7px 12px; }
-  .convert-reading { font-size: calc(20px * var(--tx) * var(--display-scale)); min-height: 32px; }
+  .convert-reading { font-size: calc(20px * var(--tx) * var(--display-scale) * var(--fit, 1)); min-height: 32px; }
   .swap { width: 34px; height: 34px; }
 }
 
@@ -1618,8 +1629,11 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
-/* Space between the pair and the pad, so the pad stays under the thumb. */
-.convert.simple .convert-pad { margin-top: auto; }
+/* The simple layout has nothing between the pair and the pad, where the
+   standard one lists every other unit, so its keys take most of that room
+   rather than leaving a band of empty screen above them. The pad still sits at
+   the bottom, under the thumb. */
+.convert.simple .convert-pad { margin-top: auto; height: clamp(240px, 56%, 440px); }
 
 /* The picker hangs from the top rather than rising from the bottom: it opens
    with the keyboard up, and a sheet at the bottom would be under it. */
@@ -1712,4 +1726,18 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   font-size: 18px;
   font-weight: 700;
   line-height: 1;
+}
+
+/* The corner settings are sized for full-size keys: soft 14px, round 24px. A
+   key a third that height reaches its full rounding long before that, so on
+   the settings preview soft, round and circle all came out as the same pill
+   and three of the four buttons seemed to do nothing. Smaller keys take the
+   same shapes in proportion, so each one looks there the way it will on the
+   pad. */
+.preview { --radius-scale: 0.4; }
+.palette-proof-keys { --radius-scale: 0.5; }
+.sci-sheet, .sci-pad { --radius-scale: 0.5; }
+.convert-pad { --radius-scale: 0.65; }
+@media (max-height: 620px) {
+  .pads { --radius-scale: 0.7; }
 }

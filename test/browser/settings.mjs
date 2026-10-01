@@ -38,6 +38,19 @@ const round = await page.$eval('.preview .key', (el) => getComputedStyle(el).bor
 await page.click('.field:has-text("Key corners") .size-btn:text-is("Sharp")')
 const sharp = await page.$eval('.preview .key', (el) => getComputedStyle(el).borderRadius)
 t.ok('a key is drawn with the corners that were chosen', round !== sharp)
+// And on the preview, where the choice is made, all four have to look like four
+// different things. Its keys are a third the height of the pad's, and soft,
+// round and circle all used to come out as the same pill there.
+const drawn = []
+for (const shape of KEY_SHAPES) {
+  await page.click(`.field:has-text("Key corners") .size-btn:text-is("${shape.name}")`)
+  drawn.push(await page.$eval('.preview .key', (el) => {
+    const radius = parseFloat(getComputedStyle(el).borderTopLeftRadius)
+    return Math.min(radius, el.getBoundingClientRect().height / 2)
+  }))
+}
+const [sharpR, softR, roundR, circleR] = drawn
+t.ok(`the preview draws four different corners (${drawn.map((r) => r.toFixed(1)).join(', ')})`, sharpR < softR - 1.5 && softR < roundR - 1.5 && roundR < circleR - 3)
 
 // ---- Operator column ---------------------------------------------------
 const order = await page.$$eval('.field:has-text("Operator column") .size-btn', (els) =>

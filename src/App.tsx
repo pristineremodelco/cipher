@@ -7,6 +7,7 @@ import { Backspace, Clock, Gear, Mark } from './components/Icons'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Converter } from './components/Converter'
 import { Confirm } from './components/Confirm'
+import { fitToWidth, onReflow } from './components/fit'
 import { Tools } from './components/Tools'
 import { useSettings, useSpell } from './store'
 
@@ -64,16 +65,7 @@ export default function App() {
    * key. Measured, not guessed from its length: how much fits depends on the
    * width of the phone and the text size chosen, and only the page knows both.
    */
-  const fitAnswer = useCallback(() => {
-    const line = answerLine.current
-    if (!line) return
-    let scale = 1
-    line.style.setProperty('--fit', '1')
-    while (line.scrollWidth > line.clientWidth + 1 && scale > 0.4) {
-      scale = Math.round((scale - 0.05) * 100) / 100
-      line.style.setProperty('--fit', String(scale))
-    }
-  }, [])
+  const fitAnswer = useCallback(() => fitToWidth(answerLine.current), [])
 
   useLayoutEffect(fitAnswer)
 
@@ -82,7 +74,11 @@ export default function App() {
     if (!display || typeof ResizeObserver === 'undefined') return
     const watch = new ResizeObserver(() => fitAnswer())
     watch.observe(display)
-    return () => watch.disconnect()
+    const stop = onReflow(fitAnswer)
+    return () => {
+      watch.disconnect()
+      stop()
+    }
   }, [fitAnswer, settings.mode])
 
   // The working line keeps the end of the sum in view, which is where the next

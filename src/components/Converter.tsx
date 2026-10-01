@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { fitToWidth, onReflow } from './fit'
 import { CATEGORIES, categoryOf, convert, defaultPair, unitOf, type Category, type Unit } from '../lib/units'
 import { findUnits, fromKey, keyOf, parsePair, type Found, type Pair } from '../lib/unitsearch'
 import { formatMeasure } from '../lib/calc'
@@ -96,12 +97,19 @@ function Reading({
   onTap: () => void
   children: ReactNode
 }) {
+  // A long reading at a large answer size used to push the unit beside it off
+  // the screen and the whole page sideways; it steps down to fit instead.
+  const node = useRef<HTMLElement | null>(null)
+  useLayoutEffect(() => fitToWidth(node.current))
+  useEffect(() => onReflow(() => fitToWidth(node.current)), [])
   return tappable ? (
-    <button className="convert-reading" aria-label={label} onClick={onTap}>
+    <button className="convert-reading" aria-label={label} onClick={onTap} ref={(el) => { node.current = el }}>
       {children}
     </button>
   ) : (
-    <div className="convert-reading">{children}</div>
+    <div className="convert-reading" ref={(el) => { node.current = el }}>
+      {children}
+    </div>
   )
 }
 

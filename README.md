@@ -196,7 +196,7 @@ npm run dev
 npm run test:browser
 ```
 
-The rest, which needs a browser: 508 checks across seven suites. Every key on
+The rest, which needs a browser: 541 checks across seven suites. Every key on
 the pad pressed with the answer read back off the screen; what carries forward
 between presses and how far the history goes; a palette made from three colours
 and worn; every setting driven and its effect measured, from key corners to
