@@ -99,12 +99,19 @@ async function inspect(page, where) {
 }
 
 for (const [name, width, height] of SIZES) {
-  for (const mode of ['calculate', 'convert']) {
-    const { context, page, noise } = await open(browser, { settings: { mode }, viewport: { width, height } })
-    if (mode === 'calculate') await page.keyboard.type('12.5*(3+4)')
+  // Both converter layouts, the simple one with a pair chosen so its rows and
+  // the line under them are all drawn.
+  const surfaces = [
+    ['calculate', { mode: 'calculate' }],
+    ['convert, standard', { mode: 'convert', convertStyle: 'categories' }],
+    ['convert, simple', { mode: 'convert', convertStyle: 'simple', simpleFrom: 'mass:lb', simpleTo: 'mass:kg' }],
+  ]
+  for (const [label, settings] of surfaces) {
+    const { context, page, noise } = await open(browser, { settings, viewport: { width, height } })
+    if (settings.mode === 'calculate') await page.keyboard.type('12.5*(3+4)')
     await page.waitForTimeout(200)
-    await inspect(page, `${name}, ${mode}`)
-    for (const problem of noise) t.note(`${name} ${mode} console: ${problem}`)
+    await inspect(page, `${name}, ${label}`)
+    for (const problem of noise) t.note(`${name} ${label} console: ${problem}`)
     await context.close()
   }
 

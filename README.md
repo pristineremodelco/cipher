@@ -56,20 +56,25 @@ Eighteen categories and 127 units: length, area, volume, mass, temperature,
 speed, time, data, pressure, force, energy, power, voltage, current,
 resistance, frequency, angle and fuel economy.
 
-Type into either row and the other one follows, so a conversion runs in
-whichever direction you happen to want it. Under the pair sits the same
+Two layouts, chosen under Settings → Math. **Simple**, the default, has no
+categories at all: two unit pickers found by typing. The top one searches every
+unit there is, and reads the way people write units: plural, American,
+abbreviated or misspelt, so "lbs", "liters", "feet", "kph" and "celcius" all
+land. Once it is chosen the bottom one holds only what it converts to, each with
+what the number comes to in it, so volts to what is answered by looking. A whole
+conversion typed in one go, "5 grams to lbs", sets both units and the amount.
+
+**Standard** lays the units out by category. Under the pair sits the same
 quantity in every other unit the category holds, which is usually the thing you
 did not know you wanted until it was there; tapping one makes it the unit being
 converted to. The pair you used in a category is remembered, so feet to inches
 stays feet to inches.
 
-Or, with **Simple** chosen under Settings → Maths, no categories at all: two
-unit pickers found by typing. The top one searches every unit there is, and
-reads the way people write units: plural, American, abbreviated or misspelt,
-so "lbs", "liters", "feet", "kph" and "celcius" all land. Once it is chosen the
-bottom one holds only what it converts to, each with what the number comes to
-in it, so volts to what is answered by looking. A whole conversion typed in one
-go, "5 grams to lbs", sets both units and the amount.
+In either layout the top row is the one typed into and the bottom row is the
+answer, unless **Either row** is chosen as the input row, when a tap on a row's
+number moves the typing there and the conversion runs the other way. Top row
+only is the default because the bottom number sits beside its unit button, and
+a tap meant for one landing on the other quietly turns a conversion round.
 
 Every factor is the exact defined value rather than one rounded off a chart: a
 foot is 0.3048 metres, a pound is 0.45359237 kilograms, a US gallon is
@@ -191,14 +196,14 @@ npm run dev
 npm run test:browser
 ```
 
-The rest, which needs a browser: 490 checks across seven suites. Every key on
+The rest, which needs a browser: 508 checks across seven suites. Every key on
 the pad pressed with the answer read back off the screen; what carries forward
 between presses and how far the history goes; a palette made from three colours
 and worn; every setting driven and its effect measured, from key corners to
 operator contrast to each typeface drawing differently; the simple converter
 searched and answered; every tool opened and answered, with the one that needs
 a signal put through all three of the states it can be in; and the layout swept
-over twelve screen sizes in all three surfaces and every tool.
+over twelve screen sizes in the calculator, both converter layouts and every tool.
 
 Playwright is deliberately not a dependency, the same way sharp is not: both
 are check-once tools, and adding a browser download to the install for

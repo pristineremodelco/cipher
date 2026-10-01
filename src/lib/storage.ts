@@ -46,7 +46,8 @@ export function defaultSettings(): Settings {
     currencyTo: 'EUR',
     convertCategory: 'length',
     convertPairs: {},
-    convertStyle: 'categories',
+    convertStyle: 'simple',
+    convertInput: 'top',
     simpleFrom: '',
     simpleTo: '',
   }
@@ -131,7 +132,8 @@ export function migrateSettings(raw: unknown): Settings {
         )
       : {}
 
-  if (merged.convertStyle !== 'simple') merged.convertStyle = 'categories'
+  if (merged.convertStyle !== 'simple' && merged.convertStyle !== 'categories') merged.convertStyle = base.convertStyle
+  if (merged.convertInput !== 'either') merged.convertInput = 'top'
   merged.editInSum = merged.editInSum !== false
   if (merged.spelling !== 'uk') merged.spelling = 'us'
   // A unit that no longer exists is no unit chosen, and two that are not the

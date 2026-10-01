@@ -585,15 +585,8 @@ function MathsTab({ settings, set }: TabProps) {
       </label>
 
       <div className="field">
-        <span>Converter</span>
+        <span>Converter layout</span>
         <div className="size-row">
-          <button
-            className="size-btn"
-            data-active={settings.convertStyle === 'categories'}
-            onClick={() => set({ convertStyle: 'categories' })}
-          >
-            By category
-          </button>
           <button
             className="size-btn"
             data-active={settings.convertStyle === 'simple'}
@@ -601,8 +594,44 @@ function MathsTab({ settings, set }: TabProps) {
           >
             Simple
           </button>
+          <button
+            className="size-btn"
+            data-active={settings.convertStyle === 'categories'}
+            onClick={() => set({ convertStyle: 'categories' })}
+          >
+            Standard
+          </button>
         </div>
-        <p className="hint">Simple picks both units by typing, as in 5 g to lb.</p>
+        <p className="hint">
+          {settings.convertStyle === 'simple'
+            ? 'Both units found by typing, as in 5 g to lb.'
+            : 'Every unit of one kind on show, by category.'}
+        </p>
+      </div>
+
+      <div className="field">
+        <span>Input row</span>
+        <div className="size-row">
+          <button
+            className="size-btn"
+            data-active={settings.convertInput === 'top'}
+            onClick={() => set({ convertInput: 'top' })}
+          >
+            Top row only
+          </button>
+          <button
+            className="size-btn"
+            data-active={settings.convertInput === 'either'}
+            onClick={() => set({ convertInput: 'either' })}
+          >
+            Either row
+          </button>
+        </div>
+        <p className="hint">
+          {settings.convertInput === 'top'
+            ? 'You type in the top row; the bottom row is the answer.'
+            : "Tap a row's number to type in that one instead."}
+        </p>
       </div>
 
       <div className="field">

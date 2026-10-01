@@ -266,6 +266,9 @@ const unitNames = async () => {
 await page.click('button:has-text("Done")').catch(() => {})
 await page.click('button[aria-label="Settings"]')
 t.is('the tabs say Math by default', await tabNames(), 'Look Keys Math')
+// Unit names are read off the standard layout's lists, so it is put on first.
+await page.click('.tab:has-text("Math")')
+await page.click('.field:has-text("Converter layout") .size-btn:text-is("Standard")')
 await page.click('.tab:has-text("Look")')
 t.ok('a palette says gray', (await page.textContent('.palette-card:has-text("Linen")')).includes('Gray-green'))
 t.ok('and units say meter', (await unitNames()).includes('Meter (m)'))

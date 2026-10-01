@@ -94,6 +94,11 @@ export type Settings = {
    * on show, or simple, two unit pickers found by typing.
    */
   convertStyle: 'categories' | 'simple'
+  /**
+   * Which row of the converter takes what is typed: always the top one, with
+   * the bottom one only ever the answer, or whichever row was last tapped.
+   */
+  convertInput: 'top' | 'either'
   /** The simple converter's two units, as "category:unit", or empty for none chosen. */
   simpleFrom: string
   simpleTo: string

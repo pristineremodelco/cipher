@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { CATEGORIES, categoryOf, convert, defaultPair, unitOf, type Category, type Unit } from '../lib/units'
 import { findUnits, fromKey, keyOf, parsePair, type Found, type Pair } from '../lib/unitsearch'
 import { formatMeasure } from '../lib/calc'
@@ -79,6 +79,32 @@ function useBuzz() {
   }
 }
 
+/**
+ * A row's number. With either row open to typing it is a button that moves the
+ * typing to its row; with only the top row taking input it is just the
+ * reading, so a tap meant for the unit beside it cannot change which number
+ * is the one being typed.
+ */
+function Reading({
+  tappable,
+  label,
+  onTap,
+  children,
+}: {
+  tappable: boolean
+  label: string
+  onTap: () => void
+  children: ReactNode
+}) {
+  return tappable ? (
+    <button className="convert-reading" aria-label={label} onClick={onTap}>
+      {children}
+    </button>
+  ) : (
+    <div className="convert-reading">{children}</div>
+  )
+}
+
 /** The number pad both layouts type with. */
 function ConvertPad({ onKey, onSwap }: { onKey: (key: string) => void; onSwap: () => void }) {
   return (
@@ -128,7 +154,9 @@ function CategoryConverter() {
 
   const [entry, setEntry] = useState('1')
   /** Which of the two rows the keypad is typing into. */
-  const [side, setSide] = useState<'from' | 'to'>('from')
+  const [typingSide, setSide] = useState<'from' | 'to'>('from')
+  // With only the top row taking input, that is where typing always is.
+  const side = settings.convertInput === 'either' ? typingSide : 'from'
   const strip = useRef<HTMLDivElement>(null)
 
   const value = Number(entry === '' || entry === '-' ? 0 : entry)
@@ -184,10 +212,10 @@ function CategoryConverter() {
     const active = which === side
     return (
       <div className="convert-row" data-active={active}>
-        <button
-          className="convert-reading"
-          aria-label={`${active ? 'Typing' : 'Result'} in ${t(unit.name)}. Tap to type in this one.`}
-          onClick={() => {
+        <Reading
+          tappable={settings.convertInput === 'either'}
+          label={`${active ? 'Typing' : 'Result'} in ${t(unit.name)}. Tap to type in this one.`}
+          onTap={() => {
             if (active) return
             buzz()
             // Typing moves to this row and starts from what it was showing, so
@@ -197,7 +225,7 @@ function CategoryConverter() {
           }}
         >
           {reading(which)}
-        </button>
+        </Reading>
         <label className="convert-unit">
           <span className="visually-hidden">{which === 'from' ? 'Convert from' : 'Convert to'}</span>
           <select value={unit.id} onChange={(e) => pickUnit(which, e.target.value)}>
@@ -286,19 +314,22 @@ function SimpleConverter() {
   const to = fromKey(settings.simpleTo)
 
   /**
-   * Always what is typed into the top row. The category layout lets either row
-   * be typed into, by tapping its number; here that was a trap. The bottom
-   * row's number sits right beside its unit button, so a tap meant for the
-   * unit could make the bottom the input, after which every new bottom unit
-   * kept the typed number and moved the top one: 1 lb turned into 0.000001 lb
-   * with nothing on screen to say why. In the simple layout the top is the
-   * input and the bottom is the answer, and that is all either of them does.
+   * What is typed, into the top row unless either row is allowed to take it.
+   * Letting either take it is a setting rather than a given because the bottom
+   * row's number sits right beside its unit button: a tap meant for the unit
+   * could make the bottom the input, after which every new bottom unit kept the
+   * typed number and moved the top one, 1 lb turning into 0.000001 lb.
    */
   const [entry, setEntry] = useState('1')
+  const [typingSide, setSide] = useState<'from' | 'to'>('from')
+  const either = settings.convertInput === 'either'
+  const side = either ? typingSide : 'from'
   const [picking, setPicking] = useState<'from' | 'to' | null>(null)
 
   const value = Number(entry === '' || entry === '-' ? 0 : entry)
-  const result = from && to ? convert(value, from.unit, to.unit) : NaN
+  const source = side === 'from' ? from : to
+  const target = side === 'from' ? to : from
+  const result = source && target ? convert(value, source.unit, target.unit) : NaN
   const show = (n: number) => (Number.isFinite(n) ? formatMeasure(n, settings.grouping) : '')
 
   function choose(which: 'from' | 'to', found: Found) {
@@ -311,14 +342,19 @@ function SimpleConverter() {
     const keeps = to && to.category.id === found.category.id && to.unit.id !== found.unit.id
     set({ simpleFrom: keyOf(found), simpleTo: keeps ? settings.simpleTo : '' })
     // A new kind of thing on top leaves nothing below that it converts to, so
-    // the list of what it does convert to opens straight away.
-    if (!keeps) setPicking('to')
+    // the list of what it does convert to opens straight away, and typing
+    // comes back to the top row, the only one with a unit left in it.
+    if (!keeps) {
+      setSide('from')
+      setPicking('to')
+    }
   }
 
   function choosePair(pair: Pair) {
     buzz()
     setPicking(null)
     set({ simpleFrom: keyOf(pair.from), simpleTo: keyOf(pair.to) })
+    setSide('from')
     if (pair.value !== undefined) setEntry(String(pair.value))
   }
 
@@ -329,17 +365,26 @@ function SimpleConverter() {
   }
 
   function reading(which: 'from' | 'to'): string {
-    if (which === 'from') return entry || '0'
+    if (which === side) return entry || '0'
     return show(result) || '—'
   }
 
   function row(which: 'from' | 'to', found: Found | undefined) {
-    const active = which === 'from'
+    const active = which === side
     return (
       <div className="convert-row" data-active={active}>
-        <div className="convert-reading" aria-live={active ? undefined : 'polite'}>
+        <Reading
+          tappable={either}
+          label={`${active ? 'Typing' : 'Result'}${found ? ` in ${t(found.unit.name)}` : ''}. Tap to type in this one.`}
+          onTap={() => {
+            if (active) return
+            buzz()
+            setEntry(Number.isFinite(result) ? asEntry(result) : '')
+            setSide(which)
+          }}
+        >
           {reading(which)}
-        </div>
+        </Reading>
         <button
           className="unit-pick"
           data-empty={!found}
@@ -394,7 +439,7 @@ function SimpleConverter() {
           // free, which is how a different kind of thing gets chosen at all.
           within={picking === 'to' && from ? from.category : undefined}
           chosen={picking === 'from' ? from : to}
-          amount={picking === 'to' && from ? { value, unit: from.unit } : undefined}
+          amount={picking === 'to' && from ? { value: side === 'from' ? value : convert(value, to?.unit ?? from.unit, from.unit), unit: from.unit } : undefined}
           show={show}
           onPick={(found) => choose(picking, found)}
           onPair={choosePair}
