@@ -167,3 +167,20 @@ test('an empty expression is neither wrong nor unfinished, it is nothing', () =>
   assert.equal(result.ok === false && result.error, '')
   assert.equal(result.ok === false && result.unfinished, undefined)
 })
+
+/**
+ * An answer is written back as input whenever it is carried on: after equals,
+ * from Ans, from the history and from memory. Whatever is written has to read
+ * back as the same number. It did not for anything JavaScript writes with an
+ * exponent, because the parser took the e for Euler's number: 1e-7 came back
+ * as −4.28 and 1e21 as 23.7.
+ */
+test('an answer carried on reads back as the same number, however large or small', () => {
+  for (const value of [1e-7, -1e-7, 1.5e-12, 0.0000012, 1e21, 9.9999999899999e22, -1.23456789e23, 6.02214076e23, 1e-100, 1e100, 1234.5, 0.1 + 0.2, -0]) {
+    const written = plainNumber(value)
+    assert.doesNotMatch(written, /e/i, `${value} was written as ${written}`)
+    const back = calculate(written, 'deg')
+    assert.ok(back.ok, `${value} did not read back`)
+    assert.equal(back.value, Number(value.toPrecision(15)), `${value} came back as ${back.value}`)
+  }
+})

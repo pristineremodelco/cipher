@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState } from 'react'
-import { CATEGORIES, categoryOf, convert, defaultPair, unitOf, type Unit } from '../lib/units'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { CATEGORIES, categoryOf, convert, defaultPair, unitOf, type Category, type Unit } from '../lib/units'
+import { findUnits, fromKey, keyOf, parsePair, type Found, type Pair } from '../lib/unitsearch'
 import { formatMeasure } from '../lib/calc'
 import { Backspace } from './Icons'
 import { useSettings } from '../store'
@@ -28,6 +29,16 @@ function typed(current: string, key: string): string {
   return current + key
 }
 
+/**
+ * A result taken up as the number being typed. Twelve figures, which is more
+ * than the readings show and few enough to drop floating point's noise, and
+ * never with an exponent: a reading of 1e-12 in the typing row is not a number
+ * anyone would type, and the next digit pressed would land on the exponent.
+ */
+function asEntry(value: number): string {
+  return Number(value.toPrecision(12)).toLocaleString('en-US', { useGrouping: false, maximumSignificantDigits: 12 })
+}
+
 function Swap() {
   return (
     <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
@@ -50,7 +61,62 @@ const PAD: string[][] = [
   ['0', '00', '.'],
 ]
 
+/** Two layouts of the same converter, chosen in settings. */
 export function Converter() {
+  const { settings } = useSettings()
+  return settings.convertStyle === 'simple' ? <SimpleConverter /> : <CategoryConverter />
+}
+
+function useBuzz() {
+  const { settings } = useSettings()
+  return () => {
+    if (!settings.haptics) return
+    try {
+      navigator.vibrate?.(8)
+    } catch {
+      /* a device with no motor, which is most of them */
+    }
+  }
+}
+
+/** The number pad both layouts type with. */
+function ConvertPad({ onKey, onSwap }: { onKey: (key: string) => void; onSwap: () => void }) {
+  return (
+    <div className="pad convert-pad">
+      {PAD.map((digits, index) => (
+        <div className="row" key={index}>
+          {digits.map((digit) => (
+            <button key={digit} className="key" data-kind="digit" onClick={() => onKey(digit)}>
+              {digit}
+            </button>
+          ))}
+          {index === 0 ? (
+            <button className="key convert-rub" data-kind="action" aria-label="Backspace" onClick={() => onKey('back')}>
+              <Backspace />
+            </button>
+          ) : null}
+          {index === 1 ? (
+            <button className="key" data-kind="action" aria-label="Clear" onClick={() => onKey('clear')}>
+              C
+            </button>
+          ) : null}
+          {index === 2 ? (
+            <button className="key" data-kind="action" aria-label="Negative" onClick={() => onKey('sign')}>
+              ±
+            </button>
+          ) : null}
+          {index === 3 ? (
+            <button className="key" data-kind="action" aria-label="Swap the two units" onClick={onSwap}>
+              <Swap />
+            </button>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function CategoryConverter() {
   const { settings, set } = useSettings()
   const category = categoryOf(settings.convertCategory)
   const saved = settings.convertPairs[category.id]
@@ -79,14 +145,7 @@ export function Converter() {
     [settings.grouping],
   )
 
-  function buzz() {
-    if (!settings.haptics) return
-    try {
-      navigator.vibrate?.(8)
-    } catch {
-      /* a device with no motor, which is most of them */
-    }
-  }
+  const buzz = useBuzz()
 
   function key(pressed: string) {
     buzz()
@@ -111,7 +170,7 @@ export function Converter() {
     set({ convertPairs: { ...settings.convertPairs, [category.id]: `${to.id}>${from.id}` } })
     // The number stays where the eye is: after a swap the row being typed into
     // is the one that was showing the answer, so the reading does not jump.
-    setEntry(Number.isFinite(result) ? String(Number(result.toPrecision(12))) : entry)
+    setEntry(Number.isFinite(result) ? asEntry(result) : entry)
   }
 
   /** What the row shows: what is being typed, or what it comes to. */
@@ -132,7 +191,7 @@ export function Converter() {
             buzz()
             // Typing moves to this row and starts from what it was showing, so
             // the conversion simply runs the other way.
-            setEntry(Number.isFinite(result) ? String(Number(result.toPrecision(12))) : '')
+            setEntry(Number.isFinite(result) ? asEntry(result) : '')
             setSide(which)
           }}
         >
@@ -196,48 +255,289 @@ export function Converter() {
                   pickUnit(side === 'from' ? 'to' : 'from', unit.id)
                 }}
               >
-                <span className="convert-other-value">{show(other)}</span>
+                <span className="convert-other-value" data-long={show(other).length > 11}>
+                  {show(other)}
+                </span>
                 <span className="convert-other-unit">{unit.symbol}</span>
               </button>
             )
           })}
       </div>
 
-      <div className="pad convert-pad">
-        {PAD.map((digits, index) => (
-          <div className="row" key={index}>
-            {digits.map((digit) => (
-              <button key={digit} className="key" data-kind="digit" onClick={() => key(digit)}>
-                {digit}
-              </button>
-            ))}
-            {index === 0 ? (
+      <ConvertPad onKey={key} onSwap={swap} />
+    </div>
+  )
+}
+
+/**
+ * The converter with the categories taken away: two units, found by typing.
+ *
+ * The top unit can be anything. Once it is chosen the bottom one can only be
+ * something it converts to, and when that is not yet decided the list it opens
+ * on shows what the number comes to in each, which answers "volts to what?"
+ * by showing rather than asking.
+ */
+function SimpleConverter() {
+  const { settings, set } = useSettings()
+  const buzz = useBuzz()
+  const from = fromKey(settings.simpleFrom)
+  const to = fromKey(settings.simpleTo)
+
+  const [entry, setEntry] = useState('1')
+  const [side, setSide] = useState<'from' | 'to'>('from')
+  const [picking, setPicking] = useState<'from' | 'to' | null>(null)
+
+  const value = Number(entry === '' || entry === '-' ? 0 : entry)
+  const source = side === 'from' ? from : to
+  const target = side === 'from' ? to : from
+  const result = source && target ? convert(value, source.unit, target.unit) : NaN
+  const show = (n: number) => (Number.isFinite(n) ? formatMeasure(n, settings.grouping) : '')
+
+  function choose(which: 'from' | 'to', found: Found) {
+    buzz()
+    setPicking(null)
+    if (which === 'to') {
+      set({ simpleTo: keyOf(found) })
+      return
+    }
+    const keeps = to && to.category.id === found.category.id && to.unit.id !== found.unit.id
+    set({ simpleFrom: keyOf(found), simpleTo: keeps ? settings.simpleTo : '' })
+    // A new kind of thing on top leaves nothing below that it converts to, so
+    // the list of what it does convert to opens straight away, and typing
+    // comes back to the top row, the only one with a unit left in it.
+    if (!keeps) {
+      setSide('from')
+      setPicking('to')
+    }
+  }
+
+  function choosePair(pair: Pair) {
+    buzz()
+    setPicking(null)
+    set({ simpleFrom: keyOf(pair.from), simpleTo: keyOf(pair.to) })
+    setSide('from')
+    if (pair.value !== undefined) setEntry(String(pair.value))
+  }
+
+  function swap() {
+    buzz()
+    set({ simpleFrom: settings.simpleTo, simpleTo: settings.simpleFrom })
+    if (Number.isFinite(result)) setEntry(asEntry(result))
+  }
+
+  function reading(which: 'from' | 'to'): string {
+    if (which === side) return entry || '0'
+    return show(result) || '—'
+  }
+
+  function row(which: 'from' | 'to', found: Found | undefined) {
+    const active = which === side
+    return (
+      <div className="convert-row" data-active={active}>
+        <button
+          className="convert-reading"
+          aria-label={`${active ? 'Typing' : 'Result'}${found ? ` in ${found.unit.name}` : ''}. Tap to type in this one.`}
+          onClick={() => {
+            if (active) return
+            buzz()
+            setEntry(Number.isFinite(result) ? asEntry(result) : '')
+            setSide(which)
+          }}
+        >
+          {reading(which)}
+        </button>
+        <button
+          className="unit-pick"
+          data-empty={!found}
+          aria-label={found ? `${which === 'from' ? 'From' : 'To'} ${found.unit.name}. Change it.` : `Choose the unit to convert ${which}`}
+          onClick={() => setPicking(which)}
+        >
+          {found ? (
+            <>
+              <strong>{found.unit.symbol}</strong>
+              <span>{found.unit.name}</span>
+            </>
+          ) : (
+            <span>Choose a unit</span>
+          )}
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="convert simple">
+      <div className="convert-pair">
+        {row('from', from)}
+        <button className="swap" aria-label="Swap the two units" title="Swap" onClick={swap} disabled={!from || !to}>
+          <Swap />
+        </button>
+        {row('to', to)}
+      </div>
+
+      {from && to ? (
+        // What one of the top unit comes to, which neither row says once a
+        // number other than one is in it.
+        <p className="simple-sentence">
+          1 {from.unit.symbol} = {show(convert(1, from.unit, to.unit))} {to.unit.symbol}
+        </p>
+      ) : (
+        <p className="simple-sentence" data-muted="true">
+          {from ? 'Now choose what to convert it to.' : 'Choose a unit, or type something like 5 g to lb.'}
+        </p>
+      )}
+
+      <ConvertPad onKey={(pressed) => { buzz(); setEntry((current) => typed(current, pressed)) }} onSwap={swap} />
+
+      {picking ? (
+        <UnitPicker
+          // A fresh picker each time, so the bottom one does not open on the
+          // search that was typed into the top one a moment before.
+          key={picking}
+          which={picking}
+          skip={picking === 'to' ? from : undefined}
+          // The bottom list keeps to what the top converts to; the top one is
+          // free, which is how a different kind of thing gets chosen at all.
+          within={picking === 'to' && from ? from.category : undefined}
+          chosen={picking === 'from' ? from : to}
+          amount={picking === 'to' && from ? { value: side === 'from' ? value : convert(value, to?.unit ?? from.unit, from.unit), unit: from.unit } : undefined}
+          show={show}
+          onPick={(found) => choose(picking, found)}
+          onPair={choosePair}
+          onClose={() => setPicking(null)}
+        />
+      ) : null}
+    </div>
+  )
+}
+
+/**
+ * A searchable list of units. Opened from the top it holds everything, by
+ * category; opened from the bottom it holds only what the top converts to,
+ * each with what the number comes to in it.
+ */
+function UnitPicker({
+  which,
+  skip,
+  within,
+  chosen,
+  amount,
+  show,
+  onPick,
+  onPair,
+  onClose,
+}: {
+  which: 'from' | 'to'
+  /** The unit on the other side, which there is no sense converting to itself. */
+  skip?: Found
+  within?: Category
+  chosen?: Found
+  amount?: { value: number; unit: Unit }
+  show: (n: number) => string
+  onPick: (found: Found) => void
+  onPair: (pair: Pair) => void
+  onClose: () => void
+}) {
+  const [query, setQuery] = useState('')
+  const field = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    field.current?.focus({ preventScroll: true })
+  }, [])
+
+  const pair = which === 'from' ? parsePair(query) : null
+  const others = (item: Found) => !skip || keyOf(item) !== keyOf(skip)
+  const found = query.trim() ? findUnits(query, within).filter(others) : null
+  const groups: Category[] = within ? [within] : CATEGORIES
+
+  function rowFor(item: Found, labelled: boolean) {
+    const isChosen = chosen && keyOf(chosen) === keyOf(item)
+    const worth = amount ? show(convert(amount.value, amount.unit, item.unit)) : ''
+    return (
+      <li key={keyOf(item)}>
+        <button className="pick-row" data-chosen={isChosen} onClick={() => onPick(item)}>
+          <span className="pick-name">
+            {item.unit.name}
+            {labelled ? <em>{item.category.name}</em> : null}
+          </span>
+          {worth ? <span className="pick-worth">{worth}</span> : null}
+          <span className="pick-symbol">{item.unit.symbol}</span>
+        </button>
+      </li>
+    )
+  }
+
+  return (
+    <div className="scrim picker-scrim" onClick={onClose}>
+      <div className="sheet picker-sheet" role="dialog" aria-label={which === 'from' ? 'Convert from' : 'Convert to'} onClick={(e) => e.stopPropagation()}>
+        <div className="picker-head">
+          <div className="picker-field">
+            <input
+              ref={field}
+              className="picker-search"
+              type="search"
+              enterKeyHint="go"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
+              placeholder={within ? `Search ${within.name.toLowerCase()}` : 'Search, or 5 g to lb'}
+              aria-label="Search units"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key !== 'Enter') return
+                e.preventDefault()
+                if (pair) onPair(pair)
+                else if (found?.[0]) onPick(found[0])
+              }}
+            />
+            {query ? (
               <button
-                className="key convert-rub"
-                data-kind="action"
-                aria-label="Backspace"
-                onClick={() => key('back')}
+                className="picker-clear"
+                aria-label="Clear the search"
+                onClick={() => {
+                  setQuery('')
+                  field.current?.focus()
+                }}
               >
-                <Backspace />
-              </button>
-            ) : null}
-            {index === 1 ? (
-              <button className="key" data-kind="action" aria-label="Clear" onClick={() => key('clear')}>
-                C
-              </button>
-            ) : null}
-            {index === 2 ? (
-              <button className="key" data-kind="action" aria-label="Negative" onClick={() => key('sign')}>
-                ±
-              </button>
-            ) : null}
-            {index === 3 ? (
-              <button className="key" data-kind="action" aria-label="Swap the two units" onClick={swap}>
-                <Swap />
+                ×
               </button>
             ) : null}
           </div>
-        ))}
+          <button className="ghost" onClick={onClose}>
+            Cancel
+          </button>
+        </div>
+        <div className="sheet-body picker-body">
+          {pair ? (
+            <button className="pick-pair" onClick={() => onPair(pair)}>
+              <strong>
+                {pair.value !== undefined ? `${pair.value} ` : ''}
+                {pair.from.unit.symbol} → {pair.to.unit.symbol}
+              </strong>
+              <span>
+                {pair.from.unit.name} to {pair.to.unit.name}
+              </span>
+            </button>
+          ) : null}
+          {found ? (
+            found.length ? (
+              <ul className="pick-list">{found.map((item) => rowFor(item, !within))}</ul>
+            ) : pair ? null : (
+              <p className="hint">Nothing by that name{within ? ` in ${within.name.toLowerCase()}` : ''}.</p>
+            )
+          ) : (
+            groups.map((category) => (
+              <section key={category.id} className="pick-group">
+                {within ? null : <h3>{category.name}</h3>}
+                <ul className="pick-list">
+                  {category.units.map((unit) => ({ category, unit })).filter(others).map((item) => rowFor(item, false))}
+                </ul>
+              </section>
+            ))
+          )}
+        </div>
       </div>
     </div>
   )

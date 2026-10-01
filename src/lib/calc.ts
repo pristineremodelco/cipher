@@ -498,5 +498,13 @@ export function formatMeasure(value: number, grouping: boolean): string {
 /** What the history list and the clipboard get: no grouping, full precision. */
 export function plainNumber(value: number): string {
   if (!Number.isFinite(value)) return Number.isNaN(value) ? 'Undefined' : '∞'
-  return String(settle(value))
+  const settled = settle(value)
+  const text = String(settled)
+  if (!/e/i.test(text)) return text
+  // JavaScript writes anything from 1e21 up, and anything under a millionth,
+  // with an exponent, and the parser reads that e as Euler's number: an
+  // answer of 1e-7 carried on came back as 1 × e − 7, which is −4.28. So an
+  // answer is always written back out in full. The keypad itself can never
+  // produce a digit beside an e, because it puts a times sign between them.
+  return settled.toLocaleString('en-US', { useGrouping: false, maximumSignificantDigits: 15 })
 }

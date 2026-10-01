@@ -31,7 +31,7 @@ export const PALETTES: Palette[] = [
   { id: 'carbon', name: 'Carbon', hint: 'True black, for OLED', scheme: 'dark', swatch: ['#000000', '#161616', '#F4F4F4', '#FF8A3D'] },
   { id: 'midnight', name: 'Midnight', hint: 'Blue black', scheme: 'dark', swatch: ['#0B1020', '#1A2440', '#E7ECFA', '#5AC8FA'] },
   { id: 'moss', name: 'Moss', hint: 'Deep green', scheme: 'dark', swatch: ['#0E1512', '#1E2B24', '#E6F0E9', '#7FBF6A'] },
-  { id: 'plum', name: 'Plum', hint: 'Late harvest', scheme: 'dark', swatch: ['#16101F', '#29203D', '#F0E9F8', '#C77DFF'] },
+  { id: 'plum', name: 'Plum', hint: 'Late harvest', scheme: 'dark', swatch: ['#16101F', '#29203D', '#F0E9F8', '#F5A8F0'] },
 ]
 
 export const PALETTE_IDS = PALETTES.map((palette) => palette.id)
@@ -82,12 +82,105 @@ function hex(rgb: [number, number, number]): string {
   return `#${rgb.map((c) => Math.round(Math.max(0, Math.min(255, c))).toString(16).padStart(2, '0')).join('')}`
 }
 
-/** `amount` of `a` over `b`, straight down the middle of each channel. */
-function mix(a: string, b: string, amount: number): string {
+/** `amount` of `a` over `b`, straight down the middle of each channel, as CSS color-mix in srgb does. */
+export function mix(a: string, b: string, amount: number): string {
   const [ar, ag, ab] = channels(a)
   const [br, bg, bb] = channels(b)
   const t = Math.max(0, Math.min(1, amount))
   return hex([ar * t + br * (1 - t), ag * t + bg * (1 - t), ab * t + bb * (1 - t)])
+}
+
+/** The contrast ratio between two colours, 1 to 21, as WCAG defines it. */
+export function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+type Lch = [number, number, number]
+
+const toLinear = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
+const fromLinear = (c: number) => (c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055)
+
+function toOklch(colour: string): Lch {
+  const [r, g, b] = channels(colour).map((c) => toLinear(c / 255))
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
+  const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
+  const L = 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s
+  const A = 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s
+  const B = 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s
+  return [L, Math.hypot(A, B), Math.atan2(B, A)]
+}
+
+/** Back to sRGB, or null when that lightness and chroma are off the screen. */
+function fromOklch([L, C, h]: Lch): [number, number, number] | null {
+  const A = C * Math.cos(h)
+  const B = C * Math.sin(h)
+  const l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3
+  const m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3
+  const s = (L - 0.0894841775 * A - 1.291485548 * B) ** 3
+  const rgb = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ]
+  if (rgb.some((c) => c < -0.0005 || c > 1.0005)) return null
+  return rgb.map((c) => fromLinear(Math.max(0, Math.min(1, c))) * 255) as [number, number, number]
+}
+
+/**
+ * The accent, moved just far enough in lightness to be read as text on every
+ * surface it sits on, and left exactly as it was if it already can be.
+ *
+ * One colour does two jobs in a palette: it fills the equals key, and it draws
+ * the operators. A fill only has to be seen; a glyph has to be read, which
+ * asks far more of it. Espresso's rust was a fine fill and a 3:1 operator, and
+ * Plum's violet all but vanished on its own violet keys. So the glyph colour is
+ * derived from the fill rather than being it.
+ *
+ * Lightness moves in OKLCH so the hue holds. Going lighter at a fixed hue runs
+ * off the edge of what a screen can show, and plain RGB mixing toward white
+ * bleaches a colour long before it needs to, so chroma is only given up where
+ * the screen cannot show the colour otherwise.
+ */
+/**
+ * How far an operator has to stand off its key. Above the 4.5 that WCAG asks
+ * of body text on purpose: that is where text stops being illegible, not where
+ * a key glanced at mid-sum reads at once. Plum's old violet sat at 5.7 and on
+ * a phone it all but vanished, which is the measurement this number answers.
+ */
+export const INK_CONTRAST = 5.5
+
+export function readableInk(accent: string, surfaces: string[], target = INK_CONTRAST): string {
+  const start = parseHex(accent)
+  if (!start || !surfaces.length) return accent
+  const score = (colour: string) => Math.min(...surfaces.map((surface) => contrast(colour, surface)))
+  if (score(start) >= target) return start
+
+  // Lighter on dark surfaces, darker on light ones.
+  const brightest = Math.max(...surfaces.map(luminance))
+  const step = brightest < 0.4 ? 0.005 : -0.005
+  const [L0, C0, h] = toOklch(start)
+  for (let L = L0 + step; L > 0 && L < 1; L += step) {
+    // The most of the original chroma this lightness can carry on a screen.
+    let lo = 0
+    let hi = C0
+    let best: [number, number, number] | null = fromOklch([L, 0, h])
+    for (let i = 0; i < 18; i += 1) {
+      const mid = (lo + hi) / 2
+      const rgb = fromOklch([L, mid, h])
+      if (rgb) {
+        best = rgb
+        lo = mid
+      } else {
+        hi = mid
+      }
+    }
+    if (!best) continue
+    const candidate = hex(best)
+    if (score(candidate) >= target) return candidate
+  }
+  return step > 0 ? '#ffffff' : '#000000'
 }
 
 /**
@@ -108,6 +201,7 @@ export function derivePalette(custom: CustomPalette): Record<string, string> {
     '--muted': mix(text, custom.key, 0.58),
     '--line': mix(text, custom.key, 0.16),
     '--accent': custom.accent,
+    '--accent-ink': readableInk(custom.accent, [custom.key, mix(custom.key, custom.ground, 0.55), custom.ground]),
     '--on-accent': contrastText(custom.accent) === '#111' ? '#111111' : '#ffffff',
     '--danger': light ? '#b3261e' : '#ff6b6b',
   }
@@ -125,11 +219,6 @@ export function asPalette(custom: CustomPalette): Palette {
   }
 }
 
-/**
- * Every stack is one the system already has. A calculator that waits on a
- * webfont before it can draw a 7 has got its priorities wrong, and this one is
- * meant to work with the network off.
- */
 /**
  * Every one but System is a file this app carries, so the choice lands the
  * same on every device. Asking for whatever the device happened to own meant

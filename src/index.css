@@ -34,7 +34,7 @@
    apart was the accent. Now the ground, the key and the type all differ. */
 [data-palette='linen'] {
   --bg: #d2dad6; --panel: #e2e8e5; --key: #e9efec;
-  --text: #172220; --muted: #55635e; --line: #bcc7c2;
+  --text: #172220; --muted: #505e59; --line: #bcc7c2;
   --accent: #356b60; --on-accent: #ffffff; --danger: #a83a2c;
 }
 
@@ -53,7 +53,7 @@
 [data-palette='espresso'] {
   --bg: #191309; --panel: #241c13; --key: #2e241a;
   --text: #efe6d0; --muted: #a2937a; --line: #3a2e20;
-  --accent: #b4502f; --on-accent: #fff3e6; --danger: #c4553f;
+  --accent: #b4502f; --on-accent: #fff3e6; --danger: #e0705a;
 }
 [data-palette='graphite'] {
   --bg: #131416; --panel: #1b1d20; --key: #24272b;
@@ -75,10 +75,19 @@
   --text: #e6f0e9; --muted: #93a89a; --line: #27362d;
   --accent: #7fbf6a; --on-accent: #0b1710; --danger: #e2725b;
 }
+/* Plum's keys are violet, so a violet accent has no colour difference to fall
+   back on and lightness is the whole of what separates an operator from its
+   key. The first accent, #c77dff, measured 5.7:1 and still all but vanished
+   on a phone, most likely at night: dark palettes are worn after dark, which
+   is when a phone's blue-light filter runs, and violet on violet is made of
+   exactly the blue it takes away. This one is lighter by a long way and leans
+   toward orchid, putting red where the filter cannot reach and a quarter turn
+   of hue between it and the keys. 8.6:1, and 7.1:1 under a strong filter
+   where the old one fell to 4.5. */
 [data-palette='plum'] {
   --bg: #16101f; --panel: #1f1730; --key: #29203d;
   --text: #f0e9f8; --muted: #a897be; --line: #362b4d;
-  --accent: #c77dff; --on-accent: #180f24; --danger: #ff6b9d;
+  --accent: #f5a8f0; --on-accent: #180f24; --danger: #ff6b9d;
 }
 
 /* ============================================================
@@ -100,6 +109,9 @@
   --fast: 120ms;
   --base: 220ms;
   --ring: color-mix(in srgb, var(--accent) 55%, transparent);
+  /* The accent as a glyph rather than a fill. Worked out in the store so it is
+     always readable on the keys; this is only what shows before that runs. */
+  --accent-ink: var(--accent);
   font-family: var(--font-stack, ui-sans-serif, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
   font-synthesis-weight: none;
@@ -117,6 +129,11 @@
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
+/* Two taps on the same key in quick succession are 77, not a request to zoom.
+   Safari on an iPhone reads a fast double tap as zoom unless told otherwise,
+   which on a calculator means the whole pad lurches in mid-sum. Pinching to
+   zoom still works; only the double tap is taken back. */
+html { touch-action: manipulation; }
 body {
   margin: 0;
   background: var(--bg);
@@ -126,6 +143,8 @@ body {
      was meant, and on a phone it puts a magnifier over the number. */
   -webkit-user-select: none;
   user-select: none;
+  /* And no callout on a long press, which holding the rub-out to clear is. */
+  -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
@@ -270,9 +289,10 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 .chip[aria-pressed='true'] {
   background: color-mix(in srgb, var(--accent) 16%, var(--panel));
   border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .chip:disabled { opacity: 0.42; cursor: not-allowed; }
+.chip[data-placeholder='true'] { visibility: hidden; }
 
 .work {
   flex: 1;
@@ -295,42 +315,62 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   flex-direction: column;
   min-height: calc(150px * var(--display-scale));
 }
+/* Exactly two lines, always. The box used to grow with the sum, so a long one
+   pushed the display down and shrank every key under the thumb mid-typing.
+   Now it holds its size, sits the working against the answer, and scrolls
+   within itself once a sum needs more than two lines. */
 .expression {
-  flex: 1;
-  min-height: 24px;
+  flex: none;
+  height: 3em;
+  display: flex;
+  flex-direction: column;
   text-align: right;
   font-size: calc(19px * var(--tx) * var(--display-scale));
   line-height: 1.5;
   letter-spacing: -0.01em;
-  word-break: break-all;
+  /* Lines break between terms, at the operators, and only split a number
+     when one number alone is wider than the display. */
+  overflow-wrap: anywhere;
   overflow-y: auto;
+  overscroll-behavior: contain;
   font-variant-numeric: tabular-nums;
   /* The one place text is worth selecting: a long expression someone wants to
      paste somewhere else. */
   -webkit-user-select: text;
   user-select: text;
+  -webkit-touch-callout: default;
 }
-.expression span[data-kind='operator'] { color: var(--accent); padding: 0 3px; }
+/* An auto margin rather than flex-end: it sits a short sum at the bottom and
+   still lets a long one scroll all the way back to its start. */
+.expression-text { margin-top: auto; }
+.expression span[data-kind='operator'] { color: var(--accent-ink); padding: 0 3px; }
 .expression span[data-kind='paren'],
 .expression span[data-kind='function'],
 .expression span[data-kind='constant'],
-.expression span[data-kind='postfix'] { color: var(--accent); }
-/* The working, still on show above the answer it produced. Set back from the
-   text colour so the answer below is plainly the result and not a repeat. */
-.expression span[data-kind='worked'] { color: var(--muted); }
+.expression span[data-kind='postfix'] { color: var(--accent-ink); }
+/* The working, still on show above the answer it produced, drawn the same way
+   it was typed. The numbers are set back from the text colour so the answer
+   below is plainly the result and not a repeat. */
+.expression[data-settled='true'] span[data-kind='digit'] { color: var(--muted); }
 
 .answer {
   border: 0;
   background: none;
   padding: 4px 0 0;
   text-align: right;
-  font-size: calc(34px * var(--tx) * var(--display-scale));
+  /* --fit is set from the script, smaller only as far as a long answer needs
+     to stay on one line at the width it actually has. */
+  --answer-size: 34px;
+  font-size: calc(var(--answer-size) * var(--tx) * var(--display-scale) * var(--fit, 1));
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.15;
   color: var(--muted);
-  min-height: calc(40px * var(--display-scale));
-  word-break: break-all;
+  /* One line of the full size plus the padding, whether the answer is empty,
+     short or shrunk to fit, so the display never changes height under it. */
+  min-height: calc(var(--answer-size) * var(--tx) * var(--display-scale) * 1.15 + 4px);
+  white-space: nowrap;
+  overflow: hidden;
   font-variant-numeric: tabular-nums;
 }
 /* Once equals has been pressed the answer is the thing on the display, so it
@@ -355,7 +395,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 .util {
   border: 0;
   background: none;
-  color: var(--accent);
+  color: var(--accent-ink);
   font-size: calc(20px * var(--tx));
   font-weight: 800;
   line-height: 1;
@@ -370,7 +410,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   padding: 8px 10px;
   color: var(--muted);
 }
-.util.angle[aria-pressed='true'] { color: var(--accent); }
+.util.angle[aria-pressed='true'] { color: var(--accent-ink); }
 .rub {
   background: var(--accent);
   color: var(--on-accent);
@@ -399,7 +439,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.memory-value[data-on='true'] { color: var(--accent); }
+.memory-value[data-on='true'] { color: var(--accent-ink); }
 
 /* ============================================================
    Keypad
@@ -454,7 +494,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 }
 .key[data-span='two'] { grid-column: span 2; }
 .key[data-kind='operator'],
-.key[data-kind='action'] { color: var(--accent); font-weight: 800; }
+.key[data-kind='action'] { color: var(--accent-ink); font-weight: 800; }
 .key:hover:not(:disabled) { filter: brightness(1.06); }
 .key:active:not(:disabled) { transform: scale(0.96); }
 .key:disabled { opacity: 0.42; cursor: not-allowed; }
@@ -550,6 +590,12 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   font-size: calc(14px * var(--tx));
   font-weight: 700;
 }
+/* Armed and waiting for a second tap: drawn in the danger colour so the change
+   of wording is not the only thing saying the next tap means it. */
+.ghost[data-armed='true'] {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 55%, var(--line));
+}
 .ghost:hover:not(:disabled) { border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
 .ghost:disabled { opacity: 0.42; cursor: not-allowed; }
 
@@ -558,8 +604,12 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
   overflow-y: auto;
+  /* Room for the last row's shadow, which the scroller would otherwise clip. */
+  padding-bottom: 4px;
 }
-.sci-sheet .key { min-height: 50px; font-size: calc(17px * var(--tx)); }
+/* Sized so all twenty-seven fit on an ordinary phone without scrolling: at 50
+   the last row sat half under the cancel button on a 393 by 852 screen. */
+.sci-sheet .key { min-height: 46px; font-size: calc(17px * var(--tx)); }
 
 .tape-list { list-style: none; margin: 0; padding: 0; }
 .tape-list li {
@@ -589,7 +639,8 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.tape-expr:hover, .tape-value:hover { color: var(--accent); }
+.tape-expr:hover, .tape-value:hover { color: var(--accent-ink); }
+.tape-expr span[data-kind='operator'] { padding: 0 2px; }
 .tape-sheet .sheet-body, .tape-sheet ul { min-height: 0; }
 .tape-sheet { min-height: 40dvh; }
 
@@ -781,7 +832,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
    display gives way first: the keys are the part a thumb has to hit. */
 @media (max-height: 620px) {
   .display { min-height: calc(104px * var(--display-scale)); }
-  .answer { font-size: calc(26px * var(--tx) * var(--display-scale)); }
+  .answer { --answer-size: 26px; }
   .brand h1 { display: none; }
 }
 
@@ -882,7 +933,8 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   font-variant-numeric: tabular-nums;
 }
 .convert-row[data-active='false'] .convert-reading { color: var(--muted); }
-.convert-unit { position: relative; display: grid; place-items: center; flex: none; }
+/* A row, so the caret sits beside the pill rather than dropping under it. */
+.convert-unit { position: relative; display: flex; align-items: center; flex: none; }
 .convert-unit select {
   position: absolute;
   inset: 0;
@@ -899,7 +951,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   font-style: normal;
   font-weight: 800;
   font-size: calc(14px * var(--tx));
-  color: var(--accent);
+  color: var(--accent-ink);
   background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-radius: 999px;
   padding: 7px 13px;
@@ -927,7 +979,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   place-items: center;
   border: 1px solid var(--line);
   background: var(--key);
-  color: var(--accent);
+  color: var(--accent-ink);
   border-radius: 999px;
   box-shadow: var(--lift);
   transition: transform var(--base) var(--ease);
@@ -959,16 +1011,18 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 }
 .convert-other[data-active='true'] { border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
 .convert-other:hover { background: color-mix(in srgb, var(--accent) 8%, var(--panel)); }
+/* Never cut short with an ellipsis: 0.000164578… is not the number, it is a
+   different and wrong one. A long reading steps down a size instead, and if
+   it still will not fit it wraps, which is untidy but true. */
 .convert-other-value {
   flex: 1;
   min-width: 0;
   font-weight: 700;
   font-size: calc(14.5px * var(--tx));
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   font-variant-numeric: tabular-nums;
 }
+.convert-other-value[data-long='true'] { font-size: calc(12.5px * var(--tx)); letter-spacing: -0.01em; }
 .convert-other-unit { color: var(--muted); font-size: calc(12.5px * var(--tx)); font-weight: 700; }
 
 /* A share of what is left rather than a fixed height, so the keys grow with
@@ -1030,10 +1084,13 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   padding: 12px;
   margin-bottom: 10px;
 }
-.colour-label { display: grid; gap: 1px; min-width: 0; }
+/* The label gives way before the controls do, so all three rows keep their
+   controls on one line; one description a few letters longer than the others
+   used to push its controls down on their own. */
+.colour-label { display: grid; gap: 1px; min-width: 0; flex: 1 1 110px; }
 .colour-label strong { font-size: calc(14px * var(--tx)); }
 .colour-label span { color: var(--muted); font-size: calc(12px * var(--tx)); }
-.colour-controls { display: flex; align-items: center; gap: 8px; }
+.colour-controls { flex: none; display: flex; align-items: center; gap: 8px; }
 .colour-controls input[type='color'] {
   width: 46px;
   height: 40px;
@@ -1155,9 +1212,12 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   .app { gap: 6px; padding-top: 4px; }
   .bar { padding: 0 2px; }
   .display { min-height: 78px; padding: 8px 12px 4px; }
-  .expression { min-height: 18px; font-size: calc(15px * var(--tx) * var(--display-scale)); }
+  .expression { font-size: calc(15px * var(--tx) * var(--display-scale)); }
   /* Still a tappable thing, even squeezed: the whole width is the copy button. */
-  .answer { font-size: calc(22px * var(--tx) * var(--display-scale)); min-height: 32px; }
+  .answer {
+    --answer-size: 22px;
+    min-height: max(32px, calc(var(--answer-size) * var(--tx) * var(--display-scale) * 1.15 + 4px));
+  }
   .utility { margin-top: 2px; }
   .util { min-height: 32px; padding: 4px 10px; }
   .key { min-height: 32px; font-size: calc(17px * var(--tx)); }
@@ -1224,7 +1284,9 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   border-radius: 14px;
   padding: 13px 14px;
   min-height: 62px;
-  align-content: center;
+  /* From the top, so two cards side by side keep their names on one line
+     when one of them has a longer description underneath. */
+  align-content: start;
   transition: border-color var(--fast) var(--ease), background-color var(--fast) var(--ease), transform var(--fast) var(--ease);
 }
 .card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
@@ -1239,7 +1301,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 }
 .card-hint { color: var(--muted); font-size: calc(12px * var(--tx)); }
 .card[data-offline='true'] .card-hint { color: var(--danger); }
-.card-signal { display: inline-grid; color: var(--accent); }
+.card-signal { display: inline-grid; color: var(--accent-ink); }
 .card-signal[data-on='false'] { color: var(--danger); }
 
 .tool-head {
@@ -1255,7 +1317,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   letter-spacing: -0.03em;
 }
 .tool-title span { color: var(--muted); font-size: calc(12.5px * var(--tx)); }
-.needs-signal { display: grid; place-items: center; color: var(--accent); }
+.needs-signal { display: grid; place-items: center; color: var(--accent-ink); }
 .needs-signal[data-on='false'] { color: var(--danger); }
 .tool-body { flex: 1; min-height: 0; }
 
@@ -1385,7 +1447,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 .readout-row[data-lead='true'] { padding: 12px 0; }
 .readout-row[data-lead='true'] .readout-value {
   font-size: calc(24px * var(--tx));
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .readout-note {
   flex: none;
@@ -1424,7 +1486,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   background: var(--panel);
   border-radius: 13px;
   padding: 9px 12px;
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .rates-bar[data-state='stale'], .rates-bar[data-state='nothing'] { color: var(--danger); }
 .rates-when { flex: 1; min-width: 0; color: var(--muted); font-size: calc(12.5px * var(--tx)); font-weight: 700; }
@@ -1486,4 +1548,149 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   font-weight: 700;
   color: var(--muted);
   background: transparent;
+}
+
+/* iOS Safari zooms the whole page in when a field under 16px takes focus, and
+   leaves it zoomed after the keyboard goes, so the app is suddenly a website
+   being pinched at. Only Safari on iOS does this, and only Safari on iOS
+   answers to -webkit-touch-callout, so everywhere else keeps the sizes the
+   layout was drawn at. */
+@supports (-webkit-touch-callout: none) {
+  .text-input,
+  .field select { font-size: max(16px, calc(15px * var(--tx))); }
+  .tool-input input,
+  .tool-input select { font-size: max(16px, calc(16px * var(--tx))); }
+  .hex,
+  .convert-unit select { font-size: 16px; }
+}
+
+/* ============================================================
+   Simple conversions
+   ============================================================ */
+.unit-pick {
+  flex: none;
+  max-width: 58%;
+  display: grid;
+  justify-items: end;
+  gap: 1px;
+  border: 0;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 7px 12px;
+  text-align: right;
+}
+.unit-pick strong { color: var(--accent-ink); font-size: calc(15px * var(--tx)); font-weight: 800; }
+.unit-pick span {
+  color: var(--muted);
+  font-size: calc(11.5px * var(--tx));
+  font-weight: 700;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.unit-pick[data-empty='true'] { background: transparent; border: 1px dashed var(--line); }
+.unit-pick[data-empty='true'] span { color: var(--accent-ink); font-size: calc(13px * var(--tx)); }
+.simple-sentence {
+  margin: 2px 4px 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: calc(13px * var(--tx));
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+/* Space between the pair and the pad, so the pad stays under the thumb. */
+.convert.simple .convert-pad { margin-top: auto; }
+
+/* The picker hangs from the top rather than rising from the bottom: it opens
+   with the keyboard up, and a sheet at the bottom would be under it. */
+.picker-scrim { place-items: start center; }
+.picker-sheet {
+  height: 100%;
+  max-height: 100dvh;
+  border-radius: 0 0 var(--radius) var(--radius);
+  border-bottom: 1px solid var(--line);
+  border-top: 0;
+  padding: max(12px, env(safe-area-inset-top)) 14px 12px;
+}
+@media (min-width: 760px) {
+  .picker-scrim { place-items: center; }
+  .picker-sheet { height: min(680px, 88dvh); border-radius: var(--radius); border-top: 1px solid var(--line); }
+}
+.picker-head { flex: none; display: flex; gap: 8px; align-items: center; }
+.picker-search {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-size: max(16px, calc(16px * var(--tx)));
+  font-weight: 600;
+}
+.picker-search:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--ring); }
+.picker-body { display: grid; align-content: start; gap: 10px; }
+.pick-group h3 {
+  margin: 6px 4px 4px;
+  font-size: calc(11.5px * var(--tx));
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.pick-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.pick-row,
+.pick-pair {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  border: 1px solid transparent;
+  background: none;
+  border-radius: 10px;
+  padding: 11px 10px;
+  text-align: left;
+}
+.pick-row:hover,
+.pick-pair:hover { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.pick-row[data-chosen='true'] { border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.pick-name { flex: 1; min-width: 0; font-weight: 700; font-size: calc(15px * var(--tx)); }
+.pick-name em,
+.pick-pair em {
+  font-style: normal;
+  margin-left: 8px;
+  color: var(--muted);
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+}
+.pick-worth { font-weight: 800; font-variant-numeric: tabular-nums; font-size: calc(14px * var(--tx)); overflow-wrap: anywhere; }
+.pick-symbol { flex: none; min-width: 44px; text-align: right; color: var(--accent-ink); font-weight: 800; font-size: calc(13.5px * var(--tx)); }
+.pick-pair {
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+  font-weight: 800;
+  font-size: calc(15px * var(--tx));
+}
+.pick-pair { flex-direction: column; align-items: stretch; gap: 2px; }
+.pick-pair span { color: var(--muted); font-size: calc(12.5px * var(--tx)); font-weight: 700; }
+/* The browser's own clear button is drawn in its own blue, whatever the palette. */
+.picker-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; }
+.picker-field { position: relative; flex: 1; min-width: 0; display: flex; }
+.picker-search { padding-right: 44px; }
+.picker-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 10%, transparent);
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
 }

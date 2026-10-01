@@ -1,6 +1,7 @@
 import { FONT_IDS, MAX_CUSTOM_PALETTES, PALETTE_IDS, TEXT_SIZES, parseHex } from './theme'
 import { CATEGORIES, categoryOf } from './units'
 import { TOOLS } from './tools'
+import { fromKey } from './unitsearch'
 import { isValidZone } from './zones'
 import type { CustomPalette, Settings } from '../types'
 
@@ -43,6 +44,9 @@ export function defaultSettings(): Settings {
     currencyTo: 'EUR',
     convertCategory: 'length',
     convertPairs: {},
+    convertStyle: 'categories',
+    simpleFrom: '',
+    simpleTo: '',
   }
 }
 
@@ -124,6 +128,14 @@ export function migrateSettings(raw: unknown): Settings {
           }),
         )
       : {}
+
+  if (merged.convertStyle !== 'simple') merged.convertStyle = 'categories'
+  // A unit that no longer exists is no unit chosen, and two that are not the
+  // same kind of thing cannot both stand.
+  const simpleFrom = typeof merged.simpleFrom === 'string' ? fromKey(merged.simpleFrom) : undefined
+  const simpleTo = typeof merged.simpleTo === 'string' ? fromKey(merged.simpleTo) : undefined
+  merged.simpleFrom = simpleFrom ? merged.simpleFrom : ''
+  merged.simpleTo = simpleTo && (!simpleFrom || simpleFrom.category.id === simpleTo.category.id) ? merged.simpleTo : ''
 
   return merged
 }

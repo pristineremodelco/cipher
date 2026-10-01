@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url'
 import { BASE, playwright } from './harness.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const SUITES = ['keys.mjs', 'behaviour.mjs', 'looks.mjs', 'settings.mjs', 'tools.mjs', 'layout.mjs']
+const SUITES = ['keys.mjs', 'behaviour.mjs', 'looks.mjs', 'settings.mjs', 'simple.mjs', 'tools.mjs', 'layout.mjs']
 
 await playwright()
 

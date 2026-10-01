@@ -85,4 +85,12 @@ export type Settings = {
    * first two units in the list happen to be.
    */
   convertPairs: Record<string, string>
+  /**
+   * How the converter is laid out: by category, with every unit of one kind
+   * on show, or simple, two unit pickers found by typing.
+   */
+  convertStyle: 'categories' | 'simple'
+  /** The simple converter's two units, as "category:unit", or empty for none chosen. */
+  simpleFrom: string
+  simpleTo: string
 }

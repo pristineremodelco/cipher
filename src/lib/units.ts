@@ -188,6 +188,20 @@ export const CATEGORIES: Category[] = [
     ],
   },
   {
+    id: 'force',
+    name: 'Force',
+    units: [
+      { id: 'n', name: 'Newton', symbol: 'N', factor: 1 },
+      { id: 'kn', name: 'Kilonewton', symbol: 'kN', factor: 1000 },
+      // A pound of force is a pound of mass under standard gravity, by
+      // definition, and the same for the kilogram and the ounce.
+      { id: 'lbf', name: 'Pound force', symbol: 'lbf', factor: POUND * GRAVITY },
+      { id: 'ozf', name: 'Ounce force', symbol: 'ozf', factor: (POUND / 16) * GRAVITY },
+      { id: 'kgf', name: 'Kilogram force', symbol: 'kgf', factor: GRAVITY },
+      { id: 'dyn', name: 'Dyne', symbol: 'dyn', factor: 1e-5 },
+    ],
+  },
+  {
     id: 'energy',
     name: 'Energy',
     units: [
@@ -214,6 +228,50 @@ export const CATEGORIES: Category[] = [
       // Mechanical horsepower: five hundred and fifty foot pounds a second.
       { id: 'hp', name: 'Horsepower', symbol: 'hp', factor: 550 * FOOT_POUND },
       { id: 'btuh', name: 'BTU per hour', symbol: 'BTU/h', factor: 1055.05585262 / 3600 },
+    ],
+  },
+  // Electrical quantities are each their own category, because a volt does
+  // not become an amp by conversion; it takes a circuit to say how many.
+  {
+    id: 'voltage',
+    name: 'Voltage',
+    units: [
+      { id: 'v', name: 'Volt', symbol: 'V', factor: 1 },
+      { id: 'mv', name: 'Millivolt', symbol: 'mV', factor: 1e-3 },
+      { id: 'uv', name: 'Microvolt', symbol: 'µV', factor: 1e-6 },
+      { id: 'kv', name: 'Kilovolt', symbol: 'kV', factor: 1e3 },
+      { id: 'megav', name: 'Megavolt', symbol: 'MV', factor: 1e6 },
+    ],
+  },
+  {
+    id: 'current',
+    name: 'Current',
+    units: [
+      { id: 'a', name: 'Ampere', symbol: 'A', factor: 1 },
+      { id: 'ma', name: 'Milliampere', symbol: 'mA', factor: 1e-3 },
+      { id: 'ua', name: 'Microampere', symbol: 'µA', factor: 1e-6 },
+      { id: 'ka', name: 'Kiloampere', symbol: 'kA', factor: 1e3 },
+    ],
+  },
+  {
+    id: 'resistance',
+    name: 'Resistance',
+    units: [
+      { id: 'ohm', name: 'Ohm', symbol: 'Ω', factor: 1 },
+      { id: 'milliohm', name: 'Milliohm', symbol: 'mΩ', factor: 1e-3 },
+      { id: 'kohm', name: 'Kilohm', symbol: 'kΩ', factor: 1e3 },
+      { id: 'megohm', name: 'Megohm', symbol: 'MΩ', factor: 1e6 },
+    ],
+  },
+  {
+    id: 'frequency',
+    name: 'Frequency',
+    units: [
+      { id: 'hz', name: 'Hertz', symbol: 'Hz', factor: 1 },
+      { id: 'khz', name: 'Kilohertz', symbol: 'kHz', factor: 1e3 },
+      { id: 'mhz', name: 'Megahertz', symbol: 'MHz', factor: 1e6 },
+      { id: 'ghz', name: 'Gigahertz', symbol: 'GHz', factor: 1e9 },
+      { id: 'rpm', name: 'Revolutions per minute', symbol: 'rpm', factor: 1 / 60 },
     ],
   },
   {

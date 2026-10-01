@@ -82,6 +82,9 @@ const t = tally('looks')
 
   await page.click('button:has-text("Put everything back")')
   await page.waitForTimeout(200)
+  r.is('one tap only asks', await page.getAttribute('html', 'data-keyshape'), 'circle')
+  await page.click('button:has-text("Put every setting back?")')
+  await page.waitForTimeout(200)
   r.is('the setting goes back', await page.getAttribute('html', 'data-keyshape'), 'soft')
   r.is(
     'the palette made here does not',

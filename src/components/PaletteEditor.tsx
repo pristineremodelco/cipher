@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { contrastText, derivePalette, luminance, parseHex } from '../lib/theme'
 import type { CustomPalette } from '../types'
 
@@ -119,9 +119,16 @@ export function PaletteEditor({
 }) {
   const derived = derivePalette(draft)
   const scheme = luminance(draft.ground) > 0.45 ? 'light' : 'dark'
+  const root = useRef<HTMLDivElement>(null)
+
+  // The list it was opened from may have been scrolled well down; the editor
+  // starts at its own top, where the name is.
+  useEffect(() => {
+    root.current?.closest('.sheet-body')?.scrollTo({ top: 0 })
+  }, [])
 
   return (
-    <div className="palette-editor">
+    <div className="palette-editor" ref={root}>
       {/* The tab's own contents are replaced while this is open, so it says
           what it is: without a heading the panel simply looks different. */}
       <div className="editor-head">
@@ -167,7 +174,7 @@ export function PaletteEditor({
       >
         <div className="palette-proof-keys">
           <span style={{ background: derived['--key'], color: derived['--text'] }}>7</span>
-          <span style={{ background: derived['--key'], color: derived['--accent'] }}>×</span>
+          <span style={{ background: derived['--key'], color: derived['--accent-ink'] }}>×</span>
           <span style={{ background: derived['--accent'], color: derived['--on-accent'] }}>=</span>
         </div>
         <p style={{ color: derived['--muted'] }}>

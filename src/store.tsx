@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { loadSettings, saveSettings } from './lib/storage'
 import { luminance } from './lib/theme'
-import { activePalette, contrastText, derivePalette, fontStack, paletteOf } from './lib/theme'
+import { activePalette, contrastText, derivePalette, fontStack, mix, paletteOf, readableInk } from './lib/theme'
 import type { Settings } from './types'
 
 /**
@@ -47,6 +47,7 @@ const PALETTE_VARS = [
   '--muted',
   '--line',
   '--accent',
+  '--accent-ink',
   '--on-accent',
   '--danger',
 ]
@@ -115,6 +116,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     }
     for (const name of PALETTE_VARS) root.style.removeProperty(name)
     for (const [name, value] of Object.entries(colours)) root.style.setProperty(name, value)
+
+    // The operators' colour comes last, from whatever the three sources above
+    // settled on between them, so a shipped palette, one made here and a
+    // chosen accent all get the same guarantee by the same route. It has to
+    // read on everything an operator can sit on: the key, the display panel,
+    // the bare ground under an outlined key, and under the contrast style a
+    // key tinted with the accent itself, which is the hardest of the four.
+    const computed = getComputedStyle(root)
+    const read = (name: string) => computed.getPropertyValue(name).trim()
+    const accent = read('--accent')
+    const surfaces = [read('--key'), read('--panel'), read('--bg')]
+    if (settings.keyStyle === 'contrast') surfaces.push(mix(accent, read('--panel'), 0.2))
+    root.style.setProperty('--accent-ink', readableInk(accent, surfaces))
 
     // The status bar takes the ground colour, so a phone in standalone mode
     // does not draw a strip of the wrong palette above the app.

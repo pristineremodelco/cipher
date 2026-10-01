@@ -108,8 +108,11 @@ t.is('both slots offer a way in', await page.$$eval('.palette-make', (e) => e.le
 
 await page.click('.field:has-text("After dark") .palette-make')
 await page.waitForSelector('.palette-editor')
-const started = await page.inputValue('.colour-field:has-text("Ground") .hex')
-t.is('one made for the night starts dark', started.toLowerCase(), '#101418')
+// It starts as a copy of whatever the slot is wearing, Espresso here, so a
+// palette that is nearly right is one colour away rather than three.
+t.is('one made for the night starts as the night palette', (await page.inputValue('.colour-field:has-text("Ground") .hex')).toLowerCase(), '#191309')
+t.is('accent and all', (await page.inputValue('.colour-field:has-text("Accent") .hex')).toLowerCase(), '#b4502f')
+t.is('and says where it came from', await page.inputValue('.text-input'), 'My Espresso')
 await page.fill('.text-input', 'Night Own')
 await page.fill('.colour-field:has-text("Ground") .hex', '#0a0f14')
 await page.fill('.colour-field:has-text("Keys") .hex', '#141d26')
@@ -123,7 +126,7 @@ t.is('and it is worn in the slot it was made for', nightPick, 'Night Own')
 // listed there, which strict filtering by lightness would not have done.
 await page.click('.field:has-text("By day") .palette-make')
 await page.waitForSelector('.palette-editor')
-t.is('one made for the day starts light', (await page.inputValue('.colour-field:has-text("Ground") .hex')).toLowerCase(), '#f4f1ea')
+t.is('one made for the day starts as the day palette', (await page.inputValue('.colour-field:has-text("Ground") .hex')).toLowerCase(), '#ede4d0')
 await page.fill('.text-input', 'Day Own')
 await page.fill('.colour-field:has-text("Ground") .hex', '#12161b')
 await page.fill('.colour-field:has-text("Keys") .hex', '#1d242c')
@@ -132,6 +135,13 @@ await page.click('button:has-text("Save palette")')
 await page.waitForSelector('.own-row')
 const dayPick = await page.$eval('.field:has-text("By day") .palette-card[data-active=true] strong', (el) => el.textContent.trim())
 t.is('a dark one chosen for the day slot stays listed there', dayPick, 'Day Own')
+
+// Made from a palette of your own, it is a copy of that one.
+await page.click('.field:has-text("By day") .palette-make')
+await page.waitForSelector('.palette-editor')
+t.is('a copy of your own carries its colours', (await page.inputValue('.colour-field:has-text("Accent") .hex')).toLowerCase(), '#66d9a0')
+t.is('and its name, numbered', await page.inputValue('.text-input'), 'Day Own 2')
+await page.click('.palette-editor button:has-text("Cancel")')
 
 // ---- The rest of them, each measured rather than assumed -----------------
 await page.click('button:has-text("Done")')
@@ -200,7 +210,13 @@ await page.$eval('.accent-row input[type="color"]', (el) => {
 })
 await page.waitForTimeout(150)
 t.is('a chosen accent is worn', await cssVar('--accent'), '#ff0066')
-t.is('and reaches what it paints', await page.$eval('.preview .key[data-kind="operator"]', (el) => getComputedStyle(el).color), 'rgb(255, 0, 102)')
+t.is('and fills the equals key exactly', await page.$eval('.preview .key[data-kind="equals"]', (el) => getComputedStyle(el).backgroundColor), 'rgb(255, 0, 102)')
+// The operators wear it too, but moved as far as they need to be to read on
+// their keys: a chosen accent is a fill first, and a deep one is unreadable as
+// a glyph on a dark key.
+const opInk = await page.$eval('.preview .key[data-kind="operator"]', (el) => getComputedStyle(el).color)
+const [r, g, b] = opInk.match(/\d+/g).map(Number)
+t.ok(`and draws the operators in its own hue (${opInk})`, r > g && r > b)
 
 // Degrees and radians. What each one answers is covered on the pad; what
 // matters here is that the two places that set it agree with each other.

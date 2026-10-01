@@ -101,8 +101,15 @@ await page.evaluate(() => {
 await page.reload({ waitUntil: 'networkidle' })
 await page.click('button[aria-label="History"]')
 t.is('nothing expires with time', await page.$$eval('.tape-list li', (rows) => rows.length), 200)
-await page.click('button:has-text("Clear")')
-t.is('clearing empties it', await page.evaluate(() => JSON.parse(localStorage.getItem('calculator.tape.v1')).entries.length), 0)
+const stored = () => page.evaluate(() => JSON.parse(localStorage.getItem('calculator.tape.v1')).entries.length)
+await page.click('.tape-sheet button:has-text("Clear")')
+t.is('one tap on clear only asks', await stored(), 200)
+t.is('and says what the next tap does', (await page.textContent('.tape-sheet [data-armed="true"]')).trim(), 'Clear all 200?')
+await page.waitForTimeout(3800)
+t.is('left alone it stands down', await page.$$eval('.tape-sheet [data-armed="true"]', (e) => e.length), 0)
+await page.click('.tape-sheet button:has-text("Clear")')
+await page.click('.tape-sheet button:has-text("Clear all")')
+t.is('the second tap clears it', await stored(), 0)
 
 // The error line: quiet while an expression is being typed, and said the
 // moment somebody presses equals and there is no answer to give.

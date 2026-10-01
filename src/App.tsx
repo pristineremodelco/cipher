@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { calculate, formatNumber, plainNumber } from './lib/calc'
-import { backspace, expressionOf, kindOf, press, seed } from './lib/calcinput'
+import { backspace, chunksOf, displayRuns, expressionOf, press, seed } from './lib/calcinput'
 import { MAX_TAPE, loadTape, saveTape, type Tape, type TapeEntry } from './lib/calctape'
 import { ROWS, SCIENTIFIC, TYPED, type Key } from './components/keys'
 import { Backspace, Clock, Gear, Mark } from './components/Icons'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Converter } from './components/Converter'
+import { Confirm } from './components/Confirm'
 import { Tools } from './components/Tools'
 import { useSettings } from './store'
 
@@ -36,6 +37,8 @@ export default function App() {
    * the instant equals is pressed.
    */
   const [worked, setWorked] = useState('')
+  const workingLine = useRef<HTMLDivElement>(null)
+  const answerLine = useRef<HTMLButtonElement>(null)
   const holdTimer = useRef<number | null>(null)
   const cleared = useRef(false)
 
@@ -51,6 +54,40 @@ export default function App() {
   const expression = expressionOf(chunks)
   const result = useMemo(() => calculate(expression, settings.angle), [expression, settings.angle])
   const lastAnswer = tape.entries[0]?.value ?? 0
+
+  /**
+   * A long answer steps down in size until it fits on one line, rather than
+   * wrapping onto a second one, which would grow the display and shrink every
+   * key. Measured, not guessed from its length: how much fits depends on the
+   * width of the phone and the text size chosen, and only the page knows both.
+   */
+  const fitAnswer = useCallback(() => {
+    const line = answerLine.current
+    if (!line) return
+    let scale = 1
+    line.style.setProperty('--fit', '1')
+    while (line.scrollWidth > line.clientWidth + 1 && scale > 0.4) {
+      scale = Math.round((scale - 0.05) * 100) / 100
+      line.style.setProperty('--fit', String(scale))
+    }
+  }, [])
+
+  useLayoutEffect(fitAnswer)
+
+  useEffect(() => {
+    const display = answerLine.current?.parentElement
+    if (!display || typeof ResizeObserver === 'undefined') return
+    const watch = new ResizeObserver(() => fitAnswer())
+    watch.observe(display)
+    return () => watch.disconnect()
+  }, [fitAnswer, settings.mode])
+
+  // The working line keeps the end of the sum in view, which is where the next
+  // key lands, whenever what it shows changes.
+  useEffect(() => {
+    const line = workingLine.current
+    if (line) line.scrollTop = line.scrollHeight
+  }, [expression, settled, worked])
 
   const buzz = useCallback(() => {
     if (!settings.haptics) return
@@ -264,12 +301,18 @@ export default function App() {
           </button>
         </nav>
         <div className="bar-actions">
-          {settings.mode === 'calculate' && settings.keepHistory ? (
+          {/* History only means something on the calculator, but its place is
+              kept on the other two, hidden and out of reach. Taking it away
+              re-centred the switch every time the tab changed, so the one
+              control meant to stay put slid sideways under the thumb. */}
+          {settings.keepHistory ? (
             <button
               className="chip"
               aria-pressed={tapeOpen}
               aria-label="History"
               title="History"
+              data-placeholder={settings.mode !== 'calculate'}
+              inert={settings.mode !== 'calculate'}
               onClick={() => setTapeOpen((open) => !open)}
             >
               <Clock />
@@ -287,20 +330,27 @@ export default function App() {
         {settings.mode === 'calculate' ? (
         <>
         <section className="display">
-          <div className="expression" aria-label="Expression">
-            {settled ? (
-              <span data-kind="worked">{worked}</span>
-            ) : (
-              chunks.map((chunk, index) => (
-                <span key={`${chunk}-${index}`} data-kind={kindOf(chunk)}>
-                  {chunk}
-                </span>
-              ))
-            )}
+          <div className="expression" aria-label="Expression" data-settled={settled} ref={workingLine}>
+            <div className="expression-text">
+              {displayRuns(settled ? worked : expression, settings.grouping).map((run, index) =>
+                run.kind === 'operator' ? (
+                  // A line may break after an operator rather than inside a number.
+                  <Fragment key={index}>
+                    <span data-kind={run.kind}>{run.text}</span>
+                    <wbr />
+                  </Fragment>
+                ) : (
+                  <span key={index} data-kind={run.kind}>
+                    {run.text}
+                  </span>
+                ),
+              )}
+            </div>
           </div>
           <button
             className="answer"
             data-settled={settled}
+            ref={answerLine}
             aria-live="polite"
             aria-label={answer ? `Answer ${answer}. Tap to copy.` : 'No answer yet'}
             title={answer ? 'Copy' : undefined}
@@ -341,6 +391,8 @@ export default function App() {
               onPointerDown={holdStart}
               onPointerUp={() => holdEnd(true)}
               onPointerLeave={() => holdEnd(false)}
+              // A long press is the gesture here, not a request for a menu.
+              onContextMenu={(e) => e.preventDefault()}
             >
               <Backspace />
             </button>
@@ -434,13 +486,13 @@ export default function App() {
             <div className="sheet-head">
               <h2>History</h2>
               <div className="sheet-head-actions">
-                <button
-                  className="ghost"
+                <Confirm
+                  ask={`Clear all ${tape.entries.length}?`}
                   disabled={!tape.entries.length}
-                  onClick={() => setTape((current) => ({ ...current, entries: [] }))}
+                  onConfirm={() => setTape((current) => ({ ...current, entries: [] }))}
                 >
                   Clear
-                </button>
+                </Confirm>
                 <button className="ghost" onClick={() => setTapeOpen(false)}>
                   Done
                 </button>
@@ -454,14 +506,18 @@ export default function App() {
                       className="tape-expr"
                       title="Put this back on the display"
                       onClick={() => {
-                        // Back as one chunk, the same as a recalled answer, so
-                        // a rub-out takes off what was put on.
-                        setChunks([entry.expression])
+                        // Back in the pieces it was typed as, so it can be
+                        // edited rather than only rubbed out whole.
+                        setChunks(chunksOf(entry.expression))
                         setSettled(false)
                         setTapeOpen(false)
                       }}
                     >
-                      {entry.expression}
+                      {displayRuns(entry.expression, settings.grouping).map((run, index) => (
+                        <span key={index} data-kind={run.kind}>
+                          {run.text}
+                        </span>
+                      ))}
                     </button>
                     <button
                       className="tape-value"

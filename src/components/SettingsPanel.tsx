@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Confirm } from './Confirm'
 import {
   FONTS,
   KEY_SHAPES,
@@ -9,6 +10,7 @@ import {
   TEXT_SIZES,
   TEXT_SIZE_LABELS,
   asPalette,
+  findPalette,
   parseHex,
 } from '../lib/theme'
 import { PaletteEditor } from './PaletteEditor'
@@ -50,7 +52,7 @@ const PREVIEW: { label: string; kind: string }[][] = [
  * either, and resetting the mode would throw you out of the panel you are
  * standing in.
  */
-const KEPT: (keyof Settings)[] = ['customPalettes', 'mode', 'convertCategory', 'convertPairs']
+const KEPT: (keyof Settings)[] = ['customPalettes', 'mode', 'convertCategory', 'convertPairs', 'simpleFrom', 'simpleTo']
 
 /** Arrays and objects need reading, not comparing by reference. */
 function same(a: unknown, b: unknown): boolean {
@@ -137,14 +139,14 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
             nothing still has to be read and dismissed every time. */}
         {changed ? (
           <div className="sheet-foot">
-            <button
-              className="ghost"
-              onClick={() =>
+            <Confirm
+              ask="Put every setting back?"
+              onConfirm={() =>
                 set(Object.fromEntries(resettable.map((key) => [key, fresh[key]])) as Partial<Settings>)
               }
             >
               Put everything back
-            </button>
+            </Confirm>
           </div>
         ) : null}
       </div>
@@ -155,22 +157,23 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 type TabProps = { settings: Settings; set: (patch: Partial<Settings>) => void }
 
 /**
- * A blank to start from. Made for the night slot it starts dark, for the day
- * slot light, so the first thing on screen is already the right side of the
- * line and only the colours are left to choose.
+ * A new palette starts as a copy of the one it is being made from, not as a
+ * stranger. Most palettes made here are a palette that is nearly right, Plum
+ * with a brighter accent say, and starting from fixed blues meant building it
+ * back up from nothing to change one colour. The name says where it came from
+ * and can be written over.
  */
-function blankPalette(slot: Slot = 'night'): CustomPalette {
-  const base =
-    slot === 'day'
-      ? { ground: '#f4f1ea', key: '#ffffff', accent: '#3b6ea5' }
-      : { ground: '#101418', key: '#1b2026', accent: '#4da3ff' }
-  return { id: crypto.randomUUID(), name: '', ...base }
+function seededFrom(source: { name: string; swatch: string[] } | undefined, own: boolean): CustomPalette {
+  const [ground, key, , accent] = (source?.swatch ?? ['#101418', '#1B2026', '', '#4DA3FF']).map((c) => c.toLowerCase())
+  const name = !source ? '' : own ? `${source.name} 2` : `My ${source.name}`
+  return { id: crypto.randomUUID(), name: name.slice(0, 30), ground, key, accent }
 }
 
 /** Which of the two the editor was opened from, or neither. */
 type Slot = 'day' | 'night' | 'either'
 
 function LookTab({ settings, set }: TabProps) {
+  const { palette: showing } = useSettings()
   const [draft, setDraft] = useState<CustomPalette | null>(null)
   // Which slot a new one is being made for, so it lands there rather than
   // wherever its own lightness would have filed it.
@@ -190,8 +193,10 @@ function LookTab({ settings, set }: TabProps) {
   const all = everything
 
   function start(next: Slot) {
+    // The palette in the slot being made for, or for neither, the one on show.
+    const id = next === 'day' ? settings.palette : next === 'night' ? settings.nightPalette : showing
     setSlot(next)
-    setDraft(blankPalette(next))
+    setDraft(seededFrom(findPalette(settings, id), settings.customPalettes.some((p) => p.id === id)))
   }
 
   function save() {
@@ -570,6 +575,27 @@ function MathsTab({ settings, set }: TabProps) {
         <input type="checkbox" checked={settings.keepHistory} onChange={(e) => set({ keepHistory: e.target.checked })} />
         Keep a history of what was worked out
       </label>
+
+      <div className="field">
+        <span>Converter</span>
+        <div className="size-row">
+          <button
+            className="size-btn"
+            data-active={settings.convertStyle === 'categories'}
+            onClick={() => set({ convertStyle: 'categories' })}
+          >
+            By category
+          </button>
+          <button
+            className="size-btn"
+            data-active={settings.convertStyle === 'simple'}
+            onClick={() => set({ convertStyle: 'simple' })}
+          >
+            Simple
+          </button>
+        </div>
+        <p className="hint">Simple picks both units by typing, as in 5 g to lb.</p>
+      </div>
 
     </>
   )

@@ -48,8 +48,9 @@ an app opened to work something out opens on it.
 
 ## Converting
 
-Thirteen categories and 103 units: length, area, volume, mass, temperature,
-speed, time, data, pressure, energy, power, angle and fuel economy.
+Eighteen categories and 127 units: length, area, volume, mass, temperature,
+speed, time, data, pressure, force, energy, power, voltage, current,
+resistance, frequency, angle and fuel economy.
 
 Type into either row and the other one follows, so a conversion runs in
 whichever direction you happen to want it. Under the pair sits the same
@@ -57,6 +58,14 @@ quantity in every other unit the category holds, which is usually the thing you
 did not know you wanted until it was there; tapping one makes it the unit being
 converted to. The pair you used in a category is remembered, so feet to inches
 stays feet to inches.
+
+Or, with **Simple** chosen under Settings → Maths, no categories at all: two
+unit pickers found by typing. The top one searches every unit there is, and
+reads the way people write units: plural, American, abbreviated or misspelt,
+so "lbs", "liters", "feet", "kph" and "celcius" all land. Once it is chosen the
+bottom one holds only what it converts to, each with what the number comes to
+in it, so volts to what is answered by looking. A whole conversion typed in one
+go, "5 grams to lbs", sets both units and the amount.
 
 Every factor is the exact defined value rather than one rounded off a chart: a
 foot is 0.3048 metres, a pound is 0.45359237 kilograms, a US gallon is
@@ -66,9 +75,9 @@ not a sum: twelve feet in yards wants 3.3333333, and 304,800,000 nanometres
 wants every digit it has.
 
 Temperature carries an offset and fuel economy is a reciprocal, so those two
-convert through a pair of functions rather than a factor. Currency is
-deliberately absent: a rate is a live number and this app does not go near a
-network.
+convert through a pair of functions rather than a factor. Currency lives under
+Tools rather than here, because it is the one conversion that needs a signal:
+a rate is a live number, and it is marked as needing a connection.
 
 ## The tools
 
@@ -110,14 +119,19 @@ question the device can already answer, daylight saving included.
 ## What it looks like
 
 Nine palettes, three light and six dark, and the device's own light or dark
-setting picks between a pair of them unless you say otherwise. On top of that: an accent of any colour, seven
+setting picks between a pair of them unless you say otherwise. Either slot can
+take a palette of your own, which starts as a copy of the one it replaces. On
+top of that: an accent of any colour, seven
 typefaces, four text sizes, a heavier weight, four key styles, four key corner
 shapes, the answer's size, the operator column on either side, and a bottom row
 with a double zero or one wide one. All under Settings, with a preview that
 changes as you set it.
 
-Every typeface is one the device already has, so nothing is fetched and the app
-looks right offline and on first paint.
+Six of the seven typefaces ship with the app, so a choice lands the same way
+on every phone and works offline; the seventh is the device's own. Operators
+are drawn in a version of the accent worked out to stand off their keys by at
+least 5.5 to 1 in every palette and key style, so a chosen accent is a fill
+first and never an unreadable glyph.
 
 ## Run it
 
@@ -154,9 +168,10 @@ npm test
 ```
 
 The sums, run under node with no test framework and no dependency: node runs
-TypeScript and ships a test runner, so there is nothing to install. 151 of
+TypeScript and ships a test runner, so there is nothing to install. 220 of
 them, covering the expression parser, what each key does to what is already on
-the display, all 103 unit factors with every pair round tripped, and every one
+the display, every answer carried on reading back as itself, all 127 unit
+factors with every pair round tripped, what typing a unit finds, and every one
 of the tools' formulas. The awkward cases are in there by name: percent reading
 its neighbour, sales tax taken back off a total, a base refusing a digit it
 cannot hold, and 4,000 random key sequences that must never crash the parser.
@@ -169,12 +184,14 @@ npm run dev
 npm run test:browser
 ```
 
-The rest, which needs a browser: 374 checks across five suites. Every key on
+The rest, which needs a browser: 467 checks across seven suites. Every key on
 the pad pressed with the answer read back off the screen; what carries forward
 between presses and how far the history goes; a palette made from three colours
-and worn; every tool opened and answered, with the one that needs a signal put
-through all three of the states it can be in; and the layout swept over twelve
-screen sizes in all three surfaces and every tool.
+and worn; every setting driven and its effect measured, from key corners to
+operator contrast to each typeface drawing differently; the simple converter
+searched and answered; every tool opened and answered, with the one that needs
+a signal put through all three of the states it can be in; and the layout swept
+over twelve screen sizes in all three surfaces and every tool.
 
 Playwright is deliberately not a dependency, the same way sharp is not: both
 are check-once tools, and adding a browser download to the install for
@@ -207,6 +224,7 @@ src/
     calcinput.ts     what each key does to what is already on the display
     calctape.ts      the history and the memory register
     units.ts         what one unit is in terms of another
+    unitsearch.ts    finding a unit, or a pair, by what was typed
     tools.ts         the sums behind the tools, and nothing that draws
     rates.ts         exchange rates, and what to do when there are none
     zones.ts         world time, worked out on the device
@@ -214,7 +232,8 @@ src/
     storage.ts       settings defaults and forward migration
   components/
     keys.ts          what is on the pad, and nothing about how it is drawn
-    Converter.tsx    categories, a pair, everything else, and a pad
+    Converter.tsx    by category or simple: a pair, a picker, and a pad
+    Confirm.tsx      a button that asks once before it does what cannot be undone
     Tools.tsx        the grid, and one screen at a time
     Form.tsx         the field, the choice and the answer block they all share
     tools/           one file per group: Money, Everyday, Vehicle, Health, Currency

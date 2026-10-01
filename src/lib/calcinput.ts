@@ -76,6 +76,59 @@ export function expressionOf(chunks: string[]): string {
   return chunks.join('')
 }
 
+export type Run = { text: string; kind: ChunkKind }
+
+/** Thousands marks in the whole part of a number, and nowhere else. */
+function grouped(number: string): string {
+  if (/e/i.test(number)) return number
+  const negative = number.startsWith('-')
+  const [whole, ...rest] = (negative ? number.slice(1) : number).split('.')
+  const marked = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  return `${negative ? '-' : ''}${marked}${rest.length ? `.${rest.join('.')}` : ''}`
+}
+
+/**
+ * An expression cut into what the display draws: numbers whole, operators and
+ * functions apart, so the working looks the same while it is typed and after
+ * equals, and after it comes back out of the history as a string.
+ *
+ * A number is grouped into thousands here when the answer is, because
+ * 1250000×1.08 above 1,350,000 asks the eye to count digits to check it.
+ */
+export function displayRuns(expression: string, grouping: boolean): Run[] {
+  const runs: Run[] = []
+  let rest = expression
+  while (rest) {
+    // An answer carried on can lead with a plain minus or carry an exponent.
+    const number = /^(?:-(?=[0-9.]))?[0-9.]+(?:e[+-]?[0-9]+)?/.exec(rest)
+    if (number && !(number[0].startsWith('-') && runs.length)) {
+      runs.push({ text: grouping ? grouped(number[0]) : number[0], kind: 'digit' })
+      rest = rest.slice(number[0].length)
+      continue
+    }
+    if (rest.startsWith(' mod ')) {
+      runs.push({ text: 'mod', kind: 'operator' })
+      rest = rest.slice(5)
+      continue
+    }
+    const opener = /^(?:[A-Za-z]+(?:⁻¹)?[₀-₉]*|√|∛)?\(/.exec(rest)
+    if (opener) {
+      runs.push({ text: opener[0], kind: opener[0] === '(' ? 'paren' : 'function' })
+      rest = rest.slice(opener[0].length)
+      continue
+    }
+    if (rest.startsWith('⁻¹')) {
+      runs.push({ text: '⁻¹', kind: 'postfix' })
+      rest = rest.slice(2)
+      continue
+    }
+    const glyph = Array.from(rest)[0]
+    runs.push({ text: glyph, kind: kindOf(glyph) })
+    rest = rest.slice(glyph.length)
+  }
+  return runs
+}
+
 /**
  * One press. Everything a key can do is decided here rather than in the
  * component, so the keypad, the physical keyboard and a pasted string all
@@ -154,6 +207,25 @@ export function press(chunks: string[], key: string): string[] {
 
 export function backspace(chunks: string[]): string[] {
   return chunks.slice(0, -1)
+}
+
+/**
+ * A written expression cut back into the chunks it was typed as, so one that
+ * comes back out of the history can be edited a digit at a time. It used to
+ * come back as one chunk, which meant recalling 1250×1.08 to make it 1.07 was
+ * a single rub-out away from retyping all of it.
+ *
+ * A number carrying a sign or an exponent stays whole: it was an answer carried
+ * on, and half of 1.5e-7 is not a number anyone means to be left with.
+ */
+export function chunksOf(expression: string): string[] {
+  const chunks: string[] = []
+  for (const run of displayRuns(expression, false)) {
+    if (run.kind === 'digit' && !/^-|e/i.test(run.text)) chunks.push(...run.text)
+    else if (run.kind === 'operator' && run.text === 'mod') chunks.push(' mod ')
+    else chunks.push(run.text)
+  }
+  return chunks
 }
 
 /** An answer carried into the next sum arrives as one chunk, so it rubs out whole. */
