@@ -58,7 +58,7 @@ export function SalesTax() {
     <Tool
       note={
         mode === 'remove'
-          ? 'Taking the rate off the total is not the same sum as adding it on, because the tax was a percentage of the smaller number. This does the right one.'
+          ? 'Taking the rate off the total is not the same calculation as adding it on, because the tax was a percentage of the smaller number. This does the right one.'
           : undefined
       }
     >

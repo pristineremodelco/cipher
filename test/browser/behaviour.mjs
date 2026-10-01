@@ -161,7 +161,7 @@ t.is('and it is a live sum again', await answer(), '226')
 // Turned off, a tap does nothing at all.
 await page.click('button[aria-label="Settings"]')
 await page.click('.tab:has-text("Math")')
-await page.click('.toggle-row:has-text("Tap the sum to edit") input')
+await page.click('.toggle-row:has-text("to edit inside it") input')
 await page.click('button:has-text("Done")')
 await tap('Equals')
 await tapAfter(0)

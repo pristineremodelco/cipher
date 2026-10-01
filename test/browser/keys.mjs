@@ -45,7 +45,7 @@ await sum('divide', ['1', '2', { aria: 'Divide' }, '3'], '4')
 await sum('power', ['2', { aria: 'Power' }, '1', '0'], '1,024')
 
 // The action keys
-await sum('brackets', ['2', { aria: 'Brackets' }, '3', { aria: 'Plus' }, '4', { aria: 'Brackets' }], '14', '2×(3+4)')
+await sum('brackets', ['2', { aria: 'Parentheses' }, '3', { aria: 'Plus' }, '4', { aria: 'Parentheses' }], '14', '2×(3+4)')
 await sum('a percent on its own', ['5', '0', '%'], '0.5')
 await sum('a percent added', ['2', '0', '0', { aria: 'Plus' }, '1', '0', '%'], '220')
 await sum('a percent taken off', ['2', '0', '0', { aria: 'Minus' }, '1', '0', '%'], '180')

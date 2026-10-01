@@ -55,7 +55,7 @@ export function BodyMetrics() {
       <div className="tool-pair">
         <Field label="Age" suffix="years" value={age} onChange={setAge} />
         <Choice
-          label="For the energy sum"
+          label="For daily energy"
           value={sex}
           onChange={setSex}
           options={[

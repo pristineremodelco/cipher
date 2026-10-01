@@ -150,7 +150,7 @@ export function PaletteEditor({
       </label>
 
       <Field
-        label="Ground"
+        label="Background"
         hint="Behind everything"
         value={draft.ground}
         onChange={(ground) => onChange({ ...draft, ground })}

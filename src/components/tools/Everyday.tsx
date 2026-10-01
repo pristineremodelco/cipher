@@ -38,7 +38,7 @@ export function DateTool() {
           onChange={setMode}
           options={[
             { id: 'between', name: 'Between two dates' },
-            { id: 'add', name: 'So many days on' },
+            { id: 'add', name: 'Days from a date' },
           ]}
         />
         <DateField label="From" value={from} onChange={setFrom} />
@@ -71,7 +71,7 @@ export function DateTool() {
         onChange={setMode}
         options={[
           { id: 'between', name: 'Between two dates' },
-          { id: 'add', name: 'So many days on' },
+          { id: 'add', name: 'Days from a date' },
         ]}
       />
       <DateField label="From" value={from} onChange={setFrom} />

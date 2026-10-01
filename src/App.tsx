@@ -8,10 +8,11 @@ import { SettingsPanel } from './components/SettingsPanel'
 import { Converter } from './components/Converter'
 import { Confirm } from './components/Confirm'
 import { Tools } from './components/Tools'
-import { useSettings } from './store'
+import { useSettings, useSpell } from './store'
 
 export default function App() {
   const { settings, set } = useSettings()
+  const t = useSpell()
   const [chunks, setChunks] = useState<string[]>([])
   /** Where the next key lands, when somebody has tapped into the sum; null is the end. */
   const [caret, setCaret] = useState<Caret>(null)
@@ -310,7 +311,7 @@ export default function App() {
         className="key"
         data-kind={item.kind}
         data-span={settings.zeroKey === 'wide' && label === '0' ? 'two' : undefined}
-        aria-label={item.aria ?? label}
+        aria-label={t(item.aria ?? label)}
         // Equals stays live on an expression that is merely unfinished, so
         // pressing it gets an answer to why rather than nothing at all. A dead
         // key on a touchscreen tells you neither that it did nothing nor why.

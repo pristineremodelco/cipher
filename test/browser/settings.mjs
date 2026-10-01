@@ -110,11 +110,11 @@ await page.click('.field:has-text("After dark") .palette-make')
 await page.waitForSelector('.palette-editor')
 // It starts as a copy of whatever the slot is wearing, Espresso here, so a
 // palette that is nearly right is one colour away rather than three.
-t.is('one made for the night starts as the night palette', (await page.inputValue('.colour-field:has-text("Ground") .hex')).toLowerCase(), '#191309')
+t.is('one made for the night starts as the night palette', (await page.inputValue('.colour-field:has-text("Background") .hex')).toLowerCase(), '#191309')
 t.is('accent and all', (await page.inputValue('.colour-field:has-text("Accent") .hex')).toLowerCase(), '#b4502f')
 t.is('and says where it came from', await page.inputValue('.text-input'), 'My Espresso')
 await page.fill('.text-input', 'Night Own')
-await page.fill('.colour-field:has-text("Ground") .hex', '#0a0f14')
+await page.fill('.colour-field:has-text("Background") .hex', '#0a0f14')
 await page.fill('.colour-field:has-text("Keys") .hex', '#141d26')
 await page.fill('.colour-field:has-text("Accent") .hex', '#e0b050')
 await page.click('button:has-text("Save palette")')
@@ -126,9 +126,9 @@ t.is('and it is worn in the slot it was made for', nightPick, 'Night Own')
 // listed there, which strict filtering by lightness would not have done.
 await page.click('.field:has-text("By day") .palette-make')
 await page.waitForSelector('.palette-editor')
-t.is('one made for the day starts as the day palette', (await page.inputValue('.colour-field:has-text("Ground") .hex')).toLowerCase(), '#ede4d0')
+t.is('one made for the day starts as the day palette', (await page.inputValue('.colour-field:has-text("Background") .hex')).toLowerCase(), '#ede4d0')
 await page.fill('.text-input', 'Day Own')
-await page.fill('.colour-field:has-text("Ground") .hex', '#12161b')
+await page.fill('.colour-field:has-text("Background") .hex', '#12161b')
 await page.fill('.colour-field:has-text("Keys") .hex', '#1d242c')
 await page.fill('.colour-field:has-text("Accent") .hex', '#66d9a0')
 await page.click('button:has-text("Save palette")')
@@ -252,7 +252,7 @@ for (const k of ['8', 'Plus', '1', 'Equals']) await page.click(`.pad .key[aria-l
 const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('calculator.tape.v1') ?? '{}').entries ?? [])
 t.ok('nothing is written down once history is off', !kept.some((e) => e.expression === '8+1'))
 
-// ---- Spelling ----------------------------------------------------------
+// ---- Language ----------------------------------------------------------
 // American by default, and British on request, everywhere a word differs.
 const tabNames = () => page.$$eval('.tab', (els) => els.map((el) => el.textContent.trim()).join(' '))
 const unitNames = async () => {
@@ -270,7 +270,11 @@ await page.click('.tab:has-text("Look")')
 t.ok('a palette says gray', (await page.textContent('.palette-card:has-text("Linen")')).includes('Gray-green'))
 t.ok('and units say meter', (await unitNames()).includes('Meter (m)'))
 await page.click('.tab:has-text("Math")')
-await page.click('.field:has-text("Spelling") .size-btn:text-is("British")')
+t.ok('and the edit switch speaks of an equation', (await page.textContent('.toggle-row:has(input) >> text=/to edit inside it/')).includes('the equation'))
+t.is('and the bracket key is parentheses', await page.$$eval('.pad .key[aria-label="Parentheses"]', (e) => e.length), 1)
+await page.click('.field:has-text("Language") .size-btn:text-is("British English")')
+t.ok('British speaks of a sum', (await page.textContent('.toggle-row:has(input) >> text=/to edit inside it/')).includes('the sum'))
+t.is('and of brackets', await page.$$eval('.pad .key[aria-label="Brackets"]', (e) => e.length), 1)
 t.is('British says Maths', await tabNames(), 'Look Keys Maths')
 await page.click('.tab:has-text("Look")')
 t.ok('and grey', (await page.textContent('.palette-card:has-text("Linen")')).includes('Grey-green'))

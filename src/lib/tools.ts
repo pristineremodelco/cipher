@@ -50,7 +50,7 @@ export const TOOLS: Tool[] = [
   { id: 'currency', name: 'Currencies', hint: 'Live rates', group: 'money', needsNetwork: true },
 
   { id: 'percent', name: 'Percent', hint: 'All three of the questions', group: 'everyday' },
-  { id: 'date', name: 'Date', hint: 'Between two, or so many days on', group: 'everyday' },
+  { id: 'date', name: 'Date', hint: 'Between two, or days from one', group: 'everyday' },
   { id: 'worldtime', name: 'World Time', hint: 'What time it is elsewhere', group: 'everyday' },
   { id: 'hex', name: 'Hex', hint: 'Base 2, 8, 10 and 16', group: 'everyday' },
   { id: 'grade', name: 'Grade Average', hint: 'Weighted, by credit', group: 'everyday' },

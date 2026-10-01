@@ -52,7 +52,7 @@ export const ROWS: { main: Key[]; side: Key }[] = [
     main: [
       { label: '0', kind: 'digit' },
       { label: '00', kind: 'digit' },
-      { label: '.', kind: 'digit', aria: 'Point' },
+      { label: '.', kind: 'digit', aria: 'Decimal point' },
     ],
     side: { label: '=', kind: 'equals', aria: 'Equals' },
   },

@@ -1,11 +1,12 @@
 /**
- * American or British, for every word the app spells.
+ * American or British English, for every word the app shows.
  *
  * The words are written British once, in the source, and turned American on
  * the way to the screen when that is the setting, rather than keeping two
- * copies of every label that would drift apart. The list is short because the
- * words that differ are few: the metric units, colour, grey, and the name of
- * the subject itself.
+ * copies of every label that would drift apart. Where one wording reads
+ * naturally to both, the source simply uses it, so this list holds only what
+ * genuinely differs: spellings, and the handful of words the two choose
+ * differently, brackets and parentheses, a sum and an equation.
  */
 export type Spelling = 'us' | 'uk'
 
@@ -25,6 +26,13 @@ const AMERICAN: [RegExp, string][] = [
   // A tonne is a metric ton to an American, and "ton" alone is the short one.
   [/\bTonne\b/g, 'Metric ton'],
   [/\btonne\b/g, 'metric ton'],
+  // Words, not spellings.
+  [/\bBrackets\b/g, 'Parentheses'],
+  [/\bbrackets\b/g, 'parentheses'],
+  [/\bthe sum\b/g, 'the equation'],
+  [/\bworking day\b/g, 'business day'],
+  [/\bpaid in at each month's end\b/g, 'deposited at the end of each month'],
+  [/\bThe vehicle does\b/g, 'Your vehicle gets'],
 ]
 
 export function spell(text: string, spelling: Spelling): string {

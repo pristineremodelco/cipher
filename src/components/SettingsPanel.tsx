@@ -528,6 +528,7 @@ function KeysTab({ settings, set }: TabProps) {
 }
 
 function MathsTab({ settings, set }: TabProps) {
+  const t = useSpell()
   // A whole number is the only one that shows what padding does, so the switch
   // carries one worked the way the switch would work it.
   const whole = formatNumber(100, {
@@ -575,7 +576,7 @@ function MathsTab({ settings, set }: TabProps) {
 
       <label className="row toggle-row">
         <input type="checkbox" checked={settings.editInSum} onChange={(e) => set({ editInSum: e.target.checked })} />
-        Tap the sum to edit inside it
+        {t('Tap the sum to edit inside it')}
       </label>
 
       <label className="row toggle-row">
@@ -605,16 +606,16 @@ function MathsTab({ settings, set }: TabProps) {
       </div>
 
       <div className="field">
-        <span>Spelling</span>
+        <span>Language</span>
         <div className="size-row">
           <button className="size-btn" data-active={settings.spelling === 'us'} onClick={() => set({ spelling: 'us' })}>
-            American
+            American English
           </button>
           <button className="size-btn" data-active={settings.spelling === 'uk'} onClick={() => set({ spelling: 'uk' })}>
-            British
+            British English
           </button>
         </div>
-        <p className="hint">{settings.spelling === 'us' ? 'Meter, liter, color, gray.' : 'Metre, litre, colour, grey.'}</p>
+        <p className="hint">{settings.spelling === 'us' ? 'Meter, color, math, parentheses.' : 'Metre, colour, maths, brackets.'}</p>
       </div>
 
     </>
