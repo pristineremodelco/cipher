@@ -191,7 +191,11 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
    nothing under them.
    ============================================================ */
 .app {
-  height: 100dvh;
+  /* The smaller of the visible screen and the page. Some Android browsers,
+     Samsung's among them, report the visible screen as taller than the page,
+     counting the strip under the navigation bar, and an app that height spills
+     out of the page by the difference and can be dragged up and down. */
+  height: min(100dvh, 100%);
   display: flex;
   flex-direction: column;
   padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))

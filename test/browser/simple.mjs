@@ -49,9 +49,22 @@ t.is('takes the amount', await reading(1), '5')
 t.is('and both units', `${await unit(1)} / ${await unit(2)}`, 'gGram / lbPound')
 t.is('and answers', await reading(2), '0.011023113')
 
+// The bottom number is the answer and nothing else. A tap on it used to make
+// the bottom row the input, after which a new bottom unit moved the top number
+// instead: 1 lb became 0.000001 lb with nothing to say why.
+await page.click('.convert-row:nth-of-type(1) .unit-pick')
+await page.keyboard.type('1 lb to kg')
+await page.keyboard.press('Enter')
+await page.click('.convert-row:nth-of-type(2) .convert-reading')
+await page.click('.convert-row:nth-of-type(2) .unit-pick')
+await page.click('.pick-row:has(.pick-symbol:text-is("g"))')
+t.is('a tap on the answer does not make it the input', await reading(1), '1')
+t.is('and a new answer unit still converts the top', await reading(2), '453.59237')
+t.is('the top row is the one being typed into', await page.getAttribute('.convert-row:nth-of-type(1)', 'data-active'), 'true')
+
 // Swapping turns it round and keeps the reading where the eye is.
 await page.click('.convert-pair .swap')
-t.is('swap turns the pair round', `${await unit(1)} / ${await unit(2)}`, 'lbPound / gGram')
+t.is('swap turns the pair round', `${await unit(1)} / ${await unit(2)}`, 'gGram / lbPound')
 
 // A new kind on top lets go of a bottom it cannot convert to.
 await page.click('.convert-row:nth-of-type(1) .unit-pick')
