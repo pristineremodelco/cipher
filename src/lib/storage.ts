@@ -3,6 +3,7 @@ import { CATEGORIES, categoryOf } from './units'
 import { TOOLS } from './tools'
 import { fromKey } from './unitsearch'
 import { isValidZone } from './zones'
+import { uid } from './uid'
 import type { CustomPalette, Settings } from '../types'
 
 const KEY = 'calculator.v1'
@@ -68,7 +69,7 @@ export function migrateSettings(raw: unknown): Settings {
         .filter((p): p is CustomPalette => Boolean(p) && typeof p.name === 'string')
         .slice(0, MAX_CUSTOM_PALETTES)
         .map((p) => ({
-          id: typeof p.id === 'string' && p.id ? p.id : crypto.randomUUID(),
+          id: typeof p.id === 'string' && p.id ? p.id : uid(),
           name: p.name.slice(0, 30) || 'Untitled',
           ground: parseHex(String(p.ground)) ?? '#efefef',
           key: parseHex(String(p.key)) ?? '#ffffff',
@@ -160,5 +161,14 @@ export function saveSettings(settings: Settings) {
     localStorage.setItem(KEY, JSON.stringify(settings))
   } catch {
     /* quota or private mode: the session keeps working, it just is not written down */
+  }
+}
+
+/** The way out if something stored is what keeps breaking the app. History is left alone. */
+export function forgetSettings() {
+  try {
+    localStorage.removeItem(KEY)
+  } catch {
+    /* nothing stored to forget */
   }
 }

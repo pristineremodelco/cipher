@@ -184,3 +184,28 @@ test('an answer carried on reads back as the same number, however large or small
     assert.equal(back.value, Number(value.toPrecision(15)), `${value} came back as ${back.value}`)
   }
 })
+
+/** The value of an expression, or its error, for the cases below. */
+const valueOf = (expression: string, angle: 'deg' | 'rad' = 'deg') => {
+  const result = calculate(expression, angle)
+  return result.ok ? result.value : result.error
+}
+
+test('a sum that cancels to rounding noise is zero, and a real difference is not', () => {
+  assert.equal(valueOf('0.1+0.2-0.3'), 0)
+  assert.equal(valueOf('1-0.9-0.1'), 0)
+  assert.equal(valueOf('0.1+0.1+0.1-0.3'), 0)
+  assert.equal(valueOf('1000000000000000+1-1000000000000000'), 1)
+  assert.equal(valueOf('200+10%'), 220)
+})
+
+test('trig gives its exact zeros, and says when there is no answer', () => {
+  for (const [expression, value] of [['sin(180)', 0], ['sin(360)', 0], ['cos(90)', 0], ['cos(270)', 0], ['tan(180)', 0], ['tan(45)', 1]] as const) {
+    const got = valueOf(expression)
+    assert.ok(typeof got === 'number' && Math.abs(got - value) < 1e-12, `${expression} = ${got}`)
+  }
+  assert.equal(calculate('tan(90)', 'deg').ok, false)
+  assert.equal(valueOf('sin(π)', 'rad'), 0)
+  // A small angle keeps its small sine.
+  assert.equal(valueOf('sin(0.00000000000000000001)', 'rad'), 1e-20)
+})

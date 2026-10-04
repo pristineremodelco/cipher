@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Field, Readout, Tool } from '../Form'
 import { ageOf, convertMoney, currencyName, fetchRates, loadRates, type Rates } from '../../lib/rates'
 import { Signal } from '../Icons'
@@ -18,28 +18,39 @@ export function Currency() {
   const [amount, setAmount] = useState('100')
   const [trouble, setTrouble] = useState('')
 
-  const refresh = useCallback(async (announce = true) => {
-    // Both of these are already where they need to be on the first run, so
-    // nothing is set until there is something to say.
-    if (announce) {
-      setState('asking')
-      setTrouble('')
-    }
-    try {
-      const next = await fetchRates()
-      setRates(next)
-      setState('fresh')
-    } catch (error) {
-      // Whatever went wrong, the answer for the person holding the phone is
-      // the same: these are the rates from last time, and here is how old.
-      setTrouble(error instanceof Error && error.name === 'AbortError' ? 'The rate service did not answer.' : 'Could not reach the rate service.')
-      setState(loadRates() ? 'stale' : 'nothing')
-    }
+  const live = useRef<AbortController | null>(null)
+
+  /** Asks once. An answer that arrives after the screen has moved on is dropped. */
+  const ask = useCallback(() => {
+    live.current?.abort()
+    const controller = new AbortController()
+    live.current = controller
+    fetchRates(controller.signal).then(
+      (next) => {
+        if (controller.signal.aborted) return
+        setRates(next)
+        setState('fresh')
+      },
+      (error: unknown) => {
+        if (controller.signal.aborted) return
+        // Whatever went wrong, the answer for the person holding the phone is
+        // the same: these are the rates from last time, and here is how old.
+        setTrouble(error instanceof Error && error.name === 'AbortError' ? 'The rate service did not answer.' : 'Could not reach the rate service.')
+        setState(loadRates() ? 'stale' : 'nothing')
+      },
+    )
   }, [])
 
   useEffect(() => {
-    void refresh(false)
-  }, [refresh])
+    ask()
+    return () => live.current?.abort()
+  }, [ask])
+
+  function refresh() {
+    setState('asking')
+    setTrouble('')
+    ask()
+  }
 
   const codes = rates ? Object.keys(rates.rates).sort() : []
   const from = codes.includes(settings.currencyFrom) ? settings.currencyFrom : codes[0] ?? 'USD'
@@ -66,10 +77,10 @@ export function Currency() {
           <p>
             {state === 'asking'
               ? 'One moment.'
-              : 'This is the one screen here that needs a signal. Everything else in the app works with the aeroplane mode on; an exchange rate is a live number and there is nothing honest to show without one.'}
+              : 'Rates need a connection. Everything else works offline.'}
           </p>
           {state !== 'asking' ? (
-            <button className="ghost" onClick={() => void refresh()}>
+            <button className="ghost" onClick={refresh}>
               Try again
             </button>
           ) : null}
@@ -89,7 +100,7 @@ export function Currency() {
               ? `Rates for ${rates.date}, just fetched`
               : `Rates for ${rates.date}, fetched ${ageOf(rates)}`}
         </span>
-        <button className="ghost tiny" disabled={state === 'asking'} onClick={() => void refresh()}>
+        <button className="ghost tiny" disabled={state === 'asking'} onClick={refresh}>
           Refresh
         </button>
       </div>

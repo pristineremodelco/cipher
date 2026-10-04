@@ -15,6 +15,7 @@ import {
 } from '../lib/theme'
 import { PaletteEditor } from './PaletteEditor'
 import { defaultSettings } from '../lib/storage'
+import { uid } from '../lib/uid'
 import { useSettings, useSpell } from '../store'
 import { formatNumber } from '../lib/calc'
 import type { CustomPalette, Settings } from '../types'
@@ -48,11 +49,22 @@ const PREVIEW: { label: string; kind: string }[][] = [
  *
  * A palette somebody made is theirs, not a setting: forgetting a dozen of them
  * because someone wanted the default corners back would be a trap. The
- * converter's remembered pairs and which surface is showing are not looks
- * either, and resetting the mode would throw you out of the panel you are
- * standing in.
+ * converter's remembered pairs, the places and currencies picked in the tools,
+ * and which surface is showing are not looks either, and resetting the mode
+ * would throw you out of the panel you are standing in.
  */
-const KEPT: (keyof Settings)[] = ['customPalettes', 'mode', 'convertCategory', 'convertPairs', 'simpleFrom', 'simpleTo']
+const KEPT: (keyof Settings)[] = [
+  'customPalettes',
+  'mode',
+  'tool',
+  'convertCategory',
+  'convertPairs',
+  'simpleFrom',
+  'simpleTo',
+  'worldZones',
+  'currencyFrom',
+  'currencyTo',
+]
 
 /** Arrays and objects need reading, not comparing by reference. */
 function same(a: unknown, b: unknown): boolean {
@@ -167,7 +179,7 @@ type TabProps = { settings: Settings; set: (patch: Partial<Settings>) => void }
 function seededFrom(source: { name: string; swatch: string[] } | undefined, own: boolean): CustomPalette {
   const [ground, key, , accent] = (source?.swatch ?? ['#101418', '#1B2026', '', '#4DA3FF']).map((c) => c.toLowerCase())
   const name = !source ? '' : own ? `${source.name} 2` : `My ${source.name}`
-  return { id: crypto.randomUUID(), name: name.slice(0, 30), ground, key, accent }
+  return { id: uid(), name: name.slice(0, 30), ground, key, accent }
 }
 
 /** Which of the two the editor was opened from, or neither. */
@@ -175,6 +187,7 @@ type Slot = 'day' | 'night' | 'either'
 
 function LookTab({ settings, set }: TabProps) {
   const { palette: showing } = useSettings()
+  const t = useSpell()
   const [draft, setDraft] = useState<CustomPalette | null>(null)
   // Which slot a new one is being made for, so it lands there rather than
   // wherever its own lightness would have filed it.
@@ -229,7 +242,14 @@ function LookTab({ settings, set }: TabProps) {
   }
 
   function forget(id: string) {
-    set({ customPalettes: settings.customPalettes.filter((p) => p.id !== id) })
+    // Whichever slot was wearing it goes back to its own default, rather than
+    // keeping the name of a palette that is no longer there.
+    const fresh = defaultSettings()
+    set({
+      customPalettes: settings.customPalettes.filter((p) => p.id !== id),
+      ...(settings.palette === id ? { palette: fresh.palette } : {}),
+      ...(settings.nightPalette === id ? { nightPalette: fresh.nightPalette } : {}),
+    })
   }
 
   if (draft) {
@@ -313,7 +333,7 @@ function LookTab({ settings, set }: TabProps) {
       <div className="field">
         <span>Accent</span>
         <p className="hint" style={{ marginTop: 0 }}>
-          Operators, brackets and the equals key. Left alone it follows the palette.
+          {t('Operators, brackets and the equals key. Left alone it follows the palette.')}
         </p>
         <div className="accent-row">
           <span className="accent-preview" style={{ background: settings.accent || 'var(--accent)' }} />

@@ -1,7 +1,8 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { calculate, formatNumber, plainNumber } from './lib/calc'
-import { backspaceAt, chunkRuns, chunksOf, displayRuns, expressionOf, pressAt, seed, type Caret } from './lib/calcinput'
+import { backspaceAt, chunkRuns, chunksOf, displayRuns, expressionOf, pressAt, pressValue, seed, type Caret } from './lib/calcinput'
 import { MAX_TAPE, loadTape, saveTape, type Tape, type TapeEntry } from './lib/calctape'
+import { uid } from './lib/uid'
 import { ROWS, SCIENTIFIC, TYPED, type Key } from './components/keys'
 import { Backspace, Clock, Gear, Mark } from './components/Icons'
 import { SettingsPanel } from './components/SettingsPanel'
@@ -57,7 +58,12 @@ export default function App() {
 
   const expression = expressionOf(chunks)
   const result = useMemo(() => calculate(expression, settings.angle), [expression, settings.angle])
-  const lastAnswer = tape.entries[0]?.value ?? 0
+  /**
+   * The last answer, for the Ans key. Kept apart from the history, which it
+   * used to be read from: with history off, equals writes nothing there, and
+   * Ans gave 0 or whatever was answered before history was turned off.
+   */
+  const [lastAnswer, setLastAnswer] = useState(() => tape.entries[0]?.value ?? 0)
 
   /**
    * A long answer steps down in size until it fits on one line, rather than
@@ -110,16 +116,33 @@ export default function App() {
       buzz()
       setCopied(false)
       setAsked(false)
-      // After an answer, a digit or a constant starts again; an operator
-      // keeps the answer and works on from it.
-      const base = settled && /^[0-9.]$|^00$/.test(pressed) ? [] : chunks
-      const value = pressed === 'ans' ? plainNumber(lastAnswer) : pressed
-      const next = pressAt(base, settled ? null : caret, value)
+      // After an answer, a digit, a constant or a recalled value starts
+      // again; an operator keeps the answer and works on from it.
+      const base = settled && (/^[0-9.]$|^00$/.test(pressed) || pressed === 'ans') ? [] : chunks
+      // Ans is one value put in whole, not digits typed one after another.
+      const next =
+        pressed === 'ans'
+          ? pressAt(base, settled ? null : caret, plainNumber(lastAnswer), pressValue)
+          : pressAt(base, settled ? null : caret, pressed)
       setChunks(next.chunks)
       setCaret(next.caret)
       setSettled(false)
     },
     [buzz, caret, chunks, lastAnswer, settled],
+  )
+
+  /** A stored number put back in whole, the way Ans is: memory recall. */
+  const recall = useCallback(
+    (value: number) => {
+      buzz()
+      setCopied(false)
+      setAsked(false)
+      const next = pressAt(settled ? [] : chunks, settled ? null : caret, plainNumber(value), pressValue)
+      setChunks(next.chunks)
+      setCaret(next.caret)
+      setSettled(false)
+    },
+    [buzz, caret, chunks, settled],
   )
 
   const clear = useCallback(() => {
@@ -172,6 +195,9 @@ export default function App() {
   )
 
   const equals = useCallback(() => {
+    // Equals again on an answer already given used to file the bare answer as
+    // a second history entry and replace the working above it with that number.
+    if (settled) return
     if (!result.ok) {
       // Asking for an answer that cannot be given is the moment to say why.
       if (result.unfinished) {
@@ -184,7 +210,7 @@ export default function App() {
     setCopied(false)
     setAsked(false)
     const entry: TapeEntry = {
-      id: crypto.randomUUID(),
+      id: uid(),
       expression,
       value: result.value,
       at: Date.now(),
@@ -196,7 +222,8 @@ export default function App() {
     setCaret(null)
     setWorked(expression)
     setSettled(true)
-  }, [buzz, expression, result, settings.keepHistory])
+    setLastAnswer(result.value)
+  }, [buzz, expression, result, settings.keepHistory, settled])
 
   const memoryAdd = useCallback(
     (direction: 1 | -1) => {
@@ -221,9 +248,11 @@ export default function App() {
         else setSettingsOpen(false)
         return
       }
-      // The panels and the converter are ordinary screens with their own
-      // controls; the pad should not be taking keys out from under them.
-      if (settingsOpen || settings.mode !== 'calculate') return
+      // The panels, the sheets and the converter are ordinary screens with their
+      // own controls; the pad should not be taking keys out from under them.
+      // With the history open, Enter on its Done button ran equals on the sum
+      // hidden behind it instead.
+      if (settingsOpen || tapeOpen || sciOpen || settings.mode !== 'calculate') return
       if (event.key === 'Enter' || event.key === '=') {
         event.preventDefault()
         equals()
@@ -466,7 +495,7 @@ export default function App() {
             <button className="chip" onClick={() => setTape((c) => ({ ...c, memory: 0 }))}>
               MC
             </button>
-            <button className="chip" disabled={!tape.memory} onClick={() => key(plainNumber(tape.memory))}>
+            <button className="chip" disabled={!tape.memory} onClick={() => recall(tape.memory)}>
               MR
             </button>
             <button className="chip" disabled={!result.ok} onClick={() => memoryAdd(1)}>

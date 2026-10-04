@@ -127,11 +127,9 @@ function canonical(source: string): string {
     .split('\u2013').join('-')
     .split('\u2014').join('-')
     .split(',').join('')
-    .split('²').join('^2')
-    .split('³').join('^3')
     // Runs after the named glyphs above, so sin⁻¹ has already become asin and
-    // only a bare reciprocal is left to read.
-    .split('⁻¹').join('^-1')
+    // only a bare reciprocal is left: one character, for the tokenizer.
+    .split('⁻¹').join('⁻')
 }
 
 function tokenize(source: string): Token[] {
@@ -177,7 +175,11 @@ function tokenize(source: string): Token[] {
       continue
     }
 
-    if ('+-*/^%!()'.includes(ch)) {
+    // The squared, cubed and reciprocal keys are postfix operators like ! and %.
+    // They used to be rewritten as ^2, ^3 and ^-1 before parsing, which made
+    // them binary powers: a digit after one joined its exponent, so 2²5 was
+    // 2^25, and a postfix after one applied to the exponent, so 3²! was 3^2!.
+    if ('+-*/^%!()²³⁻'.includes(ch)) {
       tokens.push({ t: 'op', v: ch })
       i += 1
       continue
@@ -260,6 +262,9 @@ function parse(tokens: Token[]): Node {
     for (;;) {
       if (eat('%')) node = { k: 'pct', a: node }
       else if (eat('!')) node = { k: 'fact', a: node }
+      else if (eat('²')) node = { k: 'bin', op: '^', a: node, b: { k: 'num', v: 2 } }
+      else if (eat('³')) node = { k: 'bin', op: '^', a: node, b: { k: 'num', v: 3 } }
+      else if (eat('⁻')) node = { k: 'bin', op: '^', a: node, b: { k: 'num', v: -1 } }
       else return node
     }
   }
@@ -322,6 +327,20 @@ function factorial(n: number): number {
   return total
 }
 
+/**
+ * A sum or difference that has cancelled down to floating point's own noise is
+ * zero. Binary cannot hold 0.1, 0.2 or 0.3 exactly, so 0.1 + 0.2 − 0.3 came to
+ * 5.55×10⁻¹⁷ and was shown as that. Anything within a few units in the last
+ * place of the larger of the two numbers is that noise, not an answer; the
+ * margin is tight enough that 1,000,000,000,000,001 − 1,000,000,000,000,000
+ * still comes to 1. Done here, where the sum happens, rather than when it is
+ * shown, so the history, Ans and memory get the zero too.
+ */
+function cancel(result: number, a: number, b: number): number {
+  const scale = Math.max(Math.abs(a), Math.abs(b))
+  return Number.isFinite(result) && Math.abs(result) <= scale * 2 ** -50 ? 0 : result
+}
+
 function evaluate(node: Node, angle: AngleUnit): number {
   switch (node.k) {
     case 'num':
@@ -341,7 +360,15 @@ function evaluate(node: Node, angle: AngleUnit): number {
       const fn = FUNCTIONS[node.name]
       const raw = evaluate(node.a, angle)
       const input = angle === 'deg' && TAKES_ANGLE.has(node.name) ? raw * DEG : raw
-      const out = fn(input)
+      let out = fn(input)
+      if (TAKES_ANGLE.has(node.name)) {
+        // π cannot be held exactly, so sin(180°) came out as 1.2×10⁻¹⁶ and
+        // tan(90°) as sixteen quadrillion. Where the true answer is zero it is
+        // zero, and where there is none it says so; a sine that small of an
+        // angle that is not itself tiny can only be one of those zeros.
+        if (Math.abs(out) < 1e-14 && Math.abs(input) > 1e-7) out = 0
+        if (node.name === 'tan' && Math.abs(out) > 1e15) fail('tan has no answer for that')
+      }
       if (Number.isNaN(out)) fail(`${node.name} has no answer for that`)
       return angle === 'deg' && RETURNS_ANGLE.has(node.name) ? out / DEG : out
     }
@@ -357,15 +384,15 @@ function evaluate(node: Node, angle: AngleUnit): number {
        */
       if ((node.op === '+' || node.op === '-') && node.b.k === 'pct') {
         const share = (left * evaluate(node.b.a, angle)) / 100
-        return node.op === '+' ? left + share : left - share
+        return cancel(node.op === '+' ? left + share : left - share, left, share)
       }
 
       const right = evaluate(node.b, angle)
       switch (node.op) {
         case '+':
-          return left + right
+          return cancel(left + right, left, right)
         case '-':
-          return left - right
+          return cancel(left - right, left, right)
         case '*':
           return left * right
         case '/':
@@ -485,8 +512,10 @@ export function formatMeasure(value: number, grouping: boolean): string {
   const size = Math.abs(settled)
   if (size !== 0 && (size >= BIG || size < SMALL)) return formatNumber(settled, { decimals: -1, grouping })
 
-  const integerDigits = size >= 1 ? Math.floor(Math.log10(size)) + 1 : 1 + Math.floor(Math.log10(size || 1))
-  const places = Math.max(0, Math.min(20, MEASURE_DIGITS - (size >= 1 ? integerDigits : integerDigits)))
+  // Below one this goes to nought or less, so 0.0012 counts as -2 and gets
+  // that many more places: significant figures either way.
+  const integerDigits = Math.floor(Math.log10(size || 1)) + 1
+  const places = Math.max(0, Math.min(20, MEASURE_DIGITS - integerDigits))
   const text = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: places,

@@ -27,8 +27,16 @@ export const OPERATOR_KEYS: Record<string, string> = {
 
 export type ChunkKind = 'digit' | 'operator' | 'paren' | 'function' | 'constant' | 'postfix'
 
-export function isOperator(chunk: string): boolean {
-  return OPERATORS.includes(chunk)
+/**
+ * Mod counts, and the chunk is compared trimmed: mod is stored with spaces
+ * round it, and comparing it untrimmed meant mod was never an operator, so a
+ * times pressed after it piled on instead of replacing it, and the bracket key
+ * put an implied times after it.
+ */
+export function isOperator(chunk: string | undefined): boolean {
+  if (chunk === undefined) return false
+  const plain = chunk.trim()
+  return OPERATORS.includes(plain) || plain === 'mod'
 }
 
 export function isOpener(chunk: string): boolean {
@@ -62,14 +70,40 @@ function openCount(chunks: string[]): number {
   return open
 }
 
-/** The number being typed right now, so a second decimal point can be refused. */
+/**
+ * The number being typed right now, so a second decimal point can be refused.
+ * A carried answer can lead with a minus and still be that number: -5 carried
+ * on and then a point is -5., not -50.
+ */
 function trailingNumber(chunks: string[]): string {
   let out = ''
   for (let i = chunks.length - 1; i >= 0; i -= 1) {
+    if (/^-[0-9.]+$/.test(chunks[i])) return chunks[i] + out
     if (!/^[0-9.]+$/.test(chunks[i])) break
     out = chunks[i] + out
   }
   return out
+}
+
+/** The digits after a point in the sum, up to the next thing that is not one. */
+function leadingNumber(chunks: string[]): string {
+  let out = ''
+  for (const chunk of chunks) {
+    if (!/^[0-9.]+$/.test(chunk)) break
+    out += chunk
+  }
+  return out
+}
+
+/**
+ * Whether a digit pressed after this chunk starts a new value rather than
+ * carrying on the last one: after a closing bracket, a power or a factorial or
+ * a percent, or a constant. A times goes between them, the same as before a
+ * bracket, so 2² then 5 reads 2²×5 rather than joining the exponent.
+ */
+function closesValue(chunk: string | undefined): boolean {
+  if (!chunk) return false
+  return chunk === ')' || POSTFIX.includes(chunk) || (kindOf(chunk) === 'constant' && !/^-?[0-9.]/.test(chunk.trim()))
 }
 
 export function expressionOf(chunks: string[]): string {
@@ -137,15 +171,17 @@ export function displayRuns(expression: string, grouping: boolean): Run[] {
 export function press(chunks: string[], key: string): string[] {
   const last = chunks[chunks.length - 1]
 
-  if (/^[0-9]$/.test(key)) return [...chunks, key]
+  if (/^[0-9]$/.test(key)) return closesValue(last) ? [...chunks, '×', key] : [...chunks, key]
 
   if (key === '00') {
+    if (closesValue(last)) return [...chunks, '×', '0']
     // Leading zeros are noise, so on an empty number this is worth one zero.
     if (!trailingNumber(chunks)) return [...chunks, '0']
     return [...chunks, '0', '0']
   }
 
   if (key === '.') {
+    if (closesValue(last)) return [...chunks, '×', '0', '.']
     const number = trailingNumber(chunks)
     if (number.includes('.')) return chunks
     // A point with no digit in front of it means nought point something.
@@ -153,14 +189,18 @@ export function press(chunks: string[], key: string): string[] {
   }
 
   if (isOperator(key)) {
+    // Written with its spaces, because "5mod3" is one word to a tokenizer and
+    // "5 mod 3" is three things.
+    const written = key.trim() === 'mod' ? ' mod ' : key
     if (!chunks.length) return key === '−' ? [key] : chunks
     // Swapping one operator for another is a correction, not a second operator.
     if (isOperator(last)) {
-      if (key === '−' && (last === '×' || last === '÷' || last === '^')) return [...chunks, key]
-      return [...chunks.slice(0, -1), key]
+      const before = last.trim()
+      if (key === '−' && (before === '×' || before === '÷' || before === '^' || before === 'mod')) return [...chunks, key]
+      return [...chunks.slice(0, -1), written]
     }
     if (isOpener(last)) return key === '−' ? [...chunks, key] : chunks
-    return [...chunks, key]
+    return [...chunks, written]
   }
 
   // A keyboard sends the two brackets separately; the keypad has one key that
@@ -180,13 +220,6 @@ export function press(chunks: string[], key: string): string[] {
     // A bracket straight after a value means a product, and saying so is
     // clearer than leaning on the parser to infer it.
     return [...chunks, '×', '(']
-  }
-
-  // Written with its spaces, because "5mod3" is one word to a tokenizer and
-  // "5 mod 3" is three things.
-  if (key === 'mod') {
-    if (!endsValue(last)) return chunks
-    return [...chunks, ' mod ']
   }
 
   if (POSTFIX.includes(key)) {
@@ -242,10 +275,25 @@ export type Edit = { chunks: string[]; caret: Caret }
  * times, which bracket the bracket key means, an operator replacing another)
  * are the same rules it follows in the middle; what came after is put back.
  */
-export function pressAt(chunks: string[], caret: Caret, key: string): Edit {
-  if (caret === null || caret >= chunks.length) return { chunks: press(chunks, key), caret: null }
-  const before = press(chunks.slice(0, caret), key)
+export function pressAt(chunks: string[], caret: Caret, key: string, apply: (chunks: string[], key: string) => string[] = press): Edit {
+  if (caret === null || caret >= chunks.length) return { chunks: apply(chunks, key), caret: null }
+  // The point guard has to see the whole number, after the caret as well as
+  // before it, or 1|.5 takes a second point and becomes 1..5.
+  if (key === '.' && (trailingNumber(chunks.slice(0, caret)) + leadingNumber(chunks.slice(caret))).includes('.')) {
+    return { chunks, caret }
+  }
+  const before = apply(chunks.slice(0, caret), key)
   return { chunks: [...before, ...chunks.slice(caret)], caret: before.length }
+}
+
+/**
+ * A whole number put in at once, by Ans or memory recall. It is one value, not
+ * digits to be typed: after a number or anything else that ends a value it
+ * multiplies, so 3 then Ans of 12.5 is 3×12.5, where it used to be 312.5.
+ */
+export function pressValue(chunks: string[], value: string): string[] {
+  const last = chunks[chunks.length - 1]
+  return endsValue(last) ? [...chunks, '×', value] : [...chunks, value]
 }
 
 /** A rub-out takes off the chunk before the caret, and nothing at the very start. */

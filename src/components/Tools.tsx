@@ -7,6 +7,7 @@ import { DateTool, GradeAverage, Hex, WorldTime } from './tools/Everyday'
 import { FuelCost, FuelEfficiency } from './tools/Vehicle'
 import { BodyMetrics, Ovulation } from './tools/Health'
 import { Currency } from './tools/Currency'
+import { Mend } from './Mend'
 
 const SCREENS: Record<string, () => React.ReactElement> = {
   discount: Discount,
@@ -87,7 +88,9 @@ export function Tools() {
               and answers nothing. Two marks that can disagree are worse than
               the one that is right. */}
         </div>
-        <div className="tool-body">{Screen ? <Screen /> : null}</div>
+        <div className="tool-body">
+          <Mend key={open.id}>{Screen ? <Screen /> : null}</Mend>
+        </div>
       </div>
     )
   }

@@ -81,19 +81,62 @@ test('a span borrows from the real length of the month, not a flat thirty', () =
   const span = spanOf(new Date(2020, 2, 15), new Date(2026, 8, 2))
   assert.equal(span.years, 6)
   assert.equal(span.months, 5)
-  assert.equal(spanOf(new Date(2026, 0, 31), new Date(2026, 2, 1)).months, 1)
+  assert.equal(span.rest, 18)
+})
+
+test('a span never comes out with negative days', () => {
+  const calendar = (a: Date, b: Date) => {
+    const span = spanOf(a, b)
+    return [span.years, span.months, span.rest]
+  }
+  assert.deepEqual(calendar(new Date(2025, 0, 31), new Date(2025, 2, 1)), [0, 1, 1])
+  assert.deepEqual(calendar(new Date(2025, 0, 30), new Date(2025, 2, 1)), [0, 1, 1])
+  assert.deepEqual(calendar(new Date(2024, 0, 31), new Date(2024, 2, 1)), [0, 1, 1])
+  assert.deepEqual(calendar(new Date(2024, 1, 29), new Date(2025, 1, 28)), [1, 0, 0])
+  assert.deepEqual(calendar(new Date(2026, 4, 10), new Date(2026, 4, 10)), [0, 0, 0])
+  // Backwards reads the same span, flagged.
+  const back = spanOf(new Date(2025, 2, 1), new Date(2025, 0, 31))
+  assert.deepEqual([back.years, back.months, back.rest, back.back], [0, 1, 1, true])
+  // Every pair across two years: rest is never negative and never a month or more.
+  for (let a = 0; a < 730; a += 3) {
+    for (let b = a; b < a + 400; b += 7) {
+      const from = new Date(2024, 0, 1 + a)
+      const to = new Date(2024, 0, 1 + b)
+      const span = spanOf(from, to)
+      assert.ok(span.rest >= 0 && span.rest < 31, `${from.toDateString()} → ${to.toDateString()}`)
+      assert.ok(span.months >= 0 && span.months < 12)
+    }
+  }
+})
+
+test('a date far enough out is not a date', () => {
+  assert.ok(Number.isNaN(addDays(new Date(2026, 0, 1), 1e12).getTime()))
 })
 
 test('a base reads only the digits that base can hold', () => {
-  assert.equal(parseBase('ff', 16), 255)
-  assert.equal(parseBase('1011', 2), 11)
-  assert.equal(parseBase('777', 8), 511)
-  assert.equal(parseBase('0xFF', 16), 255)
-  assert.equal(parseBase('00ff', 16), 255)
+  const read = (text: string, base: 2 | 8 | 10 | 16) => {
+    const reading = parseBase(text, base)
+    return reading === null ? null : 'value' in reading ? reading.value : reading.problem
+  }
+  assert.equal(read('ff', 16), 255n)
+  assert.equal(read('1011', 2), 11n)
+  assert.equal(read('777', 8), 511n)
+  assert.equal(read('0xFF', 16), 255n)
+  assert.equal(read('00ff', 16), 255n)
+  assert.equal(read('1111 0000', 2), 240n)
   // parseInt would silently read this as 1. Refusing is the honest answer.
-  assert.equal(parseBase('19', 8), null)
-  assert.equal(parseBase('1f', 10), null)
-  assert.equal(parseBase('', 16), null)
+  assert.equal(read('19', 8), 'digit')
+  assert.equal(read('1f', 10), 'digit')
+  assert.equal(read('', 16), null)
+  // Only the prefix that belongs to the base is taken off.
+  assert.equal(read('0b12', 16), 0xb12n)
+  assert.equal(read('0b101', 2), 5n)
+  assert.equal(read('0x10', 10), 'digit')
+  assert.equal(read('0x', 16), null)
+  // Exact past what a float can hold, and refused past 64 bits for the right reason.
+  assert.equal(read('FFFFFFFFFFFFFFFF', 16), 2n ** 64n - 1n)
+  assert.equal(read('10000000000000000', 16), 'size')
+  assert.equal(read('9007199254740993', 10), 9007199254740993n)
 })
 
 test('a blank grade row is not a zero', () => {

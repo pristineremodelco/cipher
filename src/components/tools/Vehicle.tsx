@@ -1,22 +1,19 @@
 import { useState } from 'react'
 import { Field, Readout, Segment, Tool } from '../Form'
 import { fuelCost, fuelEfficiency, type FuelUnits } from '../../lib/tools'
+import { useShow } from './dates'
 
 const UNITS: { id: FuelUnits; name: string }[] = [
   { id: 'us', name: 'Miles and gallons' },
   { id: 'metric', name: 'Kilometres and litres' },
 ]
 
-function show(value: number, places = 2): string {
-  if (!Number.isFinite(value)) return ''
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: places }).format(value)
-}
-
 export function FuelCost() {
   const [units, setUnits] = useState<FuelUnits>('us')
   const [distance, setDistance] = useState('')
   const [efficiency, setEfficiency] = useState(units === 'us' ? '25' : '8')
   const [price, setPrice] = useState('')
+  const show = useShow()
   const us = units === 'us'
   const result = fuelCost(Number(distance), Number(efficiency), Number(price), units)
   const ready = Number(distance) > 0 && Number(efficiency) > 0
@@ -55,6 +52,7 @@ export function FuelEfficiency() {
   const [units, setUnits] = useState<FuelUnits>('us')
   const [distance, setDistance] = useState('')
   const [fuel, setFuel] = useState('')
+  const show = useShow()
   const us = units === 'us'
   const result = fuelEfficiency(Number(distance), Number(fuel), units)
   const ready = Number(distance) > 0 && Number(fuel) > 0

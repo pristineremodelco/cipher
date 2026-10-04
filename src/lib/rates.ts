@@ -104,11 +104,15 @@ function saveRates(rates: Rates) {
  * Asks for a fresh set. Throws rather than returning something empty, so the
  * screen can tell the difference between "no signal" and "nothing to show".
  */
-export async function fetchRates(): Promise<Rates> {
+export async function fetchRates(signal?: AbortSignal): Promise<Rates> {
   const controller = new AbortController()
   // A phone with one bar can leave a request hanging indefinitely, and a
   // spinner that never stops is the worst of the three possible states.
   const timer = setTimeout(() => controller.abort(), 8000)
+  // Whoever asked can also call it off, when the screen that asked is gone.
+  const stop = () => controller.abort()
+  if (signal?.aborted) stop()
+  signal?.addEventListener('abort', stop)
   try {
     const response = await fetch(SOURCE, { signal: controller.signal, cache: 'no-store' })
     if (!response.ok) throw new Error(`The rate service answered ${response.status}`)
@@ -124,6 +128,7 @@ export async function fetchRates(): Promise<Rates> {
     return settled
   } finally {
     clearTimeout(timer)
+    signal?.removeEventListener('abort', stop)
   }
 }
 

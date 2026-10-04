@@ -2,19 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Choice, DateField, Field, Readout, Segment, Tool } from '../Form'
 import { BASES, BASE_NAMES, addDays, daysBetween, gradeAverage, parseBase, spanOf, type Base, type Grade } from '../../lib/tools'
 import { ZONES, dayIn, deviceZone, offsetHours, offsetLabel, timeIn, zoneOf } from '../../lib/zones'
+import { uid } from '../../lib/uid'
 import { useSettings } from '../../store'
-
-/** A date field speaks YYYY-MM-DD; the rest of the app speaks in Dates. */
-function toInput(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
-function fromInput(text: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null
-  const [y, m, d] = text.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  return Number.isNaN(date.getTime()) ? null : date
-}
+import { fromInput, toInput } from './dates'
 function longDate(date: Date): string {
   return new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date)
 }
@@ -50,7 +40,11 @@ export function DateTool() {
             {
               label: 'On the calendar',
               value: span
-                ? [span.years ? `${span.years} yr` : '', span.months ? `${span.months} mo` : '', `${span.rest} d`]
+                ? [
+                    span.years ? `${span.years} yr` : '',
+                    span.months ? `${span.months} mo` : '',
+                    span.rest || (!span.years && !span.months) ? `${span.rest} d` : '',
+                  ]
                     .filter(Boolean)
                     .join(', ')
                 : '',
@@ -63,7 +57,10 @@ export function DateTool() {
   }
 
   const shift = Number(days) * (direction === 'before' ? -1 : 1)
-  const landed = start && Number.isFinite(shift) ? addDays(start, Math.round(shift)) : null
+  const moved = start && Number.isFinite(shift) ? addDays(start, Math.round(shift)) : null
+  // Far enough out and a Date stops being one, which would take the tool down
+  // with it when it is written out.
+  const landed = moved && Number.isFinite(moved.getTime()) ? moved : null
   return (
     <Tool>
       <Segment
@@ -200,7 +197,14 @@ export function WorldTime() {
 export function Hex() {
   const [text, setText] = useState('255')
   const [base, setBase] = useState<Base>(10)
-  const value = parseBase(text, base)
+  const reading = parseBase(text, base)
+  const value = reading && 'value' in reading ? reading.value : null
+  const problem =
+    reading && 'problem' in reading
+      ? reading.problem === 'size'
+        ? 'Too large: 64 bits at most'
+        : `Not a ${BASE_NAMES[base].toLowerCase()} number`
+      : undefined
 
   return (
     <Tool note="A digit the base cannot hold is refused rather than truncated.">
@@ -210,7 +214,7 @@ export function Hex() {
         onChange={(next) => setBase(Number(next) as Base)}
         options={BASES.map((b) => ({ id: String(b), name: BASE_NAMES[b] }))}
       />
-      <Field label="Value" value={text} onChange={setText} hint={value === null && text.trim() ? `Not a ${BASE_NAMES[base].toLowerCase()} number` : undefined} />
+      <Field label="Value" value={text} onChange={setText} hint={problem} />
       <Readout
         rows={BASES.map((b) => ({
           label: BASE_NAMES[b],
@@ -224,8 +228,8 @@ export function Hex() {
 
 export function GradeAverage() {
   const [rows, setRows] = useState<Grade[]>([
-    { id: crypto.randomUUID(), score: '', weight: '3' },
-    { id: crypto.randomUUID(), score: '', weight: '3' },
+    { id: uid(), score: '', weight: '3' },
+    { id: uid(), score: '', weight: '3' },
   ])
   const result = gradeAverage(rows)
 
@@ -255,7 +259,7 @@ export function GradeAverage() {
       <button
         className="ghost"
         disabled={rows.length >= 20}
-        onClick={() => setRows((current) => [...current, { id: crypto.randomUUID(), score: '', weight: '3' }])}
+        onClick={() => setRows((current) => [...current, { id: uid(), score: '', weight: '3' }])}
       >
         Add another
       </button>

@@ -3,41 +3,18 @@ import { fitToWidth, onReflow } from './fit'
 import { CATEGORIES, categoryOf, convert, defaultPair, unitOf, type Category, type Unit } from '../lib/units'
 import { findUnits, fromKey, keyOf, parsePair, type Found, type Pair } from '../lib/unitsearch'
 import { formatMeasure } from '../lib/calc'
+import { asEntry, placed, pressEntry } from '../lib/convertentry'
 import { Backspace } from './Icons'
 import { useSettings, useSpell } from '../store'
 
-/**
- * A number being typed, held as text rather than as a number.
- *
- * "1.50" and "1.5" are the same number and different things to type, and a
- * field that renders back what it parsed cannot let anyone key the first one
- * at all: the trailing zero would vanish under their thumb.
- */
-function typed(current: string, key: string): string {
-  if (key === 'back') return current.slice(0, -1)
-  if (key === 'clear') return ''
-  if (key === 'sign') {
-    if (!current) return '-'
-    return current.startsWith('-') ? current.slice(1) : `-${current}`
+/** The typing row's number; see pressEntry for why a placed one is typed over. */
+function useEntry() {
+  const [state, setState] = useState(() => placed('1'))
+  return {
+    entry: state.text,
+    press: (key: string) => setState((current) => pressEntry(current, key)),
+    place: (text: string) => setState(placed(text)),
   }
-  if (key === '.') {
-    if (current.includes('.')) return current
-    return current ? `${current}.` : '0.'
-  }
-  if (key === '00') return current && current !== '0' ? `${current}00` : current
-  if (current === '0') return key
-  if (current === '-0') return `-${key}`
-  return current + key
-}
-
-/**
- * A result taken up as the number being typed. Twelve figures, which is more
- * than the readings show and few enough to drop floating point's noise, and
- * never with an exponent: a reading of 1e-12 in the typing row is not a number
- * anyone would type, and the next digit pressed would land on the exponent.
- */
-function asEntry(value: number): string {
-  return Number(value.toPrecision(12)).toLocaleString('en-US', { useGrouping: false, maximumSignificantDigits: 12 })
 }
 
 function Swap() {
@@ -88,11 +65,14 @@ function useBuzz() {
  */
 function Reading({
   tappable,
+  live,
   label,
   onTap,
   children,
 }: {
   tappable: boolean
+  /** The row showing the answer, which a screen reader reads out as it changes. */
+  live: boolean
   label: string
   onTap: () => void
   children: ReactNode
@@ -103,11 +83,17 @@ function Reading({
   useLayoutEffect(() => fitToWidth(node.current))
   useEffect(() => onReflow(() => fitToWidth(node.current)), [])
   return tappable ? (
-    <button className="convert-reading" aria-label={label} onClick={onTap} ref={(el) => { node.current = el }}>
+    <button
+      className="convert-reading"
+      aria-label={label}
+      aria-live={live ? 'polite' : undefined}
+      onClick={onTap}
+      ref={(el) => { node.current = el }}
+    >
       {children}
     </button>
   ) : (
-    <div className="convert-reading" ref={(el) => { node.current = el }}>
+    <div className="convert-reading" aria-live={live ? 'polite' : undefined} ref={(el) => { node.current = el }}>
       {children}
     </div>
   )
@@ -160,7 +146,7 @@ function CategoryConverter() {
   const from = unitOf(category, savedFrom)
   const to = unitOf(category, savedTo)
 
-  const [entry, setEntry] = useState('1')
+  const { entry, press, place } = useEntry()
   /** Which of the two rows the keypad is typing into. */
   const [typingSide, setSide] = useState<'from' | 'to'>('from')
   // With only the top row taking input, that is where typing always is.
@@ -186,14 +172,14 @@ function CategoryConverter() {
 
   function key(pressed: string) {
     buzz()
-    setEntry((current) => typed(current, pressed))
+    press(pressed)
   }
 
   function pickCategory(id: string) {
     buzz()
     set({ convertCategory: id })
     setSide('from')
-    setEntry('1')
+    place('1')
     strip.current?.scrollTo({ left: 0, behavior: 'smooth' })
   }
 
@@ -207,7 +193,7 @@ function CategoryConverter() {
     set({ convertPairs: { ...settings.convertPairs, [category.id]: `${to.id}>${from.id}` } })
     // The number stays where the eye is: after a swap the row being typed into
     // is the one that was showing the answer, so the reading does not jump.
-    setEntry(Number.isFinite(result) ? asEntry(result) : entry)
+    place(Number.isFinite(result) ? asEntry(result) : entry)
   }
 
   /** What the row shows: what is being typed, or what it comes to. */
@@ -222,13 +208,14 @@ function CategoryConverter() {
       <div className="convert-row" data-active={active}>
         <Reading
           tappable={settings.convertInput === 'either'}
+          live={!active}
           label={`${active ? 'Typing' : 'Result'} in ${t(unit.name)}. Tap to type in this one.`}
           onTap={() => {
             if (active) return
             buzz()
             // Typing moves to this row and starts from what it was showing, so
             // the conversion simply runs the other way.
-            setEntry(Number.isFinite(result) ? asEntry(result) : '')
+            place(Number.isFinite(result) ? asEntry(result) : '')
             setSide(which)
           }}
         >
@@ -292,7 +279,7 @@ function CategoryConverter() {
                   pickUnit(side === 'from' ? 'to' : 'from', unit.id)
                 }}
               >
-                <span className="convert-other-value" data-long={show(other).length > 11}>
+                <span className="convert-other-value" data-long={show(other).length > 12 ? 'more' : show(other).length > 11}>
                   {show(other)}
                 </span>
                 <span className="convert-other-unit">{unit.symbol}</span>
@@ -328,7 +315,7 @@ function SimpleConverter() {
    * could make the bottom the input, after which every new bottom unit kept the
    * typed number and moved the top one, 1 lb turning into 0.000001 lb.
    */
-  const [entry, setEntry] = useState('1')
+  const { entry, press, place } = useEntry()
   const [typingSide, setSide] = useState<'from' | 'to'>('from')
   const either = settings.convertInput === 'either'
   const side = either ? typingSide : 'from'
@@ -363,13 +350,16 @@ function SimpleConverter() {
     setPicking(null)
     set({ simpleFrom: keyOf(pair.from), simpleTo: keyOf(pair.to) })
     setSide('from')
-    if (pair.value !== undefined) setEntry(String(pair.value))
+    if (pair.value !== undefined) place(asEntry(pair.value))
   }
 
   function swap() {
+    // The pad's swap key is always there, unlike the one between the rows,
+    // which is greyed out until both units are chosen.
+    if (!from || !to) return
     buzz()
     set({ simpleFrom: settings.simpleTo, simpleTo: settings.simpleFrom })
-    if (Number.isFinite(result)) setEntry(asEntry(result))
+    if (Number.isFinite(result)) place(asEntry(result))
   }
 
   function reading(which: 'from' | 'to'): string {
@@ -383,11 +373,12 @@ function SimpleConverter() {
       <div className="convert-row" data-active={active}>
         <Reading
           tappable={either}
+          live={!active}
           label={`${active ? 'Typing' : 'Result'}${found ? ` in ${t(found.unit.name)}` : ''}. Tap to type in this one.`}
           onTap={() => {
             if (active) return
             buzz()
-            setEntry(Number.isFinite(result) ? asEntry(result) : '')
+            place(Number.isFinite(result) ? asEntry(result) : '')
             setSide(which)
           }}
         >
@@ -434,7 +425,7 @@ function SimpleConverter() {
         </p>
       )}
 
-      <ConvertPad onKey={(pressed) => { buzz(); setEntry((current) => typed(current, pressed)) }} onSwap={swap} />
+      <ConvertPad onKey={(pressed) => { buzz(); press(pressed) }} onSwap={swap} />
 
       {picking ? (
         <UnitPicker

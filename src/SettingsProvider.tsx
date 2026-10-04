@@ -1,16 +1,7 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from 'react'
 import { loadSettings, saveSettings } from './lib/storage'
-import { luminance } from './lib/theme'
-import { spell } from './lib/spelling'
-import { activePalette, contrastText, derivePalette, fontStack, mix, paletteOf, readableInk } from './lib/theme'
+import { activePalette, derivePalette, fontStack, mix, onAccent, paletteOf, readableInk, schemeOf } from './lib/theme'
+import { SettingsContext } from './store'
 import type { Settings } from './types'
 
 /**
@@ -53,20 +44,6 @@ const PALETTE_VARS = [
   '--danger',
 ]
 
-function asPaletteScheme(ground: string): 'light' | 'dark' {
-  return luminance(ground) > 0.45 ? 'light' : 'dark'
-}
-
-type Value = {
-  settings: Settings
-  /** A patch, not a whole record, so a screen only names what it changed. */
-  set: (patch: Partial<Settings>) => void
-  /** Which palette is on right now, once the device has had its say. */
-  palette: string
-}
-
-const SettingsContext = createContext<Value | null>(null)
-
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const prefersDark = usePrefersDark()
@@ -80,10 +57,19 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     saveSettings(settings)
   }, [settings])
 
-  useEffect(() => {
+  const { customPalettes, keyStyle, keyShape, textSize, layout, zeroKey, mode, boldText, fontId, displayScale, accent } =
+    settings
+
+  /**
+   * Laid out before the first paint rather than after it, so the app never
+   * shows a frame in the stylesheet's default palette before switching to the
+   * chosen one. Re-run only for what it reads: a converter pair or a tool
+   * being picked is a settings change too, and used to redo all of this.
+   */
+  useLayoutEffect(() => {
     const root = document.documentElement
-    const own = settings.customPalettes.find((item) => item.id === palette)
-    const scheme = own ? asPaletteScheme(own.ground) : paletteOf(palette).scheme
+    const own = customPalettes.find((item) => item.id === palette)
+    const scheme = own ? schemeOf(own.ground) : paletteOf(palette).scheme
 
     // A palette that ships is a rule in the stylesheet, keyed on this. One made
     // here has no rule to key, so its nine variables are set on the element
@@ -91,15 +77,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     // or a dark one, because the shadow scale is the one thing not set here
     // and a soft shadow on a dark ground reads as fog.
     root.dataset.palette = own ? (scheme === 'dark' ? 'graphite' : 'snow') : palette
-    root.dataset.keystyle = settings.keyStyle
-    root.dataset.keyshape = settings.keyShape
-    root.dataset.textsize = settings.textSize
-    root.dataset.layout = settings.layout
-    root.dataset.zero = settings.zeroKey
-    root.dataset.mode = settings.mode
-    root.dataset.bold = String(settings.boldText)
-    root.style.setProperty('--font-stack', fontStack(settings.fontId))
-    root.style.setProperty('--display-scale', String(settings.displayScale))
+    root.dataset.keystyle = keyStyle
+    root.dataset.keyshape = keyShape
+    root.dataset.textsize = textSize
+    root.dataset.layout = layout
+    root.dataset.zero = zeroKey
+    root.dataset.mode = mode
+    root.dataset.bold = String(boldText)
+    root.style.setProperty('--font-stack', fontStack(fontId))
+    root.style.setProperty('--display-scale', String(displayScale))
 
     /**
      * Every colour is settled here in one pass and then written once.
@@ -111,9 +97,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
      * palette made here lost the one colour it was made for.
      */
     const colours: Record<string, string> = own ? { ...derivePalette(own) } : {}
-    if (settings.accent) {
-      colours['--accent'] = settings.accent
-      colours['--on-accent'] = contrastText(settings.accent) === '#111' ? '#111111' : '#ffffff'
+    if (accent) {
+      colours['--accent'] = accent
+      colours['--on-accent'] = onAccent(accent)
     }
     for (const name of PALETTE_VARS) root.style.removeProperty(name)
     for (const [name, value] of Object.entries(colours)) root.style.setProperty(name, value)
@@ -126,10 +112,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     // key tinted with the accent itself, which is the hardest of the four.
     const computed = getComputedStyle(root)
     const read = (name: string) => computed.getPropertyValue(name).trim()
-    const accent = read('--accent')
+    const worn = read('--accent')
     const surfaces = [read('--key'), read('--panel'), read('--bg')]
-    if (settings.keyStyle === 'contrast') surfaces.push(mix(accent, read('--panel'), 0.2))
-    root.style.setProperty('--accent-ink', readableInk(accent, surfaces))
+    if (keyStyle === 'contrast') surfaces.push(mix(worn, read('--panel'), 0.2))
+    root.style.setProperty('--accent-ink', readableInk(worn, surfaces))
 
     // The status bar takes the ground colour, so a phone in standalone mode
     // does not draw a strip of the wrong palette above the app.
@@ -137,20 +123,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     const meta = document.querySelector('meta[name="theme-color"]')
     if (meta && ground) meta.setAttribute('content', ground)
     root.style.colorScheme = scheme
-  }, [palette, settings])
+  }, [palette, customPalettes, keyStyle, keyShape, textSize, layout, zeroKey, mode, boldText, fontId, displayScale, accent])
 
   const value = useMemo(() => ({ settings, set, palette }), [settings, set, palette])
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
-}
-
-/** The setting's spelling, as a function to pass text through on its way to the screen. */
-export function useSpell(): (text: string) => string {
-  const { settings } = useSettings()
-  return useCallback((text: string) => spell(text, settings.spelling), [settings.spelling])
-}
-
-export function useSettings(): Value {
-  const value = useContext(SettingsContext)
-  if (!value) throw new Error('useSettings must be used inside SettingsProvider')
-  return value
 }

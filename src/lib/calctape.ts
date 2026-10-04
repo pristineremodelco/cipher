@@ -1,3 +1,5 @@
+import { uid } from './uid'
+
 /**
  * The tape and the memory register.
  *
@@ -45,7 +47,7 @@ export function loadTape(): Tape {
             )
             .slice(0, MAX_TAPE)
             .map((entry) => ({
-              id: typeof entry.id === 'string' ? entry.id : crypto.randomUUID(),
+              id: typeof entry.id === 'string' ? entry.id : uid(),
               expression: entry.expression,
               value: entry.value,
               at: Number.isFinite(entry.at) ? entry.at : Date.now(),

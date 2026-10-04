@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Field, Readout, Segment, Tool } from '../Form'
 import { discount, loan, percentChange, percentIs, percentOf, salesTax, savings, tip, unitPrice } from '../../lib/tools'
 import { useSettings } from '../../store'
+import { useShow } from './dates'
 
 /** Money to two places, always, because money has two places. */
 function money(value: number, grouping: boolean): string {
@@ -13,20 +14,9 @@ function money(value: number, grouping: boolean): string {
   }).format(value)
 }
 
-function plain(value: number, places: number, grouping: boolean): string {
-  if (!Number.isFinite(value)) return ''
-  return new Intl.NumberFormat('en-US', {
-    maximumFractionDigits: places,
-    useGrouping: grouping,
-  }).format(value)
-}
-
 function useMoney() {
   const { settings } = useSettings()
-  return {
-    money: (value: number) => money(value, settings.grouping),
-    plain: (value: number, places = 2) => plain(value, places, settings.grouping),
-  }
+  return { money: (value: number) => money(value, settings.grouping), plain: useShow() }
 }
 
 export function Discount() {

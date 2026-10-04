@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { contrastText, derivePalette, luminance, parseHex } from '../lib/theme'
+import { derivePalette, onAccent, parseHex, schemeOf } from '../lib/theme'
 import type { CustomPalette } from '../types'
 import { useSpell } from '../store'
 
@@ -120,7 +120,7 @@ export function PaletteEditor({
   onCancel: () => void
 }) {
   const derived = derivePalette(draft)
-  const scheme = luminance(draft.ground) > 0.45 ? 'light' : 'dark'
+  const scheme = schemeOf(draft.ground)
   const root = useRef<HTMLDivElement>(null)
 
   // The list it was opened from may have been scrolled well down; the editor
@@ -190,7 +190,7 @@ export function PaletteEditor({
         </button>
         <button
           className="primary"
-          style={{ background: draft.accent, color: contrastText(draft.accent) === '#111' ? '#111' : '#fff' }}
+          style={{ background: draft.accent, color: onAccent(draft.accent) }}
           disabled={!draft.name.trim()}
           onClick={onSave}
         >

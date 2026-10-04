@@ -1,22 +1,7 @@
 import { useState } from 'react'
 import { Choice, DateField, Field, Readout, Segment, Tool } from '../Form'
 import { ACTIVITY, bmi, bmiBand, bmr, ovulation, type BodyUnits, type Sex } from '../../lib/tools'
-
-function show(value: number, places = 1): string {
-  if (!Number.isFinite(value)) return ''
-  return new Intl.NumberFormat('en-US', { maximumFractionDigits: places }).format(value)
-}
-
-function toInput(date: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
-function fromInput(text: string): Date | null {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return null
-  const [y, m, d] = text.split('-').map(Number)
-  const date = new Date(y, m - 1, d)
-  return Number.isNaN(date.getTime()) ? null : date
-}
+import { fromInput, toInput, useShow } from './dates'
 function longDate(date: Date): string {
   return new Intl.DateTimeFormat('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }).format(date)
 }
@@ -28,6 +13,7 @@ export function BodyMetrics() {
   const [age, setAge] = useState('')
   const [sex, setSex] = useState<Sex>('male')
   const [activity, setActivity] = useState(ACTIVITY[1].id)
+  const show = useShow()
 
   const us = units === 'us'
   const index = bmi(Number(weight), Number(height), units)

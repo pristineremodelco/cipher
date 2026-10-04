@@ -74,10 +74,19 @@ await page.waitForSelector('.picker-sheet[aria-label="Convert to"]')
 await page.click('.picker-head button:has-text("Cancel")')
 t.is('a new kind on top clears a bottom it cannot reach', await unit(2), 'Choose a unit')
 t.is('and the result says so rather than guessing', await reading(2), '—')
+// The pad's swap key is always there; with one unit missing it does nothing
+// rather than moving the top unit to the bottom and leaving the top empty.
+await page.click('.convert-pad .key[aria-label="Swap the two units"]')
+t.is('the pad swap leaves a half-chosen pair alone', `${await unit(1)} / ${await unit(2)}`, 'psiPound per square inch / Choose a unit')
 
 // It is remembered.
 await page.reload({ waitUntil: 'networkidle' })
 t.is('the top unit is remembered', await unit(1), 'psiPound per square inch')
+// The opening 1 is there to be typed over.
+await pad('5')
+t.is('the first digit replaces the opening 1', await reading(1), '5')
+await pad('0')
+t.is('and the next one adds to it', await reading(1), '50')
 
 // And the setting puts the categories back.
 await page.click('button[aria-label="Settings"]')

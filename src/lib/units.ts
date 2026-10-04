@@ -32,12 +32,12 @@ export type Category = {
 }
 
 const FOOT = 0.3048
-const INCH = 0.0254
-const POUND = 0.45359237
-const US_GALLON = 3.785411784
+export const INCH = 0.0254
+export const POUND = 0.45359237
+export const US_GALLON = 3.785411784
 const UK_GALLON = 4.54609
 const US_FL_OZ = US_GALLON / 128
-const MILE = 1609.344
+export const MILE = 1609.344
 /** Standard gravity, which is what turns a pound of force into newtons. */
 const GRAVITY = 9.80665
 /** A foot pound of energy, from its definition rather than from a chart. */

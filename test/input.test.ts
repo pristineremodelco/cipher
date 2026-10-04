@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { backspace, backspaceAt, chunkRuns, chunksOf, displayRuns, expressionOf, press, pressAt } from '../src/lib/calcinput.ts'
+import { backspace, backspaceAt, chunkRuns, chunksOf, displayRuns, expressionOf, press, pressAt, pressValue } from '../src/lib/calcinput.ts'
 import { calculate } from '../src/lib/calc.ts'
 
 /** Runs a sequence of presses, where `<` is the rub-out. */
@@ -159,4 +159,46 @@ test('one run per chunk, grouped like the display', () => {
     const viaString = displayRuns(expression, true).map((r) => r.text).join('')
     assert.equal(viaChunks, viaString, expression)
   }
+})
+
+/** What the review of the whole engine found, each pinned so it stays fixed. */
+const pressed = (keys: string[], start: string[] = []) => keys.reduce((chunks, key) => press(chunks, key), start)
+const worked = (chunks: string[]) => {
+  const result = calculate(expressionOf(chunks), 'deg')
+  return result.ok ? result.value : result.error
+}
+
+test('a digit after a power, a factorial or a constant starts a new factor', () => {
+  assert.equal(expressionOf(pressed(['2', '²', '5'])), '2²×5')
+  assert.equal(worked(pressed(['2', '²', '5'])), 20)
+  assert.equal(expressionOf(pressed(['e', '5'])), 'e×5')
+  assert.equal(expressionOf(pressed(['3', '!', '2'])), '3!×2')
+  assert.equal(expressionOf(pressed(['(', '1', ')', '2'])), '(1)×2')
+})
+
+test('powers are postfix operators, so what follows applies to the power', () => {
+  assert.equal(worked(pressed(['3', '²', '!'])), 362880)
+  assert.equal(worked(pressed(['5', '²', '%'])), 0.25)
+  assert.equal(worked(pressed(['2', '²', '⁻¹'])), 0.25)
+  assert.equal(worked(pressed(['2', '³', '²'])), 64)
+  assert.equal(worked(pressed(['2', '^', '3', '²'])), 512)
+  assert.equal(worked(pressed(['−', '3', '²'])), -9)
+})
+
+test('a whole value put in by Ans or memory multiplies rather than joining digits', () => {
+  assert.equal(expressionOf(pressValue(['3'], '12.5')), '3×12.5')
+  assert.equal(expressionOf(pressValue(['3', '+'], '12.5')), '3+12.5')
+  assert.equal(expressionOf(pressValue([], '-5')), '-5')
+})
+
+test('mod is an operator like the others', () => {
+  assert.equal(expressionOf(pressed(['5', 'mod', '×'])), '5×')
+  assert.equal(expressionOf(pressed(['5', '×', 'mod', '3'])), '5 mod 3')
+  assert.equal(expressionOf(pressed(['5', 'mod', '()'])), '5 mod (')
+  assert.equal(worked(pressed(['7', 'mod', '3'])), 1)
+})
+
+test('a point is refused wherever the number already has one', () => {
+  assert.deepEqual(pressAt(['1', '.', '5'], 1, '.').chunks, ['1', '.', '5'])
+  assert.equal(expressionOf(pressed(['.'], ['-5'])), '-5.')
 })

@@ -39,7 +39,9 @@ an app opened to work something out opens on it.
 - **History**: the last 200 answers, each with the working that produced it.
   Tap the working to put it back on the display, or the answer to carry it into
   the next sum. Nothing expires with time: the 201st sum pushes the oldest off
-  and that is the only way one leaves, short of Clear or turning history off
+  and that is the only way one leaves, short of Clear. Turning history off
+  stops new answers being written down and hides the list; what was already
+  there is kept, and comes back if it is turned on again
 - **Hold the rub-out** to clear the lot
 - **Tap the answer** to copy it
 - **Tap inside the sum** to put a cursor there and change one part of it, even
@@ -180,7 +182,7 @@ npm test
 ```
 
 The sums, run under node with no test framework and no dependency: node runs
-TypeScript and ships a test runner, so there is nothing to install. 228 of
+TypeScript and ships a test runner, so there is nothing to install. 243 of
 them, covering the expression parser, what each key does to what is already on
 the display, every answer carried on reading back as itself, all 127 unit
 factors with every pair round tripped, what typing a unit finds, and every one
@@ -196,7 +198,7 @@ npm run dev
 npm run test:browser
 ```
 
-The rest, which needs a browser: 541 checks across seven suites. Every key on
+The rest, which needs a browser: 567 checks across seven suites. Every key on
 the pad pressed with the answer read back off the screen; what carries forward
 between presses and how far the history goes; a palette made from three colours
 and worn; every setting driven and its effect measured, from key corners to
@@ -228,7 +230,8 @@ centre. The output is committed; run this only when the mark changes.
 ```
 src/
   App.tsx            the display, the pad, the sheets, and the keying
-  store.tsx          settings, persistence, and applying them to :root
+  SettingsProvider.tsx  settings, persistence, and applying them to :root
+  store.ts           reading the settings from anywhere below it
   index.css          palettes first, then everything reading from them
   types.ts           what a setting can be
   lib/
@@ -243,13 +246,17 @@ src/
     theme.ts         palettes, typefaces, key styles, and deriving one
     spelling.ts      American or British English, on the way to the screen
     storage.ts       settings defaults and forward migration
+    convertentry.ts  typing into the converter, and typing over its opening 1
+    uid.ts           ids that do not need a secure page
   components/
     keys.ts          what is on the pad, and nothing about how it is drawn
     Converter.tsx    by category or simple: a pair, a picker, and a pad
     Confirm.tsx      a button that asks once before it does what cannot be undone
+    Mend.tsx         what shows instead of a blank page if something breaks
     Tools.tsx        the grid, and one screen at a time
     Form.tsx         the field, the choice and the answer block they all share
-    tools/           one file per group: Money, Everyday, Vehicle, Health, Currency
+    tools/           one file per group: Money, Everyday, Vehicle, Health, Currency,
+                     and dates.ts for what they share
     SettingsPanel.tsx
     PaletteEditor.tsx  three colours in, nine out
     Icons.tsx

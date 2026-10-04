@@ -1,3 +1,5 @@
+import { INCH, MILE, POUND, US_GALLON } from './units.ts'
+
 /**
  * The sums behind the tools. No React, no formatting, no rounding.
  *
@@ -166,28 +168,36 @@ export function addDays(date: Date, days: number): Date {
   return out
 }
 
+/** The same day of the month so many months on, or that month's last day if it is shorter. */
+function monthsOn(date: Date, months: number): Date {
+  const year = date.getFullYear()
+  const month = date.getMonth() + months
+  const last = new Date(year, month + 1, 0).getDate()
+  return new Date(year, month, Math.min(date.getDate(), last))
+}
+
 /**
  * The same span said the way people say it. Months are counted by the calendar
  * rather than divided out of days, because "three months" is three months
- * whether or not February is in the middle of them.
+ * whether or not February is in the middle of them. A month is a whole month
+ * once the same date comes round again, or the end of a month too short to
+ * have it, so 31 January to 1 March is one month and a day, never a negative.
  */
 export function spanOf(from: Date, to: Date) {
   const days = daysBetween(from, to)
   const back = days < 0
   const [early, late] = back ? [to, from] : [from, to]
-  let years = late.getFullYear() - early.getFullYear()
-  let months = late.getMonth() - early.getMonth()
-  let rest = late.getDate() - early.getDate()
-  if (rest < 0) {
-    months -= 1
-    // The length of the month being borrowed from, not a flat thirty.
-    rest += new Date(late.getFullYear(), late.getMonth(), 0).getDate()
+  let total = (late.getFullYear() - early.getFullYear()) * 12 + late.getMonth() - early.getMonth()
+  if (daysBetween(monthsOn(early, total), late) < 0) total -= 1
+  const rest = daysBetween(monthsOn(early, total), late)
+  return {
+    days,
+    weeks: Math.trunc(Math.abs(days) / 7) * (back ? -1 : 1),
+    years: Math.trunc(total / 12),
+    months: total % 12,
+    rest,
+    back,
   }
-  if (months < 0) {
-    years -= 1
-    months += 12
-  }
-  return { days, weeks: Math.trunc(Math.abs(days) / 7) * (back ? -1 : 1), years, months, rest, back }
 }
 
 const BASES = [2, 8, 10, 16] as const
@@ -200,18 +210,29 @@ export const BASE_NAMES: Record<Base, string> = {
 }
 export { BASES }
 
-/** Null rather than NaN: a half-typed number is not an error, it is unfinished. */
-export function parseBase(text: string, base: Base): number | null {
-  const clean = text.trim().replace(/^0[bxo]/i, '')
+const PREFIX: Record<Base, RegExp | null> = { 2: /^0b/i, 8: /^0o/i, 10: null, 16: /^0x/i }
+const DIGITS: Record<Base, RegExp> = { 2: /^[01]+$/, 8: /^[0-7]+$/, 10: /^[0-9]+$/, 16: /^[0-9a-f]+$/i }
+const BIGINT_PREFIX: Record<Base, string> = { 2: '0b', 8: '0o', 10: '', 16: '0x' }
+
+/** Sixty-four bits, the widest a programmer's calculator is asked to hold. */
+export const BASE_MAX = 2n ** 64n - 1n
+
+export type BaseReading = { value: bigint } | { problem: 'digit' | 'size' }
+
+/**
+ * Null while there is nothing to read yet: a lone 0x is unfinished, not wrong.
+ * Only the prefix that belongs to the chosen base is taken off, so 0b12 read as
+ * hexadecimal is the number B12, and 0x10 read as decimal is refused. Read
+ * exactly, as a BigInt, so a long number is never quietly rounded.
+ */
+export function parseBase(text: string, base: Base): BaseReading | null {
+  const spaced = text.trim().replace(/[\s_]+/g, '')
+  const prefix = PREFIX[base]
+  const clean = prefix ? spaced.replace(prefix, '') : spaced
   if (!clean) return null
-  const valid = /^[0-9a-fA-F]+$/.test(clean)
-  if (!valid) return null
-  const value = parseInt(clean, base)
-  if (!Number.isFinite(value)) return null
-  // parseInt stops at the first digit the base cannot hold rather than
-  // refusing, so "19" in octal quietly becomes 1.
-  if (value.toString(base).toLowerCase() !== clean.toLowerCase().replace(/^0+(?=.)/, '')) return null
-  return value
+  if (!DIGITS[base].test(clean)) return { problem: 'digit' }
+  const value = BigInt(BIGINT_PREFIX[base] + clean)
+  return value > BASE_MAX ? { problem: 'size' } : { value }
 }
 
 export type Grade = { id: string; score: string; weight: string }
@@ -251,10 +272,11 @@ export function fuelEfficiency(distance: number, fuel: number, units: FuelUnits)
   if (!(distance > 0) || !(fuel > 0)) return { mpg: NaN, kml: NaN, l100km: NaN }
   // Everything is worked out from one pair and then said four ways, so the
   // four can never disagree with each other.
-  const miles = units === 'us' ? distance : distance / 1.609344
-  const gallons = units === 'us' ? fuel : fuel / 3.785411784
-  const km = units === 'us' ? distance * 1.609344 : distance
-  const litres = units === 'us' ? fuel * 3.785411784 : fuel
+  const mile = MILE / 1000
+  const miles = units === 'us' ? distance : distance / mile
+  const gallons = units === 'us' ? fuel : fuel / US_GALLON
+  const km = units === 'us' ? distance * mile : distance
+  const litres = units === 'us' ? fuel * US_GALLON : fuel
   return { mpg: miles / gallons, kml: km / litres, l100km: (litres / km) * 100 }
 }
 
@@ -264,8 +286,8 @@ export type BodyUnits = 'us' | 'metric'
 export type Sex = 'male' | 'female'
 
 export function bmi(weight: number, height: number, units: BodyUnits) {
-  const kg = units === 'us' ? weight * 0.45359237 : weight
-  const metres = units === 'us' ? height * 0.0254 : height / 100
+  const kg = units === 'us' ? weight * POUND : weight
+  const metres = units === 'us' ? height * INCH : height / 100
   if (!(metres > 0) || !(kg > 0)) return NaN
   return kg / (metres * metres)
 }
@@ -283,8 +305,8 @@ export function bmiBand(value: number): string {
  * energy at rest; the activity multiplier turns it into a day.
  */
 export function bmr(weight: number, height: number, age: number, sex: Sex, units: BodyUnits) {
-  const kg = units === 'us' ? weight * 0.45359237 : weight
-  const cm = units === 'us' ? height * 2.54 : height
+  const kg = units === 'us' ? weight * POUND : weight
+  const cm = units === 'us' ? height * INCH * 100 : height
   if (!(kg > 0) || !(cm > 0) || !(age > 0)) return NaN
   return 10 * kg + 6.25 * cm - 5 * age + (sex === 'male' ? 5 : -161)
 }

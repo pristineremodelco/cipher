@@ -18,11 +18,15 @@ const browser = await launch()
   await page.waitForSelector('.tool-grid')
   t.is('every tool is on the grid', await page.$$eval('.card-name', (els) => els.length), NAMES.length)
 
+  // American is the default, so nothing on any tool should be spelt British.
+  const BRITISH = /colour|metre|litre|centre|\bgrey|\bmaths\b|\bbrackets\b|\btonne|aeroplane|working day/i
   for (const name of NAMES) {
     await page.click(`.card:has-text("${name}")`)
     await page.waitForSelector('.tool-head')
     t.is(`${name} opens on itself`, (await page.textContent('.tool-title h2')).trim(), name)
     t.ok(`${name} draws something`, Boolean(await page.$('.tool-body .tool, .tool-body .offline')))
+    const words = await page.evaluate(() => document.body.innerText)
+    t.is(`${name} is spelt American`, words.match(BRITISH)?.[0] ?? '', '')
     await page.click('button[aria-label="Back to the tools"]')
     await page.waitForSelector('.tool-grid')
   }
@@ -57,6 +61,27 @@ const browser = await launch()
     (await page.$$eval('.readout-value', (els) => els.map((el) => el.textContent.trim()))).join(' '),
     '11111111 377 255 FF',
   )
+  const bases = () => page.$$eval('.readout-value', (els) => els.map((el) => el.textContent.trim()).join(' '))
+  await page.click('.segment-item:has-text("Hexadecimal")')
+  await page.fill('.tool-field:has-text("Value") input', '0b12')
+  t.is('0b12 read as hex is the number B12', (await bases()).split(' ').at(-1), 'B12')
+  await page.fill('.tool-field:has-text("Value") input', 'FFFFFFFFFFFFFFFF')
+  t.is('64 bits come out exact', (await bases()).split(' ')[2], '18446744073709551615')
+  await page.fill('.tool-field:has-text("Value") input', '10000000000000000')
+  t.is('and past that says why', (await page.textContent('.tool-hint')).trim(), 'Too large: 64 bits at most')
+  await page.fill('.tool-field:has-text("Value") input', '0x')
+  t.is('a lone prefix is unfinished, not wrong', await page.$('.tool-hint'), null)
+  await page.click('button[aria-label="Back to the tools"]')
+
+  await page.click('.card:has-text("Date")')
+  await page.fill('.tool-field:has-text("From") input', '2025-01-31')
+  await page.fill('.tool-field:has-text("To") input', '2025-03-01')
+  t.is('31 January to 1 March', (await page.textContent('.readout-row:has-text("On the calendar") .readout-value')).trim(), '1 mo, 1 d')
+  await page.click('.segment-item:has-text("Days from a date")')
+  await page.fill('.tool-field:has-text("Days") input', '1e12')
+  t.is('a date out of reach shows nothing rather than breaking', (await page.textContent('.readout-row[data-lead="true"] .readout-value')).trim(), '—')
+  await page.fill('.tool-field:has-text("Days") input', '1')
+  t.ok('and the tool is still there afterwards', /2025/.test(await page.textContent('.readout-row[data-lead="true"] .readout-value')))
   await page.click('button[aria-label="Back to the tools"]')
 
   await page.click('.card:has-text("World Time")')

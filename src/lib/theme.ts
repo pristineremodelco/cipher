@@ -191,7 +191,7 @@ export function readableInk(accent: string, surfaces: string[], target = INK_CON
  * a palette anyone meant to make. The rest hang off it.
  */
 export function derivePalette(custom: CustomPalette): Record<string, string> {
-  const light = luminance(custom.key) > 0.45
+  const light = schemeOf(custom.key) === 'light'
   const text = light ? mix('#000000', custom.key, 0.9) : mix('#ffffff', custom.key, 0.92)
   return {
     '--bg': custom.ground,
@@ -202,7 +202,7 @@ export function derivePalette(custom: CustomPalette): Record<string, string> {
     '--line': mix(text, custom.key, 0.16),
     '--accent': custom.accent,
     '--accent-ink': readableInk(custom.accent, [custom.key, mix(custom.key, custom.ground, 0.55), custom.ground]),
-    '--on-accent': contrastText(custom.accent) === '#111' ? '#111111' : '#ffffff',
+    '--on-accent': onAccent(custom.accent),
     '--danger': light ? '#b3261e' : '#ff6b6b',
   }
 }
@@ -214,7 +214,7 @@ export function asPalette(custom: CustomPalette): Palette {
     id: custom.id,
     name: custom.name,
     hint: 'Yours',
-    scheme: luminance(custom.ground) > 0.45 ? 'light' : 'dark',
+    scheme: schemeOf(custom.ground),
     swatch: [custom.ground, custom.key, derived['--text'], custom.accent],
   }
 }
@@ -262,6 +262,16 @@ export const KEY_SHAPES: { id: KeyShape; name: string }[] = [
   { id: 'round', name: 'Round' },
   { id: 'circle', name: 'Circle' },
 ]
+
+/** Light or dark, by how much light a colour gives off: the one line every scheme decision here is drawn at. */
+export function schemeOf(hex: string): 'light' | 'dark' {
+  return luminance(hex) > 0.45 ? 'light' : 'dark'
+}
+
+/** Type on a fill of the accent, the equals key's say: near black or white, whichever reads. */
+export function onAccent(hex: string): '#111111' | '#ffffff' {
+  return contrastText(hex) === '#111' ? '#111111' : '#ffffff'
+}
 
 export function contrastText(hex: string): '#111' | '#fff' {
   const value = (parseHex(hex) ?? '#757575').replace('#', '')
