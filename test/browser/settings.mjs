@@ -215,12 +215,28 @@ await page.$eval('.span-row input[type="range"]', (el) => {
 const after = await page.$eval('.preview-display strong', (el) => parseFloat(getComputedStyle(el).fontSize))
 t.ok('answer size changes the answer', after > before)
 
-// Accent really repaints the accent, and clearing hands it back.
-await page.$eval('.accent-row input[type="color"]', (el) => {
-  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
-  setter.call(el, '#ff0066')
-  el.dispatchEvent(new Event('input', { bubbles: true }))
-})
+// Accent really repaints the accent, and clearing hands it back. It is
+// chosen on a wheel, opened from the button beside the swatch.
+const wornAccent = await cssVar('--accent')
+await page.click('.accent-row .wheel-button')
+t.ok('Change opens the colour wheel', Boolean(await page.$('.colour-sheet .wheel')))
+t.is('which shows the colour it was', await page.inputValue('.colour-entry .hex'), wornAccent)
+// Somewhere on the wheel, then cancelled: nothing changes. Measured once the
+// sheet has finished sliding up, or the touch lands where it was on the way.
+await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'))
+const wheelBox = await page.locator('.wheel').boundingBox()
+await page.mouse.click(wheelBox.x + wheelBox.width * 0.85, wheelBox.y + wheelBox.height * 0.5)
+t.ok('a touch on the wheel changes the colour', (await page.inputValue('.colour-entry .hex')) !== wornAccent)
+await page.click('.colour-sheet button:has-text("Cancel")')
+t.is('Cancel leaves the accent as it was', await cssVar('--accent'), wornAccent)
+// Escape closes the wheel and only the wheel.
+await page.click('.accent-row .wheel-button')
+await page.keyboard.press('Escape')
+t.is('Escape closes the wheel', await page.$('.colour-sheet'), null)
+t.ok('and leaves the settings open', Boolean(await page.$('.settings-sheet')))
+await page.click('.accent-row .wheel-button')
+await page.fill('.colour-entry .hex', '#ff0066')
+await page.click('.colour-sheet button:has-text("Done")')
 await page.waitForTimeout(150)
 t.is('a chosen accent is worn', await cssVar('--accent'), '#ff0066')
 t.is('and fills the equals key exactly', await page.$eval('.preview .key[data-kind="equals"]', (el) => getComputedStyle(el).backgroundColor), 'rgb(255, 0, 102)')
@@ -283,7 +299,7 @@ t.is('the tabs say Math by default', await tabNames(), 'Look Keys Math')
 await page.click('.tab:has-text("Math")')
 await page.click('.field:has-text("Converter layout") .size-btn:text-is("Standard")')
 await page.click('.tab:has-text("Look")')
-t.ok('a palette says gray', (await page.textContent('.palette-card:has-text("Linen")')).includes('Gray-green'))
+t.ok('a palette says gray', (await page.textContent('.palette-card:has-text("Cobblestone")')).includes('Gray-green'))
 t.ok('and units say meter', (await unitNames()).includes('Meter (m)'))
 await page.click('.tab:has-text("Math")')
 t.ok('and the edit switch speaks of an equation', (await page.textContent('.toggle-row:has(input) >> text=/to edit inside it/')).includes('the equation'))
@@ -293,7 +309,7 @@ t.ok('British speaks of a sum', (await page.textContent('.toggle-row:has(input) 
 t.is('and of brackets', await page.$$eval('.pad .key[aria-label="Brackets"]', (e) => e.length), 1)
 t.is('British says Maths', await tabNames(), 'Look Keys Maths')
 await page.click('.tab:has-text("Look")')
-t.ok('and grey', (await page.textContent('.palette-card:has-text("Linen")')).includes('Grey-green'))
+t.ok('and grey', (await page.textContent('.palette-card:has-text("Cobblestone")')).includes('Grey-green'))
 t.ok('and metre', (await unitNames()).includes('Metre (m)'))
 
 t.done(noise)

@@ -10,10 +10,12 @@ import {
   TEXT_SIZES,
   TEXT_SIZE_LABELS,
   asPalette,
+  filedUnder,
   findPalette,
   parseHex,
 } from '../lib/theme'
 import { PaletteEditor } from './PaletteEditor'
+import { ColourWheel, Pinwheel } from './ColourWheel'
 import { defaultSettings } from '../lib/storage'
 import { uid } from '../lib/uid'
 import { useSettings, useSpell } from '../store'
@@ -192,6 +194,7 @@ function LookTab({ settings, set }: TabProps) {
   // Which slot a new one is being made for, so it lands there rather than
   // wherever its own lightness would have filed it.
   const [slot, setSlot] = useState<Slot>('either')
+  const [accentWheel, setAccentWheel] = useState(false)
   const own = settings.customPalettes.map(asPalette)
   const everything = [...PALETTES, ...own]
   /**
@@ -222,20 +225,22 @@ function LookTab({ settings, set }: TabProps) {
       ? settings.customPalettes.map((p) => (p.id === draft.id ? { ...draft, name } : p))
       : [...settings.customPalettes, { ...draft, name }].slice(0, MAX_CUSTOM_PALETTES)
     /**
-     * A new one goes straight on, into whichever slot its own lightness fits.
-     * Making a dark palette and having nothing happen because the phone is in
-     * light mode is the sort of thing that reads as a bug rather than as a
-     * setting, and the two slots are explained right above this.
+     * A new one goes straight on, into the slot it was made for, or else the
+     * one its own lightness fits. Making a dark palette and having nothing
+     * happen because the phone is in light mode is the sort of thing that
+     * reads as a bug rather than as a setting. With following off it is worn
+     * at all hours, and filed on its own side for when following comes back.
      */
+    const filed = filedUnder(draft.id, customPalettes)
     const wear = exists
       ? {}
-      : slot === 'day'
-        ? { palette: draft.id }
-        : slot === 'night' && settings.followDevice
-          ? { nightPalette: draft.id }
-          : settings.followDevice && asPalette({ ...draft, name }).scheme === 'dark'
+      : !settings.followDevice
+        ? { fixedPalette: draft.id, ...filed }
+        : slot === 'day'
+          ? { palette: draft.id }
+          : slot === 'night'
             ? { nightPalette: draft.id }
-            : { palette: draft.id }
+            : filed
     set({ customPalettes, ...wear })
     setDraft(null)
     setSlot('either')
@@ -249,6 +254,7 @@ function LookTab({ settings, set }: TabProps) {
       customPalettes: settings.customPalettes.filter((p) => p.id !== id),
       ...(settings.palette === id ? { palette: fresh.palette } : {}),
       ...(settings.nightPalette === id ? { nightPalette: fresh.nightPalette } : {}),
+      ...(settings.fixedPalette === id ? { fixedPalette: fresh.fixedPalette } : {}),
     })
   }
 
@@ -272,17 +278,29 @@ function LookTab({ settings, set }: TabProps) {
         <input
           type="checkbox"
           checked={settings.followDevice}
-          onChange={(e) => set({ followDevice: e.target.checked })}
+          // Turning it off keeps whatever is on screen, rather than switching
+          // to the day palette in the middle of the night.
+          onChange={(e) => set(e.target.checked ? { followDevice: true } : { followDevice: false, fixedPalette: showing })}
         />
         Follow the device between light and dark
       </label>
-      <Swatches
-        label={settings.followDevice ? 'By day' : 'Palette'}
-        palettes={settings.followDevice ? light : all}
-        chosen={settings.palette}
-        onPick={(id) => set({ palette: id })}
-        onMake={settings.customPalettes.length >= MAX_CUSTOM_PALETTES ? undefined : () => start('day')}
-      />
+      {settings.followDevice ? (
+        <Swatches
+          label="By day"
+          palettes={light}
+          chosen={settings.palette}
+          onPick={(id) => set({ palette: id })}
+          onMake={settings.customPalettes.length >= MAX_CUSTOM_PALETTES ? undefined : () => start('day')}
+        />
+      ) : (
+        <Swatches
+          label="Palette"
+          palettes={all}
+          chosen={settings.fixedPalette}
+          onPick={(id) => set({ fixedPalette: id, ...filedUnder(id, settings.customPalettes) })}
+          onMake={settings.customPalettes.length >= MAX_CUSTOM_PALETTES ? undefined : () => start('either')}
+        />
+      )}
 
       {settings.followDevice ? (
         <Swatches
@@ -337,18 +355,28 @@ function LookTab({ settings, set }: TabProps) {
         </p>
         <div className="accent-row">
           <span className="accent-preview" style={{ background: settings.accent || 'var(--accent)' }} />
-          <input
-            type="color"
-            aria-label="Accent"
-            value={settings.accent || '#b4502f'}
-            onChange={(e) => set({ accent: parseHex(e.target.value) ?? '' })}
-          />
+          <button className="ghost wheel-button" onClick={() => setAccentWheel(true)}>
+            <Pinwheel />
+            Change
+          </button>
           {settings.accent ? (
             <button className="ghost" onClick={() => set({ accent: '' })}>
               Use the palette
             </button>
           ) : null}
         </div>
+        {accentWheel ? (
+          <ColourWheel
+            title="Accent"
+            // Whatever the accent is now, chosen or the palette's own.
+            value={settings.accent || parseHex(getComputedStyle(document.documentElement).getPropertyValue('--accent')) || '#b4502f'}
+            onDone={(accent) => {
+              set({ accent })
+              setAccentWheel(false)
+            }}
+            onClose={() => setAccentWheel(false)}
+          />
+        ) : null}
       </div>
 
       <div className="field">

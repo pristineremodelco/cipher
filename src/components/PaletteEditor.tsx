@@ -2,37 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { derivePalette, onAccent, parseHex, schemeOf } from '../lib/theme'
 import type { CustomPalette } from '../types'
 import { useSpell } from '../store'
-
-/**
- * Whether this browser will hand back the colour under a pointer.
- *
- * Chromium has it, and on a phone that means Chrome on Android. Safari and
- * Firefox do not, so the button is simply absent there rather than present and
- * broken: an eyedropper that does nothing is worse than none at all.
- */
-type EyeDropperCtor = new () => { open: () => Promise<{ sRGBHex: string }> }
-function eyeDropper(): EyeDropperCtor | null {
-  const ctor = (window as unknown as { EyeDropper?: EyeDropperCtor }).EyeDropper
-  return typeof ctor === 'function' ? ctor : null
-}
-
-function Pipette() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-      <path
-        d="M15.5 3.2a2.4 2.4 0 0 1 3.4 0l1.9 1.9a2.4 2.4 0 0 1 0 3.4l-2 2 1 1-1.7 1.7-6.4-6.4L13.4 5l1 1z"
-        fill="currentColor"
-      />
-      <path
-        d="M11.3 8.6 4.6 15.3a2 2 0 0 0-.55 1.02l-.5 2.6a1 1 0 0 0 1.17 1.17l2.6-.5a2 2 0 0 0 1.02-.55l6.7-6.7"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.9"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
+import { ColourWheel, Pinwheel, Pipette } from './ColourWheel'
+import { eyeDropper, pickOffScreen } from '../lib/eyedropper'
 
 function Field({
   label,
@@ -47,26 +18,12 @@ function Field({
 }) {
   const t = useSpell()
   const [text, setText] = useState(value)
+  const [wheel, setWheel] = useState(false)
   const dropper = eyeDropper()
 
-  function commit(next: string) {
-    const parsed = parseHex(next)
-    if (parsed) onChange(parsed)
-  }
-
-  async function pick() {
-    const Ctor = eyeDropper()
-    if (!Ctor) return
-    try {
-      const { sRGBHex } = await new Ctor().open()
-      const parsed = parseHex(sRGBHex)
-      if (parsed) {
-        setText(parsed)
-        onChange(parsed)
-      }
-    } catch {
-      /* dismissed with Escape, which is not an error */
-    }
+  function take(colour: string) {
+    setText(colour)
+    onChange(colour)
   }
 
   return (
@@ -76,15 +33,10 @@ function Field({
         <span>{hint}</span>
       </div>
       <div className="colour-controls">
-        <input
-          type="color"
-          aria-label={t(`${label} colour`)}
-          value={value}
-          onChange={(e) => {
-            setText(e.target.value)
-            commit(e.target.value)
-          }}
-        />
+        <span className="colour-swatch" style={{ background: value }} aria-hidden="true" />
+        <button className="ghost wheel-button icon-only" aria-label={t(`Change the ${label.toLowerCase()} colour`)} onClick={() => setWheel(true)}>
+          <Pinwheel />
+        </button>
         <input
           className="hex"
           aria-label={`${label} hex code`}
@@ -94,16 +46,36 @@ function Field({
           value={text}
           onChange={(e) => {
             setText(e.target.value)
-            commit(e.target.value)
+            const parsed = parseHex(e.target.value)
+            if (parsed) onChange(parsed)
           }}
           onBlur={() => setText(value)}
         />
         {dropper ? (
-          <button className="ghost pipette" aria-label={`Pick ${label} off the screen`} title={t('Pick a colour off the screen')} onClick={pick}>
+          <button
+            className="ghost pipette"
+            aria-label={`Pick ${label} off the screen`}
+            title={t('Pick a colour off the screen')}
+            onClick={async () => {
+              const picked = await pickOffScreen()
+              if (picked) take(picked)
+            }}
+          >
             <Pipette />
           </button>
         ) : null}
       </div>
+      {wheel ? (
+        <ColourWheel
+          title={label}
+          value={value}
+          onDone={(colour) => {
+            take(colour)
+            setWheel(false)
+          }}
+          onClose={() => setWheel(false)}
+        />
+      ) : null}
     </div>
   )
 }

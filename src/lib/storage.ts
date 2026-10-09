@@ -1,4 +1,4 @@
-import { FONT_IDS, MAX_CUSTOM_PALETTES, PALETTE_IDS, TEXT_SIZES, parseHex } from './theme'
+import { FONT_IDS, MAX_CUSTOM_PALETTES, PALETTE_IDS, RENAMED_PALETTES, TEXT_SIZES, parseHex, schemeOfPalette } from './theme'
 import { CATEGORIES, categoryOf } from './units'
 import { TOOLS } from './tools'
 import { fromKey } from './unitsearch'
@@ -18,6 +18,7 @@ export function defaultSettings(): Settings {
     customPalettes: [],
     palette: 'paper',
     nightPalette: 'espresso',
+    fixedPalette: 'paper',
     followDevice: true,
     accent: '',
     fontId: 'system',
@@ -76,12 +77,30 @@ export function migrateSettings(raw: unknown): Settings {
           accent: parseHex(String(p.accent)) ?? '#2f6feb',
         }))
     : []
+  // A renamed palette keeps whoever chose it, under its new id.
+  for (const slot of ['palette', 'nightPalette', 'fixedPalette'] as const) {
+    const renamed = RENAMED_PALETTES[merged[slot]]
+    if (renamed) merged[slot] = renamed
+  }
   // A palette that was deleted leaves whatever chose it pointing at nothing,
   // so both slots fall back rather than rendering an app with no colours.
   const known = [...PALETTE_IDS, ...merged.customPalettes.map((p) => p.id)]
   if (!known.includes(merged.palette)) merged.palette = base.palette
   if (!known.includes(merged.nightPalette)) merged.nightPalette = base.nightPalette
   merged.followDevice = merged.followDevice !== false
+  // Settings from before there was a slot for wearing one palette at all hours
+  // kept that one in the day slot, so a dark palette sitting there was almost
+  // certainly chosen that way. It moves to after dark, where it belongs, and
+  // the day slot goes back to its default; what is worn with following off is
+  // unchanged.
+  if (typeof (raw as Partial<Settings>).fixedPalette !== 'string') {
+    merged.fixedPalette = merged.palette
+    if (schemeOfPalette(merged.palette, merged.customPalettes) === 'dark') {
+      merged.nightPalette = merged.palette
+      merged.palette = base.palette
+    }
+  }
+  if (!known.includes(merged.fixedPalette)) merged.fixedPalette = merged.palette
   merged.accent = typeof merged.accent === 'string' ? (parseHex(merged.accent) ?? '') : ''
   if (!FONT_IDS.includes(merged.fontId)) merged.fontId = base.fontId
   if (!TEXT_SIZES.includes(merged.textSize)) merged.textSize = base.textSize

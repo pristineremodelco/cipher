@@ -76,7 +76,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     // instead, which wins over any rule. The name still stands in for a light
     // or a dark one, because the shadow scale is the one thing not set here
     // and a soft shadow on a dark ground reads as fog.
-    root.dataset.palette = own ? (scheme === 'dark' ? 'graphite' : 'snow') : palette
+    root.dataset.palette = own ? (scheme === 'dark' ? 'graphite' : 'winter') : palette
     root.dataset.keystyle = keyStyle
     root.dataset.keyshape = keyShape
     root.dataset.textsize = textSize

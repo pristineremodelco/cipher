@@ -32,10 +32,16 @@ export type CustomPalette = {
 export type Settings = {
   /** Looks made here, offered alongside the nine that ship. */
   customPalettes: CustomPalette[]
-  /** The palette worn by day, or at all times when the device is not followed. */
+  /** The palette worn by day when the device is followed. */
   palette: string
   /** The one worn when the device says it is dark and followDevice is on. */
   nightPalette: string
+  /**
+   * The one worn at every hour when the device is not followed. Its own slot
+   * rather than the day one: choosing a dark palette here used to file it
+   * under By day, where it stayed once following was turned back on.
+   */
+  fixedPalette: string
   /**
    * Whether the device's own light or dark setting picks between the two.
    * A calculator gets opened at three in the morning more than most things do.

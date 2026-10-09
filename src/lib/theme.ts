@@ -24,8 +24,11 @@ export type Palette = {
 
 export const PALETTES: Palette[] = [
   { id: 'paper', name: 'Paper', hint: 'Warm stock, espresso ink', scheme: 'light', swatch: ['#EDE4D0', '#FBF6EA', '#241C13', '#8C3B26'] },
-  { id: 'snow', name: 'Snow', hint: 'Plain white, graphite type', scheme: 'light', swatch: ['#EEF0F3', '#FFFFFF', '#16181C', '#2F6FEB'] },
-  { id: 'linen', name: 'Linen', hint: 'Grey-green stone', scheme: 'light', swatch: ['#D2DAD6', '#E9EFEC', '#172220', '#356B60'] },
+  { id: 'winter', name: 'Winter', hint: 'Plain white, graphite type', scheme: 'light', swatch: ['#EEF0F3', '#FFFFFF', '#16181C', '#2F6FEB'] },
+  { id: 'cobblestone', name: 'Cobblestone', hint: 'Grey-green stone', scheme: 'light', swatch: ['#D2DAD6', '#E9EFEC', '#172220', '#356B60'] },
+  // Named Linen; its id is newsprint because linen was Cobblestone's, and a
+  // phone that saved linen meant the stone one.
+  { id: 'newsprint', name: 'Linen', hint: 'Newsprint, ink and tan', scheme: 'light', swatch: ['#E2DCCD', '#F5F2EA', '#1C1B18', '#7C5F3A'] },
   { id: 'espresso', name: 'Espresso', hint: "The mark's own ground", scheme: 'dark', swatch: ['#191309', '#2E241A', '#EFE6D0', '#B4502F'] },
   { id: 'graphite', name: 'Graphite', hint: 'Neutral dark', scheme: 'dark', swatch: ['#131416', '#24272B', '#EDEFF2', '#7AA2F7'] },
   { id: 'carbon', name: 'Carbon', hint: 'True black, for OLED', scheme: 'dark', swatch: ['#000000', '#161616', '#F4F4F4', '#FF8A3D'] },
@@ -35,6 +38,9 @@ export const PALETTES: Palette[] = [
 ]
 
 export const PALETTE_IDS = PALETTES.map((palette) => palette.id)
+
+/** Palettes that were renamed, under the ids they were saved with. */
+export const RENAMED_PALETTES: Record<string, string> = { snow: 'winter', linen: 'cobblestone' }
 
 export function paletteOf(id: string): Palette {
   return PALETTES.find((palette) => palette.id === id) ?? PALETTES[0]
@@ -50,8 +56,23 @@ export function palettesBy(scheme: 'light' | 'dark'): Palette[] {
  * the device says.
  */
 export function activePalette(settings: Settings, prefersDark: boolean): string {
-  if (settings.followDevice && prefersDark) return settings.nightPalette
-  return settings.palette
+  if (!settings.followDevice) return settings.fixedPalette
+  return prefersDark ? settings.nightPalette : settings.palette
+}
+
+/** Light or dark for any palette by id, one that ships or one made here. */
+export function schemeOfPalette(id: string, customPalettes: CustomPalette[]): 'light' | 'dark' {
+  const own = customPalettes.find((palette) => palette.id === id)
+  return own ? schemeOf(own.ground) : paletteOf(id).scheme
+}
+
+/**
+ * Where a palette chosen to wear at all hours is also filed, so that turning
+ * following back on finds it on its own side: a dark one after dark, a light
+ * one by day.
+ */
+export function filedUnder(id: string, customPalettes: CustomPalette[]): Partial<Settings> {
+  return schemeOfPalette(id, customPalettes) === 'dark' ? { nightPalette: id } : { palette: id }
 }
 
 /** Every palette on offer, the nine that ship and any that were made here. */

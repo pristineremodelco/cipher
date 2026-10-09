@@ -23,19 +23,27 @@
   --text: #241c13; --muted: #6d6049; --line: #d8c9a9;
   --accent: #8c3b26; --on-accent: #fbf6ea; --danger: #9d2c22;
 }
-[data-palette='snow'] {
+[data-palette='winter'] {
   --bg: #eef0f3; --panel: #ffffff; --key: #ffffff;
   --text: #16181c; --muted: #61686f; --line: #dee2e7;
   --accent: #2f6feb; --on-accent: #ffffff; --danger: #d3302f;
 }
-/* A stone grey with green in it, and the darkest of the three light grounds.
-   It used to be a hair off Snow: two near-white key faces one and nine apart,
+/* A stone grey with green in it, and the darkest of the light grounds. It
+   used to be a hair off Winter: two near-white key faces one and nine apart,
    which is under the threshold anyone can see, so the only thing telling them
    apart was the accent. Now the ground, the key and the type all differ. */
-[data-palette='linen'] {
+[data-palette='cobblestone'] {
   --bg: #d2dad6; --panel: #e2e8e5; --key: #e9efec;
   --text: #172220; --muted: #505e59; --line: #bcc7c2;
   --accent: #356b60; --on-accent: #ffffff; --danger: #a83a2c;
+}
+/* Linen: a newspaper. Grey-tan newsprint for the ground, off-white keys, ink
+   for the type and a tan brown for the accent, yellower and duller than
+   Paper's rust so the two warm ones are not mistaken for each other. */
+[data-palette='newsprint'] {
+  --bg: #e2dccd; --panel: #ebe6da; --key: #f5f2ea;
+  --text: #1c1b18; --muted: #67614f; --line: #cfc6b3;
+  --accent: #7c5f3a; --on-accent: #fbf8f1; --danger: #a8322a;
 }
 
 /* The dark ones share one shadow scale: a soft shadow on a dark ground reads
@@ -843,14 +851,101 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   border-radius: 12px;
   border: 1px solid var(--line);
 }
-.accent-row input[type='color'] {
-  width: 52px;
-  height: 40px;
-  padding: 2px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--bg);
+
+/* The button that opens the colour wheel, with a little wheel of its own on
+   it. Beside a swatch that already shows the colour, a second swatch said
+   nothing more; this says what tapping it does. */
+.wheel-button { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 8px 14px; }
+.wheel-button.icon-only { padding: 8px; width: 40px; justify-content: center; }
+.pinwheel {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, #fff, rgb(255 255 255 / 0)),
+    conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.18);
 }
+
+/* The wheel itself. Drawn over the settings rather than inside them. */
+.colour-scrim { z-index: 20; }
+.colour-sheet { width: min(460px, 100%); }
+.colour-body { display: grid; gap: 14px; justify-items: stretch; }
+.colour-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  height: 56px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.colour-compare span {
+  display: flex;
+  align-items: flex-end;
+  padding: 6px 10px;
+  font-size: calc(12px * var(--tx));
+  font-weight: 800;
+}
+.colour-compare .colour-now { justify-content: flex-end; }
+/* Hue round the rim from the top, washed to white at the centre: exactly the
+   colour each point gives, at full brightness. The shade over it takes it
+   down as the brightness slider does. */
+.wheel {
+  position: relative;
+  justify-self: center;
+  width: min(260px, 72vw, 40dvh);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    radial-gradient(closest-side, #fff, rgb(255 255 255 / 0)),
+    conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  box-shadow: 0 0 0 1px var(--line);
+  touch-action: none;
+  cursor: crosshair;
+}
+.wheel:focus-visible { outline: none; box-shadow: 0 0 0 1px var(--line), 0 0 0 4px var(--ring); }
+.wheel-shade { position: absolute; inset: 0; border-radius: 50%; background: #000; pointer-events: none; }
+.wheel-thumb {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.35);
+  pointer-events: none;
+}
+.brightness {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  margin: 4px 0 0;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  touch-action: none;
+}
+.brightness::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.35);
+}
+.brightness::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  background: transparent;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.45), 0 2px 6px rgb(0 0 0 / 0.35);
+}
+.colour-entry { display: flex; gap: 8px; justify-content: center; }
+.colour-entry .hex { width: 120px; text-align: center; }
 
 /* A short screen has no room for a 150px display and five rows of keys, so the
    display gives way first: the keys are the part a thumb has to hit. */
@@ -1122,14 +1217,12 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 .colour-label strong { font-size: calc(14px * var(--tx)); }
 .colour-label span { color: var(--muted); font-size: calc(12px * var(--tx)); }
 .colour-controls { flex: none; display: flex; align-items: center; gap: 8px; }
-.colour-controls input[type='color'] {
-  width: 46px;
+.colour-swatch {
+  flex: none;
+  width: 40px;
   height: 40px;
-  padding: 2px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: var(--panel);
-  cursor: pointer;
 }
 .hex {
   width: 96px;

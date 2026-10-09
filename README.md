@@ -129,10 +129,12 @@ question the device can already answer, daylight saving included.
 
 ## What it looks like
 
-Nine palettes, three light and six dark, and the device's own light or dark
-setting picks between a pair of them unless you say otherwise. Either slot can
-take a palette of your own, which starts as a copy of the one it replaces. On
-top of that: an accent of any colour, seven
+Ten palettes, four light and six dark, and the device's own light or dark
+setting picks between a pair of them unless you say otherwise. With that off,
+one palette is worn at every hour, and it is filed on its own side for when
+following comes back on. Either slot can take a palette of your own, which
+starts as a copy of the one it replaces. On top of that: an accent of any
+colour, picked on a wheel, seven
 typefaces, four text sizes, a heavier weight, four key styles, four key corner
 shapes, the answer's size, the operator column on either side, and a bottom row
 with a double zero or one wide one. The language is American English unless
@@ -182,7 +184,7 @@ npm test
 ```
 
 The sums, run under node with no test framework and no dependency: node runs
-TypeScript and ships a test runner, so there is nothing to install. 243 of
+TypeScript and ships a test runner, so there is nothing to install. 246 of
 them, covering the expression parser, what each key does to what is already on
 the display, every answer carried on reading back as itself, all 127 unit
 factors with every pair round tripped, what typing a unit finds, and every one
@@ -198,7 +200,7 @@ npm run dev
 npm run test:browser
 ```
 
-The rest, which needs a browser: 567 checks across seven suites. Every key on
+The rest, which needs a browser: 590 checks across seven suites. Every key on
 the pad pressed with the answer read back off the screen; what carries forward
 between presses and how far the history goes; a palette made from three colours
 and worn; every setting driven and its effect measured, from key corners to
@@ -248,11 +250,14 @@ src/
     storage.ts       settings defaults and forward migration
     convertentry.ts  typing into the converter, and typing over its opening 1
     uid.ts           ids that do not need a secure page
+    colour.ts        hue, strength and brightness, for the colour wheel
+    eyedropper.ts    a colour off the screen, where the browser allows it
   components/
     keys.ts          what is on the pad, and nothing about how it is drawn
     Converter.tsx    by category or simple: a pair, a picker, and a pad
     Confirm.tsx      a button that asks once before it does what cannot be undone
     Mend.tsx         what shows instead of a blank page if something breaks
+    ColourWheel.tsx  the colour wheel the accent and a palette's colours are chosen on
     Tools.tsx        the grid, and one screen at a time
     Form.tsx         the field, the choice and the answer block they all share
     tools/           one file per group: Money, Everyday, Vehicle, Health, Currency,
