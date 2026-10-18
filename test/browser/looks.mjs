@@ -122,7 +122,7 @@ const t = tally('looks')
   const worn = () => page.getAttribute('html', 'data-palette')
   const active = (slot) => page.$eval(`.field:has(> span:text-is("${slot}")) .palette-card[data-active=true] strong`, (el) => el.textContent.trim())
   const names = (slot) => page.$$eval(`.field:has(> span:text-is("${slot}")) .palette-card:not(.palette-make) strong`, (els) => els.map((el) => el.textContent.trim()))
-  const follow = '.toggle-row:has-text("Follow the device") input'
+  const follow = '.toggle-row:has-text("Switch between a day and a night palette") input'
   await page.click('button[aria-label="Settings"]')
   await page.click(follow)
   f.is('turning it off keeps what is on screen', await worn(), 'paper')
@@ -143,6 +143,46 @@ const t = tally('looks')
   await page.waitForTimeout(200)
   f.is('and keeps it whatever the device does next', await worn(), 'plum')
   f.done(noise)
+  await context.close()
+}
+
+// Sunset and sunrise where the phone is, rather than the phone's own setting.
+// New York, with the phone itself in light mode the whole time.
+{
+  const where = { geolocation: { latitude: 40.7128, longitude: -74.006 }, permissions: ['geolocation'], timezoneId: 'America/New_York' }
+  const { context, page, noise } = await open(browser, { settings: {}, dark: false, extra: where, time: new Date('2026-06-21T20:20:00-04:00') })
+  const s = tally('sunset and sunrise')
+  const worn = () => page.getAttribute('html', 'data-palette')
+  s.is('a light phone at 8:20 pm wears the day palette', await worn(), 'paper')
+  await page.click('button[aria-label="Settings"]')
+  await page.click('.size-btn:has-text("Sunset and sunrise")')
+  await page.waitForSelector('.sun-hint:has-text("Sunset here is at")')
+  s.ok('it says when sunset is', /Sunset here is at 8:3\d PM/.test(await page.textContent('.sun-hint')))
+  s.is('still day before sunset', await worn(), 'paper')
+  const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('calculator.v1')).sunPlace)
+  s.is('the place is kept to about a kilometre', JSON.stringify(kept), JSON.stringify({ lat: 40.71, lon: -74.01 }))
+  await page.clock.fastForward('20:00')
+  await page.waitForTimeout(200)
+  s.is('after sunset it wears the night palette, though the phone is light', await worn(), 'espresso')
+  s.ok('and says when sunrise is', /Sunrise here is at 5:2\d AM/.test(await page.textContent('.sun-hint')))
+  await page.click('.size-btn:has-text("The phone’s setting")')
+  s.is('back on the phone’s setting it follows the phone', await worn(), 'paper')
+  s.is('and the place is forgotten', await page.evaluate(() => JSON.parse(localStorage.getItem('calculator.v1')).sunPlace), null)
+  s.done(noise)
+  await context.close()
+}
+{
+  // Location refused: it says so and the phone's setting decides meanwhile.
+  const { context, page, noise } = await open(browser, { settings: {}, dark: true, extra: { permissions: [] } })
+  const s = tally('sunset with location refused')
+  await page.context().setGeolocation(null)
+  await page.click('button[aria-label="Settings"]')
+  await page.click('.size-btn:has-text("Sunset and sunrise")')
+  await page.waitForSelector('.sun-hint:not(:has-text("Finding"))', { timeout: 20000 })
+  s.ok('it says the phone’s setting decides for now', (await page.textContent('.sun-hint')).includes('phone’s setting decides for now'))
+  s.ok('and offers to try again', Boolean(await page.$('button:has-text("Try again")')))
+  s.is('a dark phone still wears the night palette', await page.getAttribute('html', 'data-palette'), 'espresso')
+  s.done(noise)
   await context.close()
 }
 

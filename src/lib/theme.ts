@@ -55,9 +55,9 @@ export function palettesBy(scheme: 'light' | 'dark'): Palette[] {
  * dark setting picks between the pair; otherwise the day one stands whatever
  * the device says.
  */
-export function activePalette(settings: Settings, prefersDark: boolean): string {
+export function activePalette(settings: Settings, dark: boolean): string {
   if (!settings.followDevice) return settings.fixedPalette
-  return prefersDark ? settings.nightPalette : settings.palette
+  return dark ? settings.nightPalette : settings.palette
 }
 
 /** Light or dark for any palette by id, one that ships or one made here. */

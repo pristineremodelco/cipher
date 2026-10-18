@@ -15,6 +15,8 @@ import {
   parseHex,
 } from '../lib/theme'
 import { PaletteEditor } from './PaletteEditor'
+import { isDark, nextChange } from '../lib/sun'
+import { locate, type Locating } from '../useSun'
 import { ColourWheel, Pinwheel } from './ColourWheel'
 import { defaultSettings } from '../lib/storage'
 import { uid } from '../lib/uid'
@@ -282,8 +284,9 @@ function LookTab({ settings, set }: TabProps) {
           // to the day palette in the middle of the night.
           onChange={(e) => set(e.target.checked ? { followDevice: true } : { followDevice: false, fixedPalette: showing })}
         />
-        Follow the device between light and dark
+        Switch between a day and a night palette
       </label>
+      {settings.followDevice ? <SwitchBy settings={settings} set={set} /> : null}
       {settings.followDevice ? (
         <Swatches
           label="By day"
@@ -445,6 +448,76 @@ function LookTab({ settings, set }: TabProps) {
         </div>
       </div>
     </>
+  )
+}
+
+const clock = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-digit' })
+
+/**
+ * What decides when night is: the phone's dark mode, or the sun where the
+ * phone is. The second needs the phone's location, asked for once when it is
+ * chosen, and the line under it says when the next change is, which is also
+ * how anyone can tell it is working.
+ */
+function SwitchBy({ settings, set }: TabProps) {
+  const [locating, setLocating] = useState<Locating>('idle')
+  const place = settings.sunPlace
+
+  function bySun() {
+    set({ switchBy: 'sun' })
+    setLocating('asking')
+    locate(
+      (sunPlace) => {
+        set({ switchBy: 'sun', sunPlace })
+        setLocating('idle')
+      },
+      setLocating,
+    )
+  }
+
+  let hint = ''
+  if (settings.switchBy === 'sun') {
+    if (locating === 'asking') hint = 'Finding where you are…'
+    else if (locating === 'refused') hint = 'Location is blocked for this app, so the phone’s setting decides for now. Allow it in the browser’s site settings, then try again.'
+    else if (locating === 'failed' || locating === 'unsupported') hint = 'Could not find where you are, so the phone’s setting decides for now.'
+    else if (!place) hint = 'Needs your location once, so the phone’s setting decides for now.'
+    else {
+      const now = new Date()
+      const next = nextChange(now, place)
+      const dark = isDark(now, place)
+      hint = next
+        ? `${dark ? 'Sunrise' : 'Sunset'} here is at ${clock.format(next)}.`
+        : `The sun will not ${dark ? 'rise' : 'set'} here in the next two days.`
+    }
+  }
+  const retry = settings.switchBy === 'sun' && locating !== 'asking' && (locating !== 'idle' || !place)
+
+  return (
+    <div className="field">
+      <span>Switch by</span>
+      <div className="size-row">
+        <button
+          className="size-btn"
+          data-active={settings.switchBy === 'device'}
+          // The place is forgotten as soon as it is not being used.
+          onClick={() => {
+            setLocating('idle')
+            set({ switchBy: 'device', sunPlace: null })
+          }}
+        >
+          The phone’s setting
+        </button>
+        <button className="size-btn" data-active={settings.switchBy === 'sun'} onClick={bySun}>
+          Sunset and sunrise
+        </button>
+      </div>
+      {hint ? <p className="hint sun-hint">{hint}</p> : null}
+      {retry ? (
+        <button className="ghost" onClick={bySun}>
+          {locating === 'idle' ? 'Use my location' : 'Try again'}
+        </button>
+      ) : null}
+    </div>
   )
 }
 

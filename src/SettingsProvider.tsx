@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactN
 import { loadSettings, saveSettings } from './lib/storage'
 import { activePalette, derivePalette, fontStack, mix, onAccent, paletteOf, readableInk, schemeOf } from './lib/theme'
 import { SettingsContext } from './store'
+import { useRefreshPlace, useSunDark } from './useSun'
 import type { Settings } from './types'
 
 /**
@@ -47,11 +48,15 @@ const PALETTE_VARS = [
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(loadSettings)
   const prefersDark = usePrefersDark()
-  const palette = activePalette(settings, prefersDark)
+  const bySun = settings.followDevice && settings.switchBy === 'sun'
+  // With no place to watch the sun from yet, the phone's own setting stands in.
+  const sunDark = useSunDark(bySun ? settings.sunPlace : null)
+  const palette = activePalette(settings, sunDark ?? prefersDark)
 
   const set = useCallback((patch: Partial<Settings>) => {
     setSettings((current) => ({ ...current, ...patch }))
   }, [])
+  useRefreshPlace(bySun, settings.sunPlace, (sunPlace) => set({ sunPlace }))
 
   useEffect(() => {
     saveSettings(settings)

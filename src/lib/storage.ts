@@ -20,6 +20,8 @@ export function defaultSettings(): Settings {
     nightPalette: 'espresso',
     fixedPalette: 'paper',
     followDevice: true,
+    switchBy: 'device',
+    sunPlace: null,
     accent: '',
     fontId: 'system',
     textSize: 'md',
@@ -88,6 +90,16 @@ export function migrateSettings(raw: unknown): Settings {
   if (!known.includes(merged.palette)) merged.palette = base.palette
   if (!known.includes(merged.nightPalette)) merged.nightPalette = base.nightPalette
   merged.followDevice = merged.followDevice !== false
+  if (merged.switchBy !== 'sun') merged.switchBy = 'device'
+  const place = merged.sunPlace as { lat?: unknown; lon?: unknown } | null
+  merged.sunPlace =
+    place &&
+    typeof place.lat === 'number' &&
+    typeof place.lon === 'number' &&
+    Math.abs(place.lat) <= 90 &&
+    Math.abs(place.lon) <= 180
+      ? { lat: place.lat, lon: place.lon }
+      : null
   // Settings from before there was a slot for wearing one palette at all hours
   // kept that one in the day slot, so a dark palette sitting there was almost
   // certainly chosen that way. It moves to after dark, where it belongs, and

@@ -114,8 +114,8 @@ t.is('and keeps them when asked to', (await page.textContent('.answer')).trim(),
 // there rather than wherever its lightness would have filed it.
 await page.click('button[aria-label="Settings"]')
 await page.click('.tab:has-text("Look")')
-const following = await page.isChecked('.toggle-row:has-text("Follow the device") input')
-if (!following) await page.click('.toggle-row:has-text("Follow the device") input')
+const following = await page.isChecked('.toggle-row:has-text("Switch between a day and a night palette") input')
+if (!following) await page.click('.toggle-row:has-text("Switch between a day and a night palette") input')
 
 t.is('both slots offer a way in', await page.$$eval('.palette-make', (e) => e.length), 2)
 

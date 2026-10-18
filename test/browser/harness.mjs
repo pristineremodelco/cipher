@@ -40,7 +40,7 @@ export async function browser() {
  * A page with the settings already written, so a suite starts from a known
  * state rather than from whatever the last run left behind.
  */
-export async function open(browser, { settings = {}, viewport = { width: 393, height: 852 }, dark = true, extra = {} } = {}) {
+export async function open(browser, { settings = {}, viewport = { width: 393, height: 852 }, dark = true, extra = {}, time } = {}) {
   const phone = viewport.width < 700 || viewport.height < 500
   const context = await browser.newContext({
     viewport,
@@ -49,6 +49,8 @@ export async function open(browser, { settings = {}, viewport = { width: 393, he
     colorScheme: dark ? 'dark' : 'light',
     ...extra,
   })
+  // A fixed starting moment, for anything that depends on the time of day.
+  if (time) await context.clock.install({ time })
   const page = await context.newPage()
   const noise = []
   page.on('pageerror', (error) => noise.push(String(error)))

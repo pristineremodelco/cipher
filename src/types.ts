@@ -47,6 +47,13 @@ export type Settings = {
    * A calculator gets opened at three in the morning more than most things do.
    */
   followDevice: boolean
+  /**
+   * What decides when night is, with followDevice on: the phone's own light or
+   * dark setting, or the sun where the phone is.
+   */
+  switchBy: 'device' | 'sun'
+  /** Where the sun is watched from, to about a kilometre. Kept only while switchBy is sun. */
+  sunPlace: { lat: number; lon: number } | null
   /** Overrides the palette's accent. Empty string keeps the palette's own. */
   accent: string
   fontId: FontId

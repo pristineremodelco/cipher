@@ -129,8 +129,11 @@ question the device can already answer, daylight saving included.
 
 ## What it looks like
 
-Ten palettes, four light and six dark, and the device's own light or dark
-setting picks between a pair of them unless you say otherwise. With that off,
+Ten palettes, four light and six dark. A day and a night palette are switched
+between by the phone's own light or dark setting, or by sunset and sunrise
+where the phone is: the location is asked for once, kept to about a kilometre
+on the phone, worked into the sun's position there with no service asked, and
+forgotten again if the phone's setting is chosen. With that off,
 one palette is worn at every hour, and it is filed on its own side for when
 following comes back on. Either slot can take a palette of your own, which
 starts as a copy of the one it replaces. On top of that: an accent of any
@@ -184,7 +187,7 @@ npm test
 ```
 
 The sums, run under node with no test framework and no dependency: node runs
-TypeScript and ships a test runner, so there is nothing to install. 246 of
+TypeScript and ships a test runner, so there is nothing to install. 250 of
 them, covering the expression parser, what each key does to what is already on
 the display, every answer carried on reading back as itself, all 127 unit
 factors with every pair round tripped, what typing a unit finds, and every one
@@ -200,7 +203,7 @@ npm run dev
 npm run test:browser
 ```
 
-The rest, which needs a browser: 590 checks across seven suites. Every key on
+The rest, which needs a browser: 601 checks across seven suites. Every key on
 the pad pressed with the answer read back off the screen; what carries forward
 between presses and how far the history goes; a palette made from three colours
 and worn; every setting driven and its effect measured, from key corners to
@@ -250,6 +253,7 @@ src/
     storage.ts       settings defaults and forward migration
     convertentry.ts  typing into the converter, and typing over its opening 1
     uid.ts           ids that do not need a secure page
+    sun.ts           whether the sun is up, and when it next rises or sets
     colour.ts        hue, strength and brightness, for the colour wheel
     eyedropper.ts    a colour off the screen, where the browser allows it
   components/
