@@ -22,12 +22,13 @@ export type ToolId =
   | 'worldtime'
   | 'hex'
   | 'grade'
+  | 'games'
   | 'fuelcost'
   | 'fuelefficiency'
   | 'body'
   | 'ovulation'
 
-export type ToolGroup = 'money' | 'everyday' | 'vehicle' | 'health'
+export type ToolGroup = 'money' | 'everyday' | 'games' | 'vehicle' | 'health'
 
 export type Tool = {
   id: ToolId
@@ -57,6 +58,8 @@ export const TOOLS: Tool[] = [
   { id: 'hex', name: 'Hex', hint: 'Base 2, 8, 10 and 16', group: 'everyday' },
   { id: 'grade', name: 'Grade Average', hint: 'Weighted, by credit', group: 'everyday' },
 
+  { id: 'games', name: 'Game Scores', hint: 'Score sheets and rules for 150 games', group: 'games' },
+
   { id: 'fuelcost', name: 'Fuel Cost', hint: 'What the trip burns', group: 'vehicle' },
   { id: 'fuelefficiency', name: 'Fuel Efficiency', hint: 'From a tank and a trip', group: 'vehicle' },
 
@@ -67,6 +70,7 @@ export const TOOLS: Tool[] = [
 export const GROUPS: { id: ToolGroup; name: string }[] = [
   { id: 'money', name: 'Money' },
   { id: 'everyday', name: 'Everyday' },
+  { id: 'games', name: 'Games' },
   { id: 'vehicle', name: 'Vehicle' },
   { id: 'health', name: 'Health' },
 ]

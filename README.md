@@ -92,11 +92,12 @@ a rate is a live number, and it is marked as needing a connection.
 
 ## The tools
 
-Sixteen of them, grouped by what they are for rather than listed alphabetically
-in a drawer.
+Seventeen of them, grouped by what they are for rather than listed
+alphabetically in a drawer.
 
 **Money.** Discount, Sales Tax, Tip, Unit Price, Loan, Savings, Currencies.
 **Everyday.** Percent, Date, World Time, Hex, Grade Average.
+**Games.** Game Scores.
 **Vehicle.** Fuel Cost, Fuel Efficiency.
 **Health.** Body Metrics, Ovulation.
 
@@ -108,9 +109,30 @@ plenty of tools get that wrong. Loan is a level payment amortisation and says
 so. Ovulation says out loud that every date on it is an average of other
 people's cycles.
 
+### Game Scores
+
+A score sheet for each of 150 games, found by typing (misspellings and other
+names included: yatzy, 10000, oh heck, frolf), each laid out the way that game
+is scored rather than as one generic grid. Hearts is hands where low wins and a
+hundred ends it, with a button for shooting the moon. Phase 10 ticks off each
+player's phase. Five Crowns and Mexican Train name every round. Yahtzee,
+Catan, Ticket to Ride, 7 Wonders and Wingspan are category sheets that do their
+own arithmetic, upper bonus and science included. Spades, Oh Hell, Wizard and
+Skull King take a bid and the tricks. Monopoly, Magic, King of Tokyo and
+poker's buy-ins are counters. Cornhole and horseshoes cancel, darts counts down
+and busts, Mölkky has to land on 50 exactly, and bowling and darts cricket keep
+their own sheets. Clue gets a detective's notepad.
+
+Scores go in on the app's own keypad, since many phone keyboards have no minus
+sign, and Next moves along the round. Every game in progress is kept on the
+phone, and the names typed carry over to the next game. Each sheet has a Rules
+button: a short reminder of how it is played, opening with a note that house
+rules may differ and enjoying the game matters more. The sheets and rules load
+only when Game Scores is opened.
+
 ### The one that needs a signal
 
-Fifteen of the sixteen work with the aeroplane mode on. **Currencies** cannot:
+Sixteen of the seventeen work with the aeroplane mode on. **Currencies** cannot:
 an exchange rate is a live number, and inventing one would be worse than saying
 so. It carries a signal mark on its card, crossed through when the device
 reports no connection, so the reason a tap will disappoint is visible before
@@ -187,7 +209,7 @@ npm test
 ```
 
 The sums, run under node with no test framework and no dependency: node runs
-TypeScript and ships a test runner, so there is nothing to install. 250 of
+TypeScript and ships a test runner, so there is nothing to install. 268 of
 them, covering the expression parser, what each key does to what is already on
 the display, every answer carried on reading back as itself, all 127 unit
 factors with every pair round tripped, what typing a unit finds, and every one
@@ -203,13 +225,14 @@ npm run dev
 npm run test:browser
 ```
 
-The rest, which needs a browser: 601 checks across seven suites. Every key on
+The rest, which needs a browser: 652 checks across eight suites. Every key on
 the pad pressed with the answer read back off the screen; what carries forward
 between presses and how far the history goes; a palette made from three colours
 and worn; every setting driven and its effect measured, from key corners to
 operator contrast to each typeface drawing differently; the simple converter
 searched and answered; every tool opened and answered, with the one that needs
-a signal put through all three of the states it can be in; and the layout swept
+a signal put through all three of the states it can be in; game sheets kept,
+busted, bid on, bowled and reloaded; and the layout swept
 over twelve screen sizes in the calculator, both converter layouts and every tool.
 
 Playwright is deliberately not a dependency, the same way sharp is not: both
@@ -254,6 +277,8 @@ src/
     convertentry.ts  typing into the converter, and typing over its opening 1
     uid.ts           ids that do not need a secure page
     sun.ts           whether the sun is up, and when it next rises or sets
+    games/           the 150 games and their rules, the arithmetic of every
+                     kind of sheet, and the games in progress
     colour.ts        hue, strength and brightness, for the colour wheel
     eyedropper.ts    a colour off the screen, where the browser allows it
   components/
@@ -266,6 +291,7 @@ src/
     Form.tsx         the field, the choice and the answer block they all share
     tools/           one file per group: Money, Everyday, Vehicle, Health, Currency,
                      and dates.ts for what they share
+      games/         Game Scores: the search, the sheets, the score pad, the rules
     SettingsPanel.tsx
     PaletteEditor.tsx  three colours in, nine out
     Icons.tsx
@@ -277,8 +303,8 @@ test/
   browser/         the rest, needing playwright and a running dev server
 ```
 
-Settings live under the `calculator.v1` key and the history under
-`calculator.tape.v1`. They are apart because one changes on every press and the
+Settings live under the `calculator.v1` key, the history under
+`calculator.tape.v1` and games in progress under `cipher.games.v1`. They are apart because one changes on every press and the
 other twice a year, and writing the whole of one every time the other moves is
 how a storage key ends up rewritten a hundred times a minute. Settings are
 migrated forward on load, so adding a field never strands an existing save.

@@ -6,7 +6,7 @@ import { browser as launch, open, tally } from './harness.mjs'
 
 const NAMES = [
   'Discount', 'Sales Tax', 'Tip', 'Unit Price', 'Loan', 'Savings', 'Currencies',
-  'Percent', 'Date', 'World Time', 'Hex', 'Grade Average',
+  'Percent', 'Date', 'World Time', 'Hex', 'Grade Average', 'Game Scores',
   'Fuel Cost', 'Fuel Efficiency', 'Body Metrics', 'Ovulation',
 ]
 
@@ -23,6 +23,8 @@ const browser = await launch()
   for (const name of NAMES) {
     await page.click(`.card:has-text("${name}")`)
     await page.waitForSelector('.tool-head')
+    // One screen loads only when it is opened.
+    await page.waitForSelector('.tool-body .tool, .tool-body .offline')
     t.is(`${name} opens on itself`, (await page.textContent('.tool-title h2')).trim(), name)
     t.ok(`${name} draws something`, Boolean(await page.$('.tool-body .tool, .tool-body .offline')))
     const words = await page.evaluate(() => document.body.innerText)

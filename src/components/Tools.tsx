@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState, type ComponentType } from 'react'
 import { GROUPS, TOOLS, toolOf, type Tool } from '../lib/tools'
 import { Signal } from './Icons'
 import { useSettings } from '../store'
@@ -9,7 +9,11 @@ import { BodyMetrics, Ovulation } from './tools/Health'
 import { Currency } from './tools/Currency'
 import { Mend } from './Mend'
 
-const SCREENS: Record<string, () => React.ReactElement> = {
+// A hundred and more games and their rules are a lot to load for anyone who
+// only wanted a tip, so that screen arrives when it is opened.
+const Games = lazy(() => import('./tools/games/Games'))
+
+const SCREENS: Record<string, ComponentType> = {
   discount: Discount,
   salestax: SalesTax,
   tip: Tip,
@@ -22,6 +26,7 @@ const SCREENS: Record<string, () => React.ReactElement> = {
   worldtime: WorldTime,
   hex: Hex,
   grade: GradeAverage,
+  games: Games,
   fuelcost: FuelCost,
   fuelefficiency: FuelEfficiency,
   body: BodyMetrics,
@@ -89,7 +94,9 @@ export function Tools() {
               the one that is right. */}
         </div>
         <div className="tool-body">
-          <Mend key={open.id}>{Screen ? <Screen /> : null}</Mend>
+          <Mend key={open.id}>
+            <Suspense fallback={<p className="hint">Opening…</p>}>{Screen ? <Screen /> : null}</Suspense>
+          </Mend>
         </div>
       </div>
     )

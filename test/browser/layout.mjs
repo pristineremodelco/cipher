@@ -36,9 +36,23 @@ const SIZES = [
 
 const TOOLS = [
   'discount', 'salestax', 'tip', 'unitprice', 'loan', 'savings', 'currency',
-  'percent', 'date', 'worldtime', 'hex', 'grade',
+  'percent', 'date', 'worldtime', 'hex', 'grade', 'games',
   'fuelcost', 'fuelefficiency', 'body', 'ovulation',
 ]
+
+/** Six players at Hearts, the widest sheet a phone is likely to be asked for. */
+const SIX_AT_HEARTS = JSON.stringify({
+  last: 'hearts',
+  recent: ['hearts'],
+  names: [],
+  boards: {
+    hearts: {
+      players: ['Ann', 'Ben', 'Cal', 'Dee', 'Eve', 'Fay'].map((name, i) => ({ id: `p${i}`, name })),
+      data: { rows: [{ scores: { p0: 26, p1: 0, p2: 0, p3: 0, p4: 0, p5: 0 } }] },
+      at: 0,
+    },
+  },
+})
 
 const browser = await launch()
 const t = tally('layout')
@@ -127,12 +141,13 @@ for (const [name, width, height] of SIZES) {
   const { context, page } = await open(browser, { settings: { mode: 'tools', tool: '' }, viewport: { width, height } })
   await inspect(page, `${name}, the tool grid`)
   for (const tool of TOOLS) {
-    await page.evaluate((tool) => {
+    await page.evaluate(([tool, games]) => {
       const settings = JSON.parse(localStorage.getItem('calculator.v1'))
       localStorage.setItem('calculator.v1', JSON.stringify({ ...settings, mode: 'tools', tool }))
-    }, tool)
+      if (tool === 'games') localStorage.setItem('cipher.games.v1', games)
+    }, [tool, SIX_AT_HEARTS])
     await page.reload({ waitUntil: 'networkidle' })
-    await page.waitForTimeout(150)
+    await page.waitForTimeout(tool === 'games' ? 400 : 150)
     await inspect(page, `${name}, ${tool}`)
   }
   await context.close()
