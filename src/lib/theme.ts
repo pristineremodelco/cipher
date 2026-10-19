@@ -182,6 +182,10 @@ export function readableInk(accent: string, surfaces: string[], target = INK_CON
   const brightest = Math.max(...surfaces.map(luminance))
   const step = brightest < 0.4 ? 0.005 : -0.005
   const [L0, C0, h] = toOklch(start)
+  // Surfaces that pull both ways (white keys on a black ground) may have no
+  // colour that reaches the target; then the best seen is kept, never one
+  // that reads worse than the accent did.
+  let kept = start
   for (let L = L0 + step; L > 0 && L < 1; L += step) {
     // The most of the original chroma this lightness can carry on a screen.
     let lo = 0
@@ -200,8 +204,9 @@ export function readableInk(accent: string, surfaces: string[], target = INK_CON
     if (!best) continue
     const candidate = hex(best)
     if (score(candidate) >= target) return candidate
+    if (score(candidate) > score(kept)) kept = candidate
   }
-  return step > 0 ? '#ffffff' : '#000000'
+  return ['#ffffff', '#000000'].reduce((a, b) => (score(b) > score(a) ? b : a), kept)
 }
 
 /**
@@ -211,9 +216,14 @@ export function readableInk(accent: string, surfaces: string[], target = INK_CON
  * rather than asked for, because a palette whose numbers cannot be read is not
  * a palette anyone meant to make. The rest hang off it.
  */
+/** The type colour for a key face: near black on a light one, near white on a dark one. */
+function textOn(key: string): string {
+  return schemeOf(key) === 'light' ? mix('#000000', key, 0.9) : mix('#ffffff', key, 0.92)
+}
+
 export function derivePalette(custom: CustomPalette): Record<string, string> {
   const light = schemeOf(custom.key) === 'light'
-  const text = light ? mix('#000000', custom.key, 0.9) : mix('#ffffff', custom.key, 0.92)
+  const text = textOn(custom.key)
   return {
     '--bg': custom.ground,
     '--panel': mix(custom.key, custom.ground, 0.55),
@@ -230,13 +240,14 @@ export function derivePalette(custom: CustomPalette): Record<string, string> {
 
 /** Enough of a Palette for the settings list to name and preview one. */
 export function asPalette(custom: CustomPalette): Palette {
-  const derived = derivePalette(custom)
+  // Only the type colour is needed for the swatch; the whole palette, with
+  // its search for a readable accent, would be worked out for nothing.
   return {
     id: custom.id,
     name: custom.name,
     hint: 'Yours',
     scheme: schemeOf(custom.ground),
-    swatch: [custom.ground, custom.key, derived['--text'], custom.accent],
+    swatch: [custom.ground, custom.key, textOn(custom.key), custom.accent],
   }
 }
 

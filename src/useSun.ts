@@ -7,10 +7,13 @@ import { isDark, roughly, type Place } from './lib/sun'
  * the front, since a phone in a pocket at sunset is the usual case.
  */
 export function useSunDark(place: Place | null): boolean | null {
-  const [now, setNow] = useState(() => new Date())
+  // Only a nudge to draw again; the time itself is read fresh on every draw,
+  // so the first decision after a place arrives is about now, not about
+  // whenever the app was opened.
+  const [, setTick] = useState(0)
   useEffect(() => {
     if (!place) return
-    const tick = () => setNow(new Date())
+    const tick = () => setTick((n) => n + 1)
     const id = window.setInterval(tick, 60000)
     const back = () => {
       if (document.visibilityState === 'visible') tick()
@@ -21,11 +24,18 @@ export function useSunDark(place: Place | null): boolean | null {
       document.removeEventListener('visibilitychange', back)
     }
   }, [place])
-  return place ? isDark(now, place) : null
+  return place ? isDark(new Date(), place) : null
 }
 
 /** What became of the last request for where the phone is. */
 export type Locating = 'idle' | 'asking' | 'refused' | 'failed' | 'unsupported'
+
+let asking = 0
+
+/** Calls off any answer still on its way, so a late one cannot undo a change of mind. */
+export function stopLocating() {
+  asking += 1
+}
 
 /** Asks once for where the phone is, roughly. The answer stays on the phone. */
 export function locate(onPlace: (place: Place) => void, onTrouble: (why: Locating) => void) {
@@ -33,9 +43,14 @@ export function locate(onPlace: (place: Place) => void, onTrouble: (why: Locatin
     onTrouble('unsupported')
     return
   }
+  const ticket = ++asking
   navigator.geolocation.getCurrentPosition(
-    (position) => onPlace(roughly(position.coords.latitude, position.coords.longitude)),
-    (error) => onTrouble(error.code === error.PERMISSION_DENIED ? 'refused' : 'failed'),
+    (position) => {
+      if (ticket === asking) onPlace(roughly(position.coords.latitude, position.coords.longitude))
+    },
+    (error) => {
+      if (ticket === asking) onTrouble(error.code === error.PERMISSION_DENIED ? 'refused' : 'failed')
+    },
     // A town is plenty for sunset, so no GPS fix is waited for, and an answer
     // from the last few hours will do.
     { enableHighAccuracy: false, timeout: 15000, maximumAge: 6 * 3600000 },

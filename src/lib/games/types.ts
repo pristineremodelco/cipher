@@ -79,8 +79,8 @@ export type CategorySheet = {
 export type Counter = {
   id: string
   label: string
-  /** Where it starts; 'players' starts it at the number of players. */
-  start: number | 'players'
+  /** Where it starts. */
+  start: number
   min?: number
   max?: number
   /** Reaching this wins. */

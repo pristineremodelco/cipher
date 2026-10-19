@@ -200,5 +200,39 @@ test('mod is an operator like the others', () => {
 
 test('a point is refused wherever the number already has one', () => {
   assert.deepEqual(pressAt(['1', '.', '5'], 1, '.').chunks, ['1', '.', '5'])
-  assert.equal(expressionOf(pressed(['.'], ['-5'])), '-5.')
+  // A carried answer is one value, rubbed out whole, so a point after it starts a new number.
+  assert.equal(expressionOf(pressed(['.'], ['-5'])), '-5×0.')
+})
+
+test('a minus stacked on a times goes with it when the operator is corrected', () => {
+  assert.equal(expressionOf(press(press(press(['5'], '×'), '−'), '+')), '5+')
+  assert.equal(expressionOf(press(press(press(['5'], '×'), '−'), '÷')), '5÷')
+})
+
+test('a value put in the middle multiplies what follows it too', () => {
+  const edit = pressAt(['1', '2'], 1, '5', pressValue)
+  assert.equal(expressionOf(edit.chunks), '1×5×2')
+  assert.equal(edit.caret, 4)
+})
+
+test('a closing bracket in the middle counts the ones already after it', () => {
+  const chunks = ['(', '2', '+', '3', ')']
+  assert.deepEqual(pressAt(chunks, 4, ')').chunks, chunks)
+  assert.equal(expressionOf(pressAt(['(', '2', '+', '3'], 4, ')').chunks), '(2+3)')
+})
+
+test('an operator typed in front of another replaces it', () => {
+  assert.equal(expressionOf(pressAt(['2', '+', '3'], 1, '×').chunks), '2×3')
+  assert.equal(expressionOf(pressAt(['2', '−', '3'], 1, '×').chunks), '2×−3')
+})
+
+test('digits after a recalled value start a new one', () => {
+  assert.equal(expressionOf(press(pressValue(['3'], '12.5'), '2')), '3×12.5×2')
+  assert.equal(expressionOf(press(pressValue([], '-3'), '.')), '-3×0.')
+})
+
+test('a carried negative inside a sum stays one signed number when recalled', () => {
+  assert.deepEqual(chunksOf('5×-3'), ['5', '×', '-3'])
+  const runs = displayRuns('5×-3', false)
+  assert.deepEqual(runs.map((r) => r.kind), ['digit', 'operator', 'digit'])
 })

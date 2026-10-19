@@ -5,7 +5,7 @@ import { findUnits, fromKey, keyOf, parsePair, type Found, type Pair } from '../
 import { formatMeasure } from '../lib/calc'
 import { asEntry, placed, pressEntry } from '../lib/convertentry'
 import { Backspace } from './Icons'
-import { useSettings, useSpell } from '../store'
+import { useBuzz, useSettings, useSpell } from '../store'
 
 /** The typing row's number; see pressEntry for why a placed one is typed over. */
 function useEntry() {
@@ -43,18 +43,6 @@ const PAD: string[][] = [
 export function Converter() {
   const { settings } = useSettings()
   return settings.convertStyle === 'simple' ? <SimpleConverter /> : <CategoryConverter />
-}
-
-function useBuzz() {
-  const { settings } = useSettings()
-  return () => {
-    if (!settings.haptics) return
-    try {
-      navigator.vibrate?.(8)
-    } catch {
-      /* a device with no motor, which is most of them */
-    }
-  }
 }
 
 /**
@@ -268,7 +256,7 @@ function CategoryConverter() {
         {category.units
           .filter((unit) => unit.id !== source.id)
           .map((unit) => {
-            const other = convert(value, source, unit)
+            const text = show(convert(value, source, unit))
             return (
               <button
                 key={unit.id}
@@ -279,8 +267,8 @@ function CategoryConverter() {
                   pickUnit(side === 'from' ? 'to' : 'from', unit.id)
                 }}
               >
-                <span className="convert-other-value" data-long={show(other).length > 12 ? 'more' : show(other).length > 11}>
-                  {show(other)}
+                <span className="convert-other-value" data-long={text.length > 12 ? 'more' : text.length > 11}>
+                  {text}
                 </span>
                 <span className="convert-other-unit">{unit.symbol}</span>
               </button>

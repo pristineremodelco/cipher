@@ -209,3 +209,21 @@ test('trig gives its exact zeros, and says when there is no answer', () => {
   // A small angle keeps its small sine.
   assert.equal(valueOf('sin(0.00000000000000000001)', 'rad'), 1e-20)
 })
+
+test('names off every object are not names the parser knows', () => {
+  const result = calculate('constructor+1')
+  assert.equal(result.ok, false)
+  assert.ok(!result.ok && result.error.includes('not a name'))
+})
+
+test('log of nought has no answer rather than one too large', () => {
+  const result = calculate('log(0)')
+  assert.ok(!result.ok && result.error.includes('no answer'))
+  const ln = calculate('ln(0)')
+  assert.ok(!ln.ok && ln.error.includes('no answer'))
+})
+
+test('a tiny answer keeps its figures', () => {
+  assert.equal(formatNumber(1.23456789e-9, { decimals: -1, grouping: true }), '1.23456789×10⁻⁹')
+  assert.equal(formatNumber(0.000123, { decimals: -1, grouping: true }), '0.000123')
+})

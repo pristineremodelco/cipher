@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { Choice, DateField, Field, Readout, Segment, Tool } from '../Form'
 import { ACTIVITY, bmi, bmiBand, bmr, ovulation, type BodyUnits, type Sex } from '../../lib/tools'
-import { fromInput, toInput, useShow } from './dates'
-function longDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' }).format(date)
-}
+import { fromInput, longDate as fullDate, toInput, useShow } from './dates'
 
+const longDate = (date: Date) => fullDate(date, 'short')
+import { readNumber } from '../../lib/amount'
 export function BodyMetrics() {
   const [units, setUnits] = useState<BodyUnits>('us')
   const [weight, setWeight] = useState('')
@@ -16,8 +15,8 @@ export function BodyMetrics() {
   const show = useShow()
 
   const us = units === 'us'
-  const index = bmi(Number(weight), Number(height), units)
-  const rest = bmr(Number(weight), Number(height), Number(age), sex, units)
+  const index = bmi(readNumber(weight), readNumber(height), units)
+  const rest = bmr(readNumber(weight), readNumber(height), readNumber(age), sex, units)
   const factor = ACTIVITY.find((item) => item.id === activity)?.factor ?? 1.375
 
   return (
@@ -71,7 +70,7 @@ export function Ovulation() {
   const [last, setLast] = useState(toInput(new Date()))
   const [cycle, setCycle] = useState('28')
   const start = fromInput(last)
-  const result = start ? ovulation(start, Number(cycle)) : null
+  const result = start ? ovulation(start, readNumber(cycle)) : null
 
   return (
     <Tool note="Ovulation is taken as fourteen days before the next period, the due date as 280 days from the last. Both are averages, not facts about your cycle.">

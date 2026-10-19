@@ -10,11 +10,17 @@ type Props = { children: ReactNode; whole?: boolean }
  * app standing. Around everything it offers a reload and, in case it is
  * something stored that keeps tripping it, a way to put the settings back.
  */
-export class Mend extends Component<Props, { broken: boolean }> {
-  state = { broken: false }
+export class Mend extends Component<Props, { broken: boolean; fetch: boolean }> {
+  state = { broken: false, fetch: false }
 
-  static getDerivedStateFromError() {
-    return { broken: true }
+  /**
+   * A screen that failed to download is remembered as failed by the browser's
+   * module loader, so drawing it again only fails again: that one needs the
+   * page reloaded, most often after an update has replaced the file.
+   */
+  static getDerivedStateFromError(error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    return { broken: true, fetch: /dynamically imported module|module script|loading chunk|failed to fetch/i.test(message) }
   }
 
   render() {
@@ -23,7 +29,7 @@ export class Mend extends Component<Props, { broken: boolean }> {
       return (
         <div className="offline" role="alert">
           <strong>This screen hit a snag</strong>
-          <button className="ghost" onClick={() => this.setState({ broken: false })}>
+          <button className="ghost" onClick={() => (this.state.fetch ? location.reload() : this.setState({ broken: false }))}>
             Start it again
           </button>
         </div>

@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { calculate, formatNumber, plainNumber } from './lib/calc'
-import { backspaceAt, chunkRuns, chunksOf, displayRuns, expressionOf, pressAt, pressValue, seed, type Caret } from './lib/calcinput'
+import { backspaceAt, chunkRuns, chunksOf, displayRuns, expressionOf, kindOf, pressAt, pressValue, seed, type Caret } from './lib/calcinput'
 import { MAX_TAPE, loadTape, saveTape, type Tape, type TapeEntry } from './lib/calctape'
 import { uid } from './lib/uid'
 import { ROWS, SCIENTIFIC, TYPED, type Key } from './components/keys'
@@ -10,7 +10,7 @@ import { Converter } from './components/Converter'
 import { Confirm } from './components/Confirm'
 import { fitToWidth, onReflow } from './components/fit'
 import { Tools } from './components/Tools'
-import { useSettings, useSpell } from './store'
+import { useBuzz, useSettings, useSpell } from './store'
 
 export default function App() {
   const { settings, set } = useSettings()
@@ -73,7 +73,8 @@ export default function App() {
    */
   const fitAnswer = useCallback(() => fitToWidth(answerLine.current), [])
 
-  useLayoutEffect(fitAnswer)
+  // Only when what is drawn, or the size it is drawn at, can have changed.
+  useLayoutEffect(fitAnswer, [fitAnswer, result, format, copied, settings.displayScale, settings.textSize, settings.fontId, settings.boldText])
 
   useEffect(() => {
     const display = answerLine.current?.parentElement
@@ -102,14 +103,7 @@ export default function App() {
     if (at.top < box.top || at.bottom > box.bottom) line.scrollTop += at.top - box.top - (box.height - at.height) / 2
   }, [expression, settled, worked, caret])
 
-  const buzz = useCallback(() => {
-    if (!settings.haptics) return
-    try {
-      navigator.vibrate?.(8)
-    } catch {
-      /* a device with no motor, which is most of them */
-    }
-  }, [settings.haptics])
+  const buzz = useBuzz()
 
   const key = useCallback(
     (pressed: string) => {
@@ -118,7 +112,8 @@ export default function App() {
       setAsked(false)
       // After an answer, a digit, a constant or a recalled value starts
       // again; an operator keeps the answer and works on from it.
-      const base = settled && (/^[0-9.]$|^00$/.test(pressed) || pressed === 'ans') ? [] : chunks
+      const fresh = /^[0-9.]$|^00$/.test(pressed) || pressed === 'ans' || kindOf(pressed) === 'constant'
+      const base = settled && fresh ? [] : chunks
       // Ans is one value put in whole, not digits typed one after another.
       const next =
         pressed === 'ans'
@@ -253,6 +248,10 @@ export default function App() {
       // With the history open, Enter on its Done button ran equals on the sum
       // hidden behind it instead.
       if (settingsOpen || tapeOpen || sciOpen || settings.mode !== 'calculate') return
+      // Enter on a button reached with the keyboard presses that button. After
+      // a key was tapped, focus sits on it without showing, and Enter is still
+      // equals, as it is on any calculator.
+      if (event.key === 'Enter' && target?.tagName === 'BUTTON' && target.matches(':focus-visible')) return
       if (event.key === 'Enter' || event.key === '=') {
         event.preventDefault()
         equals()
@@ -300,6 +299,9 @@ export default function App() {
   /** Holding the rub-out clears the lot, which is the one gesture worth having. */
   function holdStart() {
     cleared.current = false
+    // A second finger down before the first lifts must not leave a timer
+    // behind that clears the sum after an ordinary tap.
+    if (holdTimer.current !== null) window.clearTimeout(holdTimer.current)
     holdTimer.current = window.setTimeout(() => {
       cleared.current = true
       clear()
@@ -479,6 +481,10 @@ export default function App() {
               onPointerDown={holdStart}
               onPointerUp={() => holdEnd(true)}
               onPointerLeave={() => holdEnd(false)}
+              // A keyboard or screen reader presses it without a pointer at all.
+              onClick={(e) => {
+                if (e.detail === 0) rub()
+              }}
               // A long press is the gesture here, not a request for a menu.
               onContextMenu={(e) => e.preventDefault()}
             >
@@ -616,6 +622,8 @@ export default function App() {
                         setCaret(null)
                         setWorked(entry.expression)
                         setSettled(true)
+                        // The answer on show is the one Ans means.
+                        setLastAnswer(entry.value)
                         setTapeOpen(false)
                       }}
                     >

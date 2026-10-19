@@ -168,6 +168,22 @@ await tapAfter(0)
 t.is('with editing off a tap leaves a finished sum alone', await answer(), '226')
 t.is('and puts no caret anywhere', await page.$$eval('.expression .caret', (e) => e.length), 0)
 
+// After an answer a constant starts a new sum, as a digit does, rather than
+// multiplying the answer.
+await tap('Clear')
+for (const key of ['2', 'Plus', '3', 'Equals']) await tap(key)
+await page.click('button[aria-label="Scientific functions"]')
+await page.click('.sci-sheet .key[aria-label="Pi"]')
+await page.keyboard.press('Escape')
+t.is('pi after an answer starts again', await expression(), 'π')
+
+// The rub-out answers a keyboard or a screen reader, which press without a pointer.
+await tap('Clear')
+for (const key of ['4', '2']) await tap(key)
+await page.focus('.rub')
+await page.keyboard.press('Space')
+t.is('the rub-out works from the keyboard', await expression(), '4')
+
 t.done(noise)
 await context.close()
 await browser.close()

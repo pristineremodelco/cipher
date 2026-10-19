@@ -281,8 +281,9 @@ function parse(tokens: Token[]): Node {
     if (token.t === 'name') {
       pos += 1
       const name = token.v
-      if (name in CONSTANTS) return { k: 'num', v: CONSTANTS[name] }
-      if (name in FUNCTIONS) {
+      // Own names only: "constructor" is on every object and is not a constant.
+      if (Object.hasOwn(CONSTANTS, name)) return { k: 'num', v: CONSTANTS[name] }
+      if (Object.hasOwn(FUNCTIONS, name)) {
         // A function with no brackets takes the value beside it, so sqrt9+1
         // is 4 rather than the root of 10.
         if (!startsValue() && !isOp('-')) {
@@ -370,6 +371,9 @@ function evaluate(node: Node, angle: AngleUnit): number {
         if (node.name === 'tan' && Math.abs(out) > 1e15) fail('tan has no answer for that')
       }
       if (Number.isNaN(out)) fail(`${node.name} has no answer for that`)
+      // log 0 and ln 0 run off to minus infinity, which is not an answer that
+      // is too large but no answer at all.
+      if (!Number.isFinite(out) && input === 0) fail(`${node.name} has no answer for 0`)
       return angle === 'deg' && RETURNS_ANGLE.has(node.name) ? out / DEG : out
     }
 
@@ -473,19 +477,44 @@ function settle(value: number): number {
   return Number(value.toPrecision(15))
 }
 
+const formats = new Map<string, Intl.NumberFormat>()
+
+/**
+ * One formatter for each set of options, made once and kept. Making one is
+ * far from free, and every key press redraws several numbers.
+ */
+export function numberFormat(options: Intl.NumberFormatOptions): Intl.NumberFormat {
+  const key = JSON.stringify(options)
+  let made = formats.get(key)
+  if (!made) {
+    made = new Intl.NumberFormat('en-US', options)
+    formats.set(key, made)
+  }
+  return made
+}
+
+/** Money to two places, always, because money has two places. Blank for a number that is not one. */
+export function formatMoney(value: number, grouping: boolean): string {
+  if (!Number.isFinite(value)) return ''
+  return numberFormat({ minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: grouping }).format(value)
+}
+
 export function formatNumber(value: number, format: NumberFormat): string {
   if (!Number.isFinite(value)) return Number.isNaN(value) ? 'Undefined' : '∞'
   const settled = settle(value)
   const size = Math.abs(settled)
 
-  if (size !== 0 && (size >= BIG || size < SMALL)) {
+  // Showing whatever the answer has, twelve places would cut 0.00000000123
+  // down to four figures, so anything under a millionth is written as a power.
+  const small = format.decimals >= 0 ? SMALL : 1e-6
+  if (size !== 0 && (size >= BIG || size < small)) {
     const [mantissa, exponent] = settled.toExponential(9).split('e')
     const trimmed = Number(mantissa).toString()
     return `${trimmed}×10${superscript(exponent)}`
   }
 
   const digits = format.decimals >= 0 ? format.decimals : 12
-  const text = new Intl.NumberFormat('en-US', {
+  const text = numberFormat({
     minimumFractionDigits: format.decimals >= 0 && format.padDecimals ? format.decimals : 0,
     maximumFractionDigits: Math.min(20, digits),
     useGrouping: format.grouping,
@@ -516,7 +545,7 @@ export function formatMeasure(value: number, grouping: boolean): string {
   // that many more places: significant figures either way.
   const integerDigits = Math.floor(Math.log10(size || 1)) + 1
   const places = Math.max(0, Math.min(20, MEASURE_DIGITS - integerDigits))
-  const text = new Intl.NumberFormat('en-US', {
+  const text = numberFormat({
     minimumFractionDigits: 0,
     maximumFractionDigits: places,
     useGrouping: grouping,

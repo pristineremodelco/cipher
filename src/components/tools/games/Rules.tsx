@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import type { Game } from '../../../lib/games/types'
 import { useSpell } from '../../../store'
+import { useEscape } from '../../useEscape'
 
 /** "Heading: text" lines, as the catalogue writes them. */
 function sections(rules: string): { heading: string; text: string }[] {
@@ -14,15 +14,7 @@ function sections(rules: string): { heading: string; text: string }[] {
 /** The rules at a glance, for settling an argument without the box. */
 export function Rules({ game, onClose }: { game: Game; onClose: () => void }) {
   const t = useSpell()
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopImmediatePropagation()
-      onClose()
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  useEscape(onClose)
 
   return createPortal(
     <div className="scrim" onClick={onClose}>

@@ -3,6 +3,8 @@ import { Field, Readout, Tool } from '../Form'
 import { ageOf, convertMoney, currencyName, fetchRates, loadRates, type Rates } from '../../lib/rates'
 import { Signal } from '../Icons'
 import { useSettings } from '../../store'
+import { readNumber } from '../../lib/amount'
+import { formatMoney } from '../../lib/calc'
 
 type State = 'idle' | 'asking' | 'fresh' | 'stale' | 'nothing'
 
@@ -55,18 +57,11 @@ export function Currency() {
   const codes = rates ? Object.keys(rates.rates).sort() : []
   const from = codes.includes(settings.currencyFrom) ? settings.currencyFrom : codes[0] ?? 'USD'
   const to = codes.includes(settings.currencyTo) ? settings.currencyTo : codes[1] ?? 'EUR'
-  const value = Number(amount)
+  const value = readNumber(amount)
   const converted = rates ? convertMoney(value, from, to, rates) : NaN
   const one = rates ? convertMoney(1, from, to, rates) : NaN
 
-  const money = (n: number) =>
-    Number.isFinite(n)
-      ? new Intl.NumberFormat('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-          useGrouping: settings.grouping,
-        }).format(n)
-      : ''
+  const money = (n: number) => formatMoney(n, settings.grouping)
 
   if (!rates) {
     return (
@@ -135,8 +130,8 @@ export function Currency() {
       </div>
       <Readout
         rows={[
-          { label: currencyName(to), value: amount ? `${money(converted)} ${to}` : '', lead: true },
-          { label: `One ${from}`, value: `${money(one)} ${to}` },
+          { label: currencyName(to), value: amount && money(converted) ? `${money(converted)} ${to}` : '', lead: true },
+          { label: `One ${from}`, value: money(one) ? `${money(one)} ${to}` : '' },
         ]}
         note="European Central Bank reference rates, published once a working day. Not what a bank or card will give you."
       />

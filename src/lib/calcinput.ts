@@ -47,13 +47,13 @@ export function isOpener(chunk: string): boolean {
 export function endsValue(raw: string | undefined): boolean {
   if (!raw) return false
   const chunk = raw.trim()
-  if (isOperator(chunk) || chunk === 'mod' || isOpener(chunk)) return false
+  if (isOperator(chunk) || isOpener(chunk)) return false
   return true
 }
 
 export function kindOf(raw: string): ChunkKind {
   const chunk = raw.trim()
-  if (isOperator(chunk) || chunk === 'mod') return 'operator'
+  if (isOperator(chunk)) return 'operator'
   if (chunk === '(' || chunk === ')') return 'paren'
   if (isOpener(chunk)) return 'function'
   if (POSTFIX.includes(chunk)) return 'postfix'
@@ -103,7 +103,24 @@ function leadingNumber(chunks: string[]): string {
  */
 function closesValue(chunk: string | undefined): boolean {
   if (!chunk) return false
-  return chunk === ')' || POSTFIX.includes(chunk) || (kindOf(chunk) === 'constant' && !/^-?[0-9.]/.test(chunk.trim()))
+  return chunk === ')' || POSTFIX.includes(chunk) || (kindOf(chunk) === 'constant' && !/^-?[0-9.]/.test(chunk.trim())) || isWholeValue(chunk)
+}
+
+/**
+ * A number put in whole, by Ans, memory recall or an answer carried on, rather
+ * than typed a digit at a time: typed digits are a chunk each. A digit after
+ * one starts a new value, as it does after a constant, so 3, Ans, 2 is 3×12.5×2
+ * and not 3×12.52.
+ */
+function isWholeValue(chunk: string): boolean {
+  return chunk.length > 1 && /^-?[0-9.]+(?:e[+-]?[0-9]+)?$/i.test(chunk)
+}
+
+/** Whether a chunk can begin a value, so that one put down in front of it needs a times between. */
+function startsValue(chunk: string | undefined): boolean {
+  if (!chunk) return false
+  const kind = kindOf(chunk)
+  return kind === 'digit' || kind === 'constant' || kind === 'function' || chunk === '('
 }
 
 export function expressionOf(chunks: string[]): string {
@@ -135,7 +152,10 @@ export function displayRuns(expression: string, grouping: boolean): Run[] {
   while (rest) {
     // An answer carried on can lead with a plain minus or carry an exponent.
     const number = /^(?:-(?=[0-9.]))?[0-9.]+(?:e[+-]?[0-9]+)?/.exec(rest)
-    if (number && !(number[0].startsWith('-') && runs.length)) {
+    // A plain minus only ever arrives on a carried value, so it is that
+    // value's sign wherever a value can start: 5×-3 is five times minus three.
+    const signAllowed = !runs.length || runs[runs.length - 1].kind !== 'digit'
+    if (number && (!number[0].startsWith('-') || signAllowed)) {
       runs.push({ text: grouping ? grouped(number[0]) : number[0], kind: 'digit' })
       rest = rest.slice(number[0].length)
       continue
@@ -197,6 +217,9 @@ export function press(chunks: string[], key: string): string[] {
     if (isOperator(last)) {
       const before = last.trim()
       if (key === '−' && (before === '×' || before === '÷' || before === '^' || before === 'mod')) return [...chunks, key]
+      // A minus stacked on a times is part of the operator being corrected:
+      // 5 × − then + is 5 + rather than 5 × +.
+      if (last === '−' && isOperator(chunks[chunks.length - 2])) return [...chunks.slice(0, -2), written]
       return [...chunks.slice(0, -1), written]
     }
     if (isOpener(last)) return key === '−' ? [...chunks, key] : chunks
@@ -282,8 +305,26 @@ export function pressAt(chunks: string[], caret: Caret, key: string, apply: (chu
   if (key === '.' && (trailingNumber(chunks.slice(0, caret)) + leadingNumber(chunks.slice(caret))).includes('.')) {
     return { chunks, caret }
   }
-  const before = apply(chunks.slice(0, caret), key)
-  return { chunks: [...before, ...chunks.slice(caret)], caret: before.length }
+  let before = apply(chunks.slice(0, caret), key)
+  let after = chunks.slice(caret)
+  // A closing bracket counts the ones already waiting after the caret: in
+  // (2+3|) there is nothing left to close.
+  const closed = before.length === caret + 1 && before[before.length - 1] === ')'
+  if (closed && openCount(chunks) <= 0) {
+    if (key === ')') return { chunks, caret }
+    before = [...chunks.slice(0, caret), '×', '(']
+  }
+  // Where what was put in meets what follows, the same rules as at the end:
+  // a value set down in front of another multiplies it, and an operator typed
+  // in front of another replaces it.
+  const added = before[before.length - 1]
+  const joins = apply === press ? closesValue(added) : endsValue(added)
+  if (joins && startsValue(after[0]) && before.length > caret) before = [...before, '×']
+  if (isOperator(key) && isOperator(after[0]) && before.length > caret) {
+    const stack = after[0] === '−' && ['×', '÷', '^', 'mod'].includes(key.trim())
+    if (!stack) after = after.slice(1)
+  }
+  return { chunks: [...before, ...after], caret: before.length }
 }
 
 /**

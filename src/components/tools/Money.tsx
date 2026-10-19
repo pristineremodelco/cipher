@@ -3,35 +3,38 @@ import { Field, Readout, Segment, Tool } from '../Form'
 import { discount, loan, percentChange, percentIs, percentOf, salesTax, savings, tip, unitPrice } from '../../lib/tools'
 import { useSettings } from '../../store'
 import { useShow } from './dates'
+import { readNumber } from '../../lib/amount'
+import { formatMoney } from '../../lib/calc'
 
-/** Money to two places, always, because money has two places. */
-function money(value: number, grouping: boolean): string {
-  if (!Number.isFinite(value)) return ''
-  return new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-    useGrouping: grouping,
-  }).format(value)
-}
 
+/**
+ * Money with its sign, or nothing at all: a number that would not read used
+ * to leave a lone "$" in the answer where a dash belongs.
+ */
 function useMoney() {
   const { settings } = useSettings()
-  return { money: (value: number) => money(value, settings.grouping), plain: useShow() }
+  return {
+    money: (value: number) => {
+      const text = formatMoney(value, settings.grouping)
+      return text ? `$${text}` : ''
+    },
+    plain: useShow(),
+  }
 }
 
 export function Discount() {
   const [price, setPrice] = useState('')
   const [percent, setPercent] = useState('20')
   const { money } = useMoney()
-  const result = discount(Number(price), Number(percent))
+  const result = discount(readNumber(price), readNumber(percent))
   return (
     <Tool>
       <Field label="Price" prefix="$" value={price} onChange={setPrice} placeholder="0.00" />
       <Field label="Off" suffix="%" value={percent} onChange={setPercent} />
       <Readout
         rows={[
-          { label: 'You pay', value: price ? `$${money(result.pay)}` : '', lead: true },
-          { label: 'You save', value: price ? `$${money(result.saved)}` : '' },
+          { label: 'You pay', value: price ? money(result.pay) : '', lead: true },
+          { label: 'You save', value: price ? money(result.saved) : '' },
         ]}
       />
     </Tool>
@@ -43,7 +46,7 @@ export function SalesTax() {
   const [rate, setRate] = useState('8.25')
   const [mode, setMode] = useState<'add' | 'remove'>('add')
   const { money } = useMoney()
-  const result = salesTax(Number(amount), Number(rate), mode === 'remove')
+  const result = salesTax(readNumber(amount), readNumber(rate), mode === 'remove')
   return (
     <Tool
       note={
@@ -72,10 +75,10 @@ export function SalesTax() {
         rows={[
           {
             label: mode === 'add' ? 'Total' : 'Price before tax',
-            value: amount ? `$${money(mode === 'add' ? result.total : result.before)}` : '',
+            value: amount ? money(mode === 'add' ? result.total : result.before) : '',
             lead: true,
           },
-          { label: 'Tax', value: amount ? `$${money(result.tax)}` : '' },
+          { label: 'Tax', value: amount ? money(result.tax) : '' },
         ]}
       />
     </Tool>
@@ -87,8 +90,8 @@ export function Tip() {
   const [percent, setPercent] = useState('20')
   const [people, setPeople] = useState('1')
   const { money } = useMoney()
-  const heads = Math.max(1, Math.floor(Number(people)) || 1)
-  const result = tip(Number(bill), Number(percent), heads)
+  const heads = Math.max(1, Math.floor(readNumber(people)) || 1)
+  const result = tip(readNumber(bill), readNumber(percent), heads)
   return (
     <Tool>
       <Field label="Bill" prefix="$" value={bill} onChange={setBill} placeholder="0.00" />
@@ -107,10 +110,10 @@ export function Tip() {
       <Field label="Split between" suffix={heads === 1 ? 'person' : 'people'} value={people} onChange={setPeople} />
       <Readout
         rows={[
-          { label: 'Total', value: bill ? `$${money(result.total)}` : '', lead: true },
-          { label: 'Tip', value: bill ? `$${money(result.tip)}` : '' },
+          { label: 'Total', value: bill ? money(result.total) : '', lead: true },
+          { label: 'Tip', value: bill ? money(result.tip) : '' },
           ...(heads > 1
-            ? [{ label: `Each of ${heads}`, value: bill ? `$${money(result.each)}` : '' }]
+            ? [{ label: `Each of ${heads}`, value: bill ? money(result.each) : '' }]
             : []),
         ]}
       />
@@ -126,8 +129,8 @@ export function UnitPrice() {
   const [unit, setUnit] = useState('oz')
   const { plain } = useMoney()
 
-  const a = unitPrice(Number(aPrice), Number(aSize))
-  const b = unitPrice(Number(bPrice), Number(bSize))
+  const a = unitPrice(readNumber(aPrice), readNumber(aSize))
+  const b = unitPrice(readNumber(bPrice), readNumber(bSize))
   const both = Number.isFinite(a) && Number.isFinite(b)
   const cheaper = !both ? '' : a === b ? 'The same' : a < b ? 'The first one' : 'The second one'
   const gap = both && a !== b ? Math.abs(a - b) / Math.max(a, b) : NaN
@@ -159,8 +162,8 @@ export function Percent() {
   const [a, setA] = useState('')
   const [b, setB] = useState('')
   const { plain } = useMoney()
-  const x = Number(a)
-  const y = Number(b)
+  const x = readNumber(a)
+  const y = readNumber(b)
   const filled = a !== '' && b !== ''
 
   const answer =
@@ -199,8 +202,8 @@ export function Loan() {
   const [rate, setRate] = useState('6.5')
   const [years, setYears] = useState('30')
   const { money, plain } = useMoney()
-  const result = loan(Number(amount), Number(rate), Number(years))
-  const ready = Number(amount) > 0 && Number(years) > 0
+  const result = loan(readNumber(amount), readNumber(rate), readNumber(years))
+  const ready = readNumber(amount) > 0 && readNumber(years) > 0
   return (
     <Tool note="A level payment loan, compounded monthly. No fees, insurance or escrow, so a lender's figure will be higher.">
       <Field label="Amount borrowed" prefix="$" value={amount} onChange={setAmount} placeholder="0.00" />
@@ -210,9 +213,9 @@ export function Loan() {
       </div>
       <Readout
         rows={[
-          { label: 'Every month', value: ready ? `$${money(result.payment)}` : '', lead: true },
-          { label: 'Total interest', value: ready ? `$${money(result.interest)}` : '' },
-          { label: 'Paid in the end', value: ready ? `$${money(result.total)}` : '' },
+          { label: 'Every month', value: ready ? money(result.payment) : '', lead: true },
+          { label: 'Total interest', value: ready ? money(result.interest) : '' },
+          { label: 'Paid in the end', value: ready ? money(result.total) : '' },
           { label: 'Payments', value: ready ? plain(result.months, 0) : '' },
         ]}
       />
@@ -226,8 +229,8 @@ export function Savings() {
   const [rate, setRate] = useState('4')
   const [years, setYears] = useState('10')
   const { money } = useMoney()
-  const result = savings(Number(start) || 0, Number(monthly) || 0, Number(rate), Number(years))
-  const ready = Number(years) > 0 && (Number(start) > 0 || Number(monthly) > 0)
+  const result = savings(readNumber(start) || 0, readNumber(monthly) || 0, readNumber(rate), readNumber(years))
+  const ready = readNumber(years) > 0 && (readNumber(start) > 0 || readNumber(monthly) > 0)
   return (
     <Tool note="Compounded monthly, paid in at each month's end. No tax, no inflation.">
       <Field label="Starting with" prefix="$" value={start} onChange={setStart} placeholder="0.00" />
@@ -238,9 +241,9 @@ export function Savings() {
       </div>
       <Readout
         rows={[
-          { label: 'Ends up as', value: ready ? `$${money(result.total)}` : '', lead: true },
-          { label: 'Of which you put in', value: ready ? `$${money(result.paidIn)}` : '' },
-          { label: 'And interest added', value: ready ? `$${money(result.interest)}` : '' },
+          { label: 'Ends up as', value: ready ? money(result.total) : '', lead: true },
+          { label: 'Of which you put in', value: ready ? money(result.paidIn) : '' },
+          { label: 'And interest added', value: ready ? money(result.interest) : '' },
         ]}
       />
     </Tool>

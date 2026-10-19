@@ -202,7 +202,7 @@ function GameSearch({ recent, current, onPick }: { recent: string[]; current?: s
         aria-expanded={open}
         aria-controls="game-results"
         aria-autocomplete="list"
-        aria-activedescendant={open && options[lit] ? `game-${options[lit].game.id}` : undefined}
+        aria-activedescendant={open && options[lit] ? `game-option-${lit}` : undefined}
         placeholder={current ? 'Switch game: Scrabble, Yahtzee…' : 'Search games: Scrabble, Yahtzee…'}
         value={query}
         onFocus={() => {
@@ -246,7 +246,7 @@ function GameSearch({ recent, current, onPick }: { recent: string[]; current?: s
               <li key={`${option.game.id}-${i}`} role="presentation">
                 {option.section ? <span className="game-section">{t(option.section)}</span> : null}
                 <button
-                  id={`game-${option.game.id}`}
+                  id={`game-option-${i}`}
                   role="option"
                   aria-selected={i === lit}
                   data-index={i}

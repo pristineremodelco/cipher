@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { hexToHsv, hsvToHex, pointOnWheel, wheelPoint, type Hsv } from '../lib/colour'
 import { onAccent, parseHex } from '../lib/theme'
 import { useSpell } from '../store'
 import { eyeDropper, pickOffScreen } from '../lib/eyedropper'
+import { useEscape } from './useEscape'
 
 export function Pipette() {
   return (
@@ -85,17 +86,7 @@ export function ColourWheel({
     update({ ...hsv, ...move })
   }
 
-  // Escape closes this, not the settings underneath it.
-  useEffect(() => {
-    const onKey = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopImmediatePropagation()
-      event.preventDefault()
-      onClose()
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  useEscape(onClose)
 
   const thumb = wheelPoint(hsv.h, hsv.s)
   const full = hsvToHex({ ...hsv, v: 1 })

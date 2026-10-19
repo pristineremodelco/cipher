@@ -1,8 +1,9 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { Backspace } from '../../Icons'
 import type { Part } from '../../../lib/games/types'
 import { useSpell } from '../../../store'
+import { useEscape } from '../../useEscape'
 
 const KEYS = [
   ['7', '8', '9'],
@@ -69,15 +70,7 @@ export function ScorePad({
   // With parts, starting from a number already entered keeps it rather than zeroing it.
   const [fromParts, setFromParts] = useState(!(parts && value !== null))
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopImmediatePropagation()
-      onClose()
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  useEscape(onClose)
 
   const partsTotal = parts
     ? parts.reduce((sum, part, i) => sum + (part.typed ? (asNumber(typed[i]) ?? 0) : counts[i] * (part.per ?? 1)), 0)
@@ -95,7 +88,8 @@ export function ScorePad({
   }
 
   function commit(advance: boolean) {
-    if (parts && fromParts && !touchedParts) onDone(null, advance)
+    // Parts opened and left untouched keep whatever was there before.
+    if (parts && fromParts && !touchedParts) onDone(value, advance)
     else onDone(result, advance)
   }
 

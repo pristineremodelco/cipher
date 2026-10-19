@@ -3,12 +3,9 @@ import { Choice, DateField, Field, Readout, Segment, Tool } from '../Form'
 import { BASES, BASE_NAMES, addDays, daysBetween, gradeAverage, parseBase, spanOf, type Base, type Grade } from '../../lib/tools'
 import { ZONES, dayIn, deviceZone, offsetHours, offsetLabel, timeIn, zoneOf } from '../../lib/zones'
 import { uid } from '../../lib/uid'
+import { readNumber } from '../../lib/amount'
 import { useSettings } from '../../store'
-import { fromInput, toInput } from './dates'
-function longDate(date: Date): string {
-  return new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(date)
-}
-
+import { fromInput, longDate, toInput } from './dates'
 export function DateTool() {
   const [mode, setMode] = useState<'between' | 'add'>('between')
   const [from, setFrom] = useState(toInput(new Date()))
@@ -56,7 +53,7 @@ export function DateTool() {
     )
   }
 
-  const shift = Number(days) * (direction === 'before' ? -1 : 1)
+  const shift = readNumber(days) * (direction === 'before' ? -1 : 1)
   const moved = start && Number.isFinite(shift) ? addDays(start, Math.round(shift)) : null
   // Far enough out and a Date stops being one, which would take the tool down
   // with it when it is written out.
@@ -169,7 +166,11 @@ export function WorldTime() {
           </div>
         ))}
       </div>
-      {available.length ? (
+      {others.length >= 12 ? (
+        // Twelve is the most that are kept, so the picker steps aside rather
+        // than taking a choice and doing nothing with it.
+        <p className="hint">Twelve places is the most. Remove one to add another.</p>
+      ) : available.length ? (
         <label className="tool-field">
           <span className="tool-label">Add a place</span>
           <span className="tool-input">

@@ -12,7 +12,6 @@ import {
   roundsResult,
   science,
   sheetResult,
-  startOf,
   type BidRow,
   type CounterValues,
   type CricketHit,
@@ -32,6 +31,7 @@ import type {
   RoundsSheet,
 } from '../../../lib/games/types'
 import { useSpell } from '../../../store'
+import { useEscape } from '../../useEscape'
 
 type Data = Record<string, unknown>
 export type BoardProps<S> = { game: Game; sheet: S; players: Player[]; data: Data; change: (next: Data) => void }
@@ -354,15 +354,7 @@ function SheetRow({ line, children }: { line: Line; children: ReactNode }) {
 }
 
 function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      event.stopImmediatePropagation()
-      onClose()
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose])
+  useEscape(onClose)
   return createPortal(
     <div className="scrim pad-scrim" onClick={onClose}>
       <div className="sheet pad-sheet" role="dialog" aria-label={title} onClick={(e) => e.stopPropagation()}>
@@ -373,17 +365,22 @@ function Sheet({ title, onClose, children }: { title: string; onClose: () => voi
   )
 }
 
-function Stepper({ label, value, onChange, step = 1, min = 0 }: { label: string; value: number; onChange: (n: number) => void; step?: number; min?: number }) {
+/**
+ * A number nudged up and down. Blank (null) shows a dash for "not yet": +
+ * counts up from it as from nought, and − makes it nought, which is how a
+ * hand where a player took no tricks is told apart from one not yet played.
+ */
+function Stepper({ label, value, onChange, step = 1, min = 0 }: { label: string; value: number | null; onChange: (n: number) => void; step?: number; min?: number }) {
   const t = useSpell()
   return (
     <div className="pad-part">
       <span>{t(label)}</span>
       <div className="stepper">
-        <button aria-label={`Less ${label}`} onClick={() => onChange(Math.max(min, value - step))}>
+        <button aria-label={`Less ${label}`} onClick={() => onChange(value === null ? 0 : Math.max(min, value - step))}>
           −
         </button>
-        <strong>{value}</strong>
-        <button aria-label={`More ${label}`} onClick={() => onChange(value + step)}>
+        <strong>{value ?? '–'}</strong>
+        <button aria-label={`More ${label}`} onClick={() => onChange((value ?? 0) + step)}>
           +
         </button>
       </div>
@@ -422,14 +419,15 @@ function SciencePad({ player, value, onDone, onClose }: { player: Player; value?
 
 // -------------------------------------------------------------- counters ----
 
-const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
+// The minimum has to come down with the maximum, or older engines refuse it outright.
+const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
 export function CountersBoard({ sheet, players, data, change }: BoardProps<CounterSheet>) {
   const t = useSpell()
   const values = (data.values as CounterValues | undefined) ?? {}
   const result = counterResult(sheet, players, values)
   const [editing, setEditing] = useState<{ counter: string; player: Player } | null>(null)
-  const valueOf = (id: string, pid: string) => values[id]?.[pid] ?? startOf(sheet.counters.find((c) => c.id === id)!, players.length)
+  const valueOf = (id: string, pid: string) => values[id]?.[pid] ?? sheet.counters.find((c) => c.id === id)!.start
 
   function bump(id: string, pid: string, by: number) {
     const counter = sheet.counters.find((c) => c.id === id)!
@@ -633,8 +631,8 @@ function BidPad({ sheet, player, detail, row, cards, last, onDone, onClose }: {
       </div>
       <div className="pad-parts">
         <Stepper label={sheet.scoring === 'spades' ? 'Bid (the team together)' : 'Bid'} value={bid} onChange={(n) => setBid(Math.min(n, cards))} />
-        <Stepper label="Tricks taken" value={took ?? 0} onChange={(n) => setTook(Math.min(n, cards))} />
-        {took === null ? <p className="hint">Leave tricks for now and come back after the hand.</p> : null}
+        <Stepper label="Tricks taken" value={took} onChange={(n) => setTook(Math.min(n, cards))} />
+        {took === null ? <p className="hint">A dash means not played yet. Tap − for none.</p> : null}
         {sheet.scoring === 'skullking' ? <Stepper label="Bonus points" value={bonus} step={10} onChange={setBonus} /> : null}
         {sheet.scoring === 'spades' ? (
           <div className="size-row">
@@ -782,9 +780,14 @@ export function BowlingBoard({ players, data, change }: BoardProps<unknown>) {
     change({ ...data, rolls: { ...rolls, [up.id]: [...(rolls[up.id] ?? []), pins] }, order: [...order, up.id] })
   }
   function undo() {
-    const last = order[order.length - 1]
-    if (!last) return
-    change({ ...data, rolls: { ...rolls, [last]: (rolls[last] ?? []).slice(0, -1) }, order: order.slice(0, -1) })
+    // Balls bowled by someone since removed are passed over, so undo always
+    // takes back something that can be seen.
+    const seated = new Set(players.map((p) => p.id))
+    let at = order.length - 1
+    while (at >= 0 && !seated.has(order[at])) at -= 1
+    if (at < 0) return
+    const last = order[at]
+    change({ ...data, rolls: { ...rolls, [last]: (rolls[last] ?? []).slice(0, -1) }, order: order.slice(0, at) })
   }
 
   const next = up ? games[up.id].next : 0
@@ -833,7 +836,7 @@ export function BowlingBoard({ players, data, change }: BoardProps<unknown>) {
           </div>
         </div>
       ) : null}
-      <button className="ghost" disabled={!order.length} onClick={undo}>
+      <button className="ghost" disabled={!order.some((id) => players.some((p) => p.id === id))} onClick={undo}>
         Undo the last ball
       </button>
     </div>

@@ -16,7 +16,7 @@ import {
 } from '../lib/theme'
 import { PaletteEditor } from './PaletteEditor'
 import { isDark, nextChange } from '../lib/sun'
-import { locate, type Locating } from '../useSun'
+import { locate, stopLocating, type Locating } from '../useSun'
 import { ColourWheel, Pinwheel } from './ColourWheel'
 import { defaultSettings } from '../lib/storage'
 import { uid } from '../lib/uid'
@@ -282,7 +282,10 @@ function LookTab({ settings, set }: TabProps) {
           checked={settings.followDevice}
           // Turning it off keeps whatever is on screen, rather than switching
           // to the day palette in the middle of the night.
-          onChange={(e) => set(e.target.checked ? { followDevice: true } : { followDevice: false, fixedPalette: showing })}
+          onChange={(e) => {
+            if (!e.target.checked) stopLocating()
+            set(e.target.checked ? { followDevice: true } : { followDevice: false, fixedPalette: showing })
+          }}
         />
         Switch between a day and a night palette
       </label>
@@ -322,11 +325,11 @@ function LookTab({ settings, set }: TabProps) {
         </p>
         {settings.customPalettes.length ? (
           <div className="own-list">
-            {settings.customPalettes.map((palette) => (
+            {settings.customPalettes.map((palette, index) => (
               <div className="own-row" key={palette.id}>
                 <span className="palette-swatch" aria-hidden="true">
                   <i style={{ background: palette.ground }} />
-                  <i style={{ background: palette.key, color: asPalette(palette).swatch[2] }}>12</i>
+                  <i style={{ background: palette.key, color: own[index].swatch[2] }}>12</i>
                   <i style={{ background: palette.accent }} />
                 </span>
                 <strong>{palette.name}</strong>
@@ -501,6 +504,7 @@ function SwitchBy({ settings, set }: TabProps) {
           data-active={settings.switchBy === 'device'}
           // The place is forgotten as soon as it is not being used.
           onClick={() => {
+            stopLocating()
             setLocating('idle')
             set({ switchBy: 'device', sunPlace: null })
           }}

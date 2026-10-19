@@ -229,3 +229,9 @@ test('darts cricket: three marks close a number, then hits score while anyone ha
   assert.equal(result.points.b, 25)
   assert.equal(result.marks.a['20'], 6)
 })
+
+test('badminton ends at 30 even when nobody is two clear', () => {
+  const sheet = sheetOf('badminton') as CounterSheet
+  assert.deepEqual(counterResult(sheet, two, { points: { a: 30, b: 29 } }).winners, ['a'])
+  assert.deepEqual(counterResult(sheet, two, { points: { a: 22, b: 21 } }).winners, [])
+})

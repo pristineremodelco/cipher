@@ -197,10 +197,6 @@ export function sheetResult(sheet: CategorySheet, players: Player[], cells: Shee
 
 // -------------------------------------------------------------- counters ----
 
-export function startOf(counter: Counter, players: number): number {
-  return counter.start === 'players' ? players : counter.start
-}
-
 /** Kept inside the counter's limits. */
 export function clampCounter(counter: Counter, value: number): number {
   let out = value
@@ -216,18 +212,20 @@ const reached = (value: number, mark: number, start: number) => (mark >= start ?
 
 export function counterResult(sheet: CounterSheet, players: Player[], values: CounterValues): CounterResult {
   const ids = players.map((p) => p.id)
-  const value = (counter: Counter, id: string) => values[counter.id]?.[id] ?? startOf(counter, ids.length)
+  const value = (counter: Counter, id: string) => values[counter.id]?.[id] ?? counter.start
   const out: Record<string, boolean> = {}
   for (const id of ids) {
-    out[id] = sheet.counters.some((c) => c.lose !== undefined && reached(value(c, id), c.lose, startOf(c, ids.length)) && value(c, id) !== startOf(c, ids.length))
+    out[id] = sheet.counters.some((c) => c.lose !== undefined && reached(value(c, id), c.lose, c.start) && value(c, id) !== c.start)
   }
   let winners: string[] = []
   for (const counter of sheet.counters) {
     if (counter.win === undefined) continue
-    const start = startOf(counter, ids.length)
+    const start = counter.start
     for (const id of ids) {
       if (out[id] || !reached(value(counter, id), counter.win, start) || value(counter, id) === start) continue
-      if (counter.winBy) {
+      // Some games cap a game where winning by two would never end: badminton at 30.
+      const capped = counter.max !== undefined && counter.max > counter.win && value(counter, id) === counter.max
+      if (counter.winBy && !capped) {
         const others = ids.filter((other) => other !== id).map((other) => value(counter, other))
         const gap = counter.win >= start ? value(counter, id) - Math.max(...others) : Math.min(...others) - value(counter, id)
         if (others.length && gap < counter.winBy) continue
@@ -243,14 +241,14 @@ export function counterResult(sheet: CounterSheet, players: Player[], values: Co
   }
   if (!winners.length && ids.length > 1 && standing.length === 1 && Object.values(out).some(Boolean)) winners = standing
   const first = sheet.counters[0]
-  const firstStart = startOf(first, ids.length)
+  const firstStart = first.start
   const byCounter = (id: string, c: Counter) => value(c, id)
   const counterOf = (cid: string) => sheet.counters.find((c) => c.id === cid)!
   const ranked = (id: string) =>
     sheet.sum?.leads
       ? sheet.sum.of.reduce((a, cid) => a + byCounter(id, counterOf(cid)), 0) - (sheet.sum.less ?? []).reduce((a, cid) => a + byCounter(id, counterOf(cid)), 0)
       : value(first, id)
-  const moved = standing.filter((id) => (sheet.sum?.leads ? sheet.counters.some((c) => value(c, id) !== startOf(c, ids.length)) : value(first, id) !== firstStart))
+  const moved = standing.filter((id) => (sheet.sum?.leads ? sheet.counters.some((c) => value(c, id) !== c.start) : value(first, id) !== firstStart))
   const direction: 'high' | 'low' = !sheet.sum?.leads && first.win !== undefined && first.win < firstStart ? 'low' : 'high'
   const scores = Object.fromEntries(standing.map((id) => [id, ranked(id)]))
   return { done: winners.length > 0, winners, leaders: winners.length ? winners : moved.length ? best(scores, direction, standing) : [], out, lost: false }

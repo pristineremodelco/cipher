@@ -557,7 +557,7 @@ Score: The top card of every firework added together, up to 25.`,
       shared: true,
       counters: [
         { id: 'level', label: 'Level', start: 1, min: 1, max: 12 },
-        { id: 'lives', label: 'Lives', start: 'players', min: 0, max: 5, lose: 0 },
+        { id: 'lives', label: 'Lives', start: 2, min: 0, max: 5, lose: 0 },
         { id: 'stars', label: 'Throwing stars', start: 1, min: 0, max: 3 },
       ],
     }),
@@ -565,7 +565,7 @@ Score: The top card of every firework added together, up to 25.`,
 Levels: Level one deals one card each, level two two, and so on: twelve levels with two players, ten with three, eight with four.
 Play: Anyone may play their lowest card at any time. A card played out of order costs a life, and the lower cards are discarded.
 Throwing stars: All agree, and everyone discards their lowest card.
-Lives: Start with one per player. Some levels reward a life or a star.`,
+Lives: Start with one per player, so set them with + and − before the first level. Some levels reward a life or a star.`,
   },
   {
     id: 'dutchblitz',

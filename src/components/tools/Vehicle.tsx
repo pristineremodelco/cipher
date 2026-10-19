@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Field, Readout, Segment, Tool } from '../Form'
 import { fuelCost, fuelEfficiency, type FuelUnits } from '../../lib/tools'
 import { useShow } from './dates'
+import { readNumber } from '../../lib/amount'
 
 const UNITS: { id: FuelUnits; name: string }[] = [
   { id: 'us', name: 'Miles and gallons' },
@@ -15,8 +16,8 @@ export function FuelCost() {
   const [price, setPrice] = useState('')
   const show = useShow()
   const us = units === 'us'
-  const result = fuelCost(Number(distance), Number(efficiency), Number(price), units)
-  const ready = Number(distance) > 0 && Number(efficiency) > 0
+  const result = fuelCost(readNumber(distance), readNumber(efficiency), readNumber(price), units)
+  const ready = readNumber(distance) > 0 && readNumber(efficiency) > 0
 
   return (
     <Tool>
@@ -40,7 +41,7 @@ export function FuelCost() {
       <Field label="Fuel price" prefix="$" suffix={us ? '/gal' : '/L'} value={price} onChange={setPrice} />
       <Readout
         rows={[
-          { label: 'The trip costs', value: ready && price ? `$${show(result.cost)}` : '', lead: true },
+          { label: 'The trip costs', value: ready && price && show(result.cost) ? `$${show(result.cost)}` : '', lead: true },
           { label: 'Fuel used', value: ready ? `${show(result.fuel)} ${us ? 'gal' : 'L'}` : '' },
         ]}
       />
@@ -54,8 +55,8 @@ export function FuelEfficiency() {
   const [fuel, setFuel] = useState('')
   const show = useShow()
   const us = units === 'us'
-  const result = fuelEfficiency(Number(distance), Number(fuel), units)
-  const ready = Number(distance) > 0 && Number(fuel) > 0
+  const result = fuelEfficiency(readNumber(distance), readNumber(fuel), units)
+  const ready = readNumber(distance) > 0 && readNumber(fuel) > 0
 
   return (
     <Tool note="One trip and one fill, said three ways.">

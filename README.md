@@ -209,7 +209,7 @@ npm test
 ```
 
 The sums, run under node with no test framework and no dependency: node runs
-TypeScript and ships a test runner, so there is nothing to install. 268 of
+TypeScript and ships a test runner, so there is nothing to install. 280 of
 them, covering the expression parser, what each key does to what is already on
 the display, every answer carried on reading back as itself, all 127 unit
 factors with every pair round tripped, what typing a unit finds, and every one
@@ -225,7 +225,7 @@ npm run dev
 npm run test:browser
 ```
 
-The rest, which needs a browser: 652 checks across eight suites. Every key on
+The rest, which needs a browser: 656 checks across eight suites. Every key on
 the pad pressed with the answer read back off the screen; what carries forward
 between presses and how far the history goes; a palette made from three colours
 and worn; every setting driven and its effect measured, from key corners to
@@ -276,6 +276,7 @@ src/
     storage.ts       settings defaults and forward migration
     convertentry.ts  typing into the converter, and typing over its opening 1
     uid.ts           ids that do not need a secure page
+    amount.ts        a number as typed into a form: 1,000, $25, 6.5%
     sun.ts           whether the sun is up, and when it next rises or sets
     games/           the 150 games and their rules, the arithmetic of every
                      kind of sheet, and the games in progress

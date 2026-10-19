@@ -24,6 +24,19 @@ export function useSpell(): (text: string) => string {
   return useCallback((text: string) => spell(text, settings.spelling), [settings.spelling])
 }
 
+/** A short tap of the motor under a key, when the setting asks for one. */
+export function useBuzz(): () => void {
+  const { settings } = useSettings()
+  return useCallback(() => {
+    if (!settings.haptics) return
+    try {
+      navigator.vibrate?.(8)
+    } catch {
+      /* a device with no motor, which is most of them */
+    }
+  }, [settings.haptics])
+}
+
 export function useSettings(): SettingsValue {
   const value = useContext(SettingsContext)
   if (!value) throw new Error('useSettings must be used inside SettingsProvider')
