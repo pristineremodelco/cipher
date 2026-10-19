@@ -28,6 +28,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // A new version installs itself in the background and is ready the next
+      // time the app opens either way; while it is open, a banner offers it
+      // rather than reloading under someone in the middle of a sum.
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {

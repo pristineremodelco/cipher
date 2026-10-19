@@ -202,6 +202,18 @@ not there:
 BASE_PATH=/cipher/ npm run build
 ```
 
+### Updates on an installed phone
+
+The service worker keeps a copy of the app on the phone, so it opens offline,
+and a browser only looks for a newer copy when the app is opened fresh. A phone
+keeps an installed app alive in the background for days, so the app looks for
+itself: whenever it comes back to the screen, at most once a minute, and every
+half hour while it is open. A newer version installs in the background and a
+banner across the top offers it; a tap reloads into it, and history, settings
+and games in progress are on the phone and come straight back. It never reloads
+by itself under someone in the middle of a sum, and the next fresh open is the
+new version whether the banner was tapped or not.
+
 ## Checking it
 
 ```bash
@@ -225,14 +237,15 @@ npm run dev
 npm run test:browser
 ```
 
-The rest, which needs a browser: 656 checks across eight suites. Every key on
+The rest, which needs a browser: 664 checks across nine suites. Every key on
 the pad pressed with the answer read back off the screen; what carries forward
 between presses and how far the history goes; a palette made from three colours
 and worn; every setting driven and its effect measured, from key corners to
 operator contrast to each typeface drawing differently; the simple converter
 searched and answered; every tool opened and answered, with the one that needs
 a signal put through all three of the states it can be in; game sheets kept,
-busted, bid on, bowled and reloaded; and the layout swept
+busted, bid on, bowled and reloaded; a real service worker put through an
+update, banner and all; and the layout swept
 over twelve screen sizes in the calculator, both converter layouts and every tool.
 
 Playwright is deliberately not a dependency, the same way sharp is not: both
