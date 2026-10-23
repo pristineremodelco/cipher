@@ -319,6 +319,41 @@ function parse(tokens: Token[]): Node {
 
 const DEG = Math.PI / 180
 
+function gcd(a: number, b: number): number {
+  let x = Math.abs(a)
+  let y = Math.abs(b)
+  while (y) {
+    const next = x % y
+    x = y
+    y = next
+  }
+  return x
+}
+
+/**
+ * A negative number to a fractional power. Math.pow refuses every one of
+ * them, the odd roots included, and those are real: (−8)^(1/3) is −2, the
+ * same as ∛(−8). The power is read as a fraction with an odd bottom where it
+ * is one; an even root of a negative stays refused.
+ */
+function realPower(base: number, exp: number): number {
+  if (base < 0 && !Number.isInteger(exp)) {
+    const size = Math.abs(exp)
+    for (let den = 1; den <= 31; den += 2) {
+      const num = Math.round(size * den)
+      if (num === 0 || Math.abs(num / den - size) > 1e-10) continue
+      const magnitude = Math.pow(-base, size)
+      if (!Number.isFinite(magnitude)) fail('That answer is too large')
+      // An odd top keeps the sign, since an odd bottom always does: (−8)^(2/3) is 4.
+      const signed = (num / gcd(num, den)) % 2 === 1 ? -magnitude : magnitude
+      return exp < 0 ? 1 / signed : signed
+    }
+  }
+  const out = Math.pow(base, exp)
+  if (Number.isNaN(out)) fail('That power has no real answer')
+  return out
+}
+
 function factorial(n: number): number {
   if (!Number.isInteger(n)) fail('A factorial wants a whole number')
   if (n < 0) fail('A factorial wants nothing below zero')
@@ -405,11 +440,8 @@ function evaluate(node: Node, angle: AngleUnit): number {
         case 'mod':
           if (right === 0) fail('Nothing divides by zero')
           return left % right
-        case '^': {
-          const out = Math.pow(left, right)
-          if (Number.isNaN(out)) fail('That power has no real answer')
-          return out
-        }
+        case '^':
+          return realPower(left, right)
         default:
           return fail(`"${node.op}" is not an operator here`)
       }

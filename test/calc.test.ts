@@ -50,6 +50,13 @@ const SUMS: [string, number][] = [
   ['10 mod 3', 1],
   ['3²', 9],
   ['2^0.5', Math.SQRT2],
+  // Odd roots of a negative are real. An even root is not, and stays refused.
+  ['(-8)^(1/3)', -2],
+  ['(-32)^(1/5)', -2],
+  ['(-32)^0.2', -2],
+  ['(-8)^(-1/3)', -0.5],
+  ['(-8)^(2/3)', 4],
+  ['(-27)^(4/3)', 81],
   // A half typed expression still answers, so the preview line has something.
   ['(2+3', 5],
   // Grouping separators pasted in from somewhere else are ignored.
@@ -151,7 +158,7 @@ for (const expression of UNFINISHED) {
 }
 
 /** These cannot be put right by typing more, so they are said straight away. */
-const WRONG = ['1÷0', 'sin⁻¹(5)', '(-1)^0.5', '171!', '2.5!', '1+2)3', 'wibble(2)']
+const WRONG = ['1÷0', 'sin⁻¹(5)', '(-1)^0.5', '(-16)^(1/4)', '(-8)^0.1', '171!', '2.5!', '1+2)3', 'wibble(2)']
 
 for (const expression of WRONG) {
   test(`${expression} is wrong rather than unfinished`, () => {
