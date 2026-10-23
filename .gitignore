@@ -12,3 +12,7 @@ npm-debug.log*
 !.vscode/extensions.json
 .idea
 .DS_Store
+
+# Written into the project folder by a local prompt hook. A private record
+# of what was asked, and this repository is public.
+PROMPT-LOG.md
