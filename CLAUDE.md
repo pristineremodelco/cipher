@@ -14,6 +14,9 @@ README.md describes it.
 
 - Every push to `main` runs the tests, builds and publishes to GitHub Pages.
   Unfinished work stays on a branch.
+- A second copy runs on Cloudflare as static files, set up in
+  `wrangler.jsonc`. It does not update on push: run `npm run build` without
+  BASE_PATH, then `npx wrangler deploy`, after the push.
 - Before starting, `git fetch` and compare with `origin/main`. A session on
   the phone or in the cloud may have pushed. Build on it; never force push.
 - Before pushing: `npm run lint`, `npm test`, `npm run build`.
