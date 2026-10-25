@@ -101,20 +101,74 @@ function saveRates(rates: Rates) {
 }
 
 /**
- * Asks for a fresh set. Throws rather than returning something empty, so the
- * screen can tell the difference between "no signal" and "nothing to show".
+ * How long a fetched set stands in for a new request.
+ *
+ * The source publishes once a working day and tells the browser the response
+ * is good for a day (`Cache-Control: max-age=86400`). Twelve hours is inside
+ * that, and short enough that an afternoon publication is not missed until
+ * the next morning. Older than this, we ask again.
  */
-export async function fetchRates(signal?: AbortSignal): Promise<Rates> {
+export const RATES_CURRENT_MS = 12 * 60 * 60 * 1000
+
+/** Whether a saved set is still the one a fresh request would return. */
+export function ratesAreCurrent(rates: Rates | null, now = Date.now()): rates is Rates {
+  if (!rates?.fetchedAt) return false
+  const age = now - rates.fetchedAt
+  return age >= 0 && age < RATES_CURRENT_MS
+}
+
+// One request in flight, shared by every caller. A screen that goes away
+// drops its own interest and leaves the request running, so the next opening
+// finds the answer instead of starting the same request over.
+let flight: { force: boolean; promise: Promise<Rates> } | null = null
+// Bumped when a newer request starts, so a slower older one cannot overwrite
+// what the newer one saved.
+let ticket = 0
+
+function abortError(): Error {
+  const error = new Error('The rate service did not answer.')
+  error.name = 'AbortError'
+  return error
+}
+
+/** The caller's signal rejects them alone. It does not cancel the shared request. */
+function relay<T>(promise: Promise<T>, signal?: AbortSignal): Promise<T> {
+  if (!signal) return promise
+  if (signal.aborted) return Promise.reject(abortError())
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      signal.removeEventListener('abort', onAbort)
+      reject(abortError())
+    }
+    signal.addEventListener('abort', onAbort)
+    promise.then(
+      (value) => {
+        signal.removeEventListener('abort', onAbort)
+        if (signal.aborted) reject(abortError())
+        else resolve(value)
+      },
+      (error: unknown) => {
+        signal.removeEventListener('abort', onAbort)
+        if (signal.aborted) reject(abortError())
+        else reject(error)
+      },
+    )
+  })
+}
+
+async function request(force: boolean, mine: number): Promise<Rates> {
   const controller = new AbortController()
   // A phone with one bar can leave a request hanging indefinitely, and a
   // spinner that never stops is the worst of the three possible states.
   const timer = setTimeout(() => controller.abort(), 8000)
-  // Whoever asked can also call it off, when the screen that asked is gone.
-  const stop = () => controller.abort()
-  if (signal?.aborted) stop()
-  signal?.addEventListener('abort', stop)
   try {
-    const response = await fetch(SOURCE, { signal: controller.signal, cache: 'no-store' })
+    const response = await fetch(SOURCE, {
+      signal: controller.signal,
+      // A forced refresh has to pass the browser's copy. An ordinary ask uses
+      // it: the server marks the body good for a day, and `no-store` was
+      // throwing that away on every opening.
+      cache: force ? 'reload' : 'default',
+    })
     if (!response.ok) throw new Error(`The rate service answered ${response.status}`)
     const body = (await response.json()) as { base?: string; date?: string; rates?: Record<string, number> }
     if (!body.rates || typeof body.rates !== 'object') throw new Error('The rate service sent nothing usable')
@@ -124,12 +178,38 @@ export async function fetchRates(signal?: AbortSignal): Promise<Rates> {
       if (typeof value === 'number' && Number.isFinite(value) && value > 0) rates[code] = value
     }
     const settled: Rates = { base, rates, date: body.date ?? '', fetchedAt: Date.now() }
-    saveRates(settled)
+    if (mine === ticket) saveRates(settled)
     return settled
   } finally {
     clearTimeout(timer)
-    signal?.removeEventListener('abort', stop)
   }
+}
+
+function begin(force: boolean): Promise<Rates> {
+  const mine = ++ticket
+  const promise = request(force, mine).finally(() => {
+    if (flight?.promise === promise) flight = null
+  })
+  flight = { force, promise }
+  return promise
+}
+
+/**
+ * Asks for a fresh set. Throws rather than returning something empty, so the
+ * screen can tell the difference between "no signal" and "nothing to show".
+ *
+ * A set fetched within the last twelve hours is returned as it stands, unless
+ * `force` is set, which is the refresh button.
+ */
+export async function fetchRates(signal?: AbortSignal, force = false): Promise<Rates> {
+  if (!force) {
+    const cached = loadRates()
+    if (ratesAreCurrent(cached)) return cached
+  }
+  // A refresh has to start its own request. Anything else can share the one
+  // already on its way, including a refresh that is already on its way.
+  if (flight && (flight.force || !force)) return relay(flight.promise, signal)
+  return relay(begin(force), signal)
 }
 
 /** Through the base, the same way every other conversion in the app goes. */

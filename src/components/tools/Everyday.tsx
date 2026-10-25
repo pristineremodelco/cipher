@@ -96,12 +96,36 @@ export function WorldTime() {
   const [now, setNow] = useState(() => new Date())
   const here = deviceZone()
 
-  // The minute is the only thing that changes, so the clock is nudged on the
-  // minute rather than every second: nothing on screen shows seconds.
+  // The minute is the only thing that changes, so the clock wakes when the
+  // minute turns, not four times through it, and not at all while the app is
+  // hidden. Coming back reads the time then.
   useEffect(() => {
-    const tick = () => setNow(new Date())
-    const id = window.setInterval(tick, 15000)
-    return () => window.clearInterval(id)
+    let timer = 0
+    const arm = () => {
+      window.clearTimeout(timer)
+      if (document.visibilityState !== 'visible') return
+      // A few milliseconds past the turn, so a timer that lands early does
+      // not paint the minute that just ended.
+      const delay = 60000 - (Date.now() % 60000) + 40
+      timer = window.setTimeout(() => {
+        setNow(new Date())
+        arm()
+      }, delay)
+    }
+    const back = () => {
+      if (document.visibilityState === 'visible') {
+        setNow(new Date())
+        arm()
+      } else {
+        window.clearTimeout(timer)
+      }
+    }
+    arm()
+    document.addEventListener('visibilitychange', back)
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('visibilitychange', back)
+    }
   }, [])
 
   /**
@@ -125,7 +149,7 @@ export function WorldTime() {
         zone: zoneOf(id),
         time: timeIn(id, now, settings.timeFormat === '12'),
         day: dayIn(id, now),
-        offset: offsetHours(id, here, now),
+        offset: id === here ? 0 : offsetHours(id, here, now),
       })),
     [chosen, here, now, settings.timeFormat],
   )

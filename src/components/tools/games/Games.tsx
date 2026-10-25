@@ -25,7 +25,30 @@ export default function Games() {
     const loaded = loadSaved()
     return loaded.last ? withBoard(loaded, loaded.last) : loaded
   })
-  useEffect(() => saveSaved(saved), [saved])
+  // A score is several taps, and each one used to rewrite every saved game.
+  // The latest is written a moment after the taps stop, and straight away if
+  // the app is closed or this screen goes away.
+  const savedRef = useRef(saved)
+  useEffect(() => {
+    savedRef.current = saved
+  }, [saved])
+  useEffect(() => {
+    const flush = () => saveSaved(savedRef.current)
+    const onHide = () => {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', onHide)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      document.removeEventListener('visibilitychange', onHide)
+      flush()
+    }
+  }, [])
+  useEffect(() => {
+    const id = window.setTimeout(() => saveSaved(saved), 400)
+    return () => window.clearTimeout(id)
+  }, [saved])
   const [rules, setRules] = useState(false)
 
   const game = gameOf(saved.last)
@@ -169,6 +192,9 @@ function GameSearch({ recent, current, onPick }: { recent: string[]; current?: s
   const list = useRef<HTMLUListElement>(null)
 
   const options: Option[] = useMemo(() => {
+    // The full catalogue is a hundred and more rows. Built when the list is
+    // open, not on the way in to the screen.
+    if (!open) return []
     if (query.trim()) return findGames(query).map((game) => ({ game }))
     const out: Option[] = []
     const lately = recent.map(gameOf).filter((g): g is Game => Boolean(g))
@@ -179,7 +205,7 @@ function GameSearch({ recent, current, onPick }: { recent: string[]; current?: s
         .forEach((game, i) => out.push({ game, section: i === 0 ? CATEGORY_NAMES[category] : undefined }))
     }
     return out
-  }, [query, recent])
+  }, [open, query, recent])
 
   useEffect(() => {
     list.current?.querySelector(`[data-index="${lit}"]`)?.scrollIntoView({ block: 'nearest' })

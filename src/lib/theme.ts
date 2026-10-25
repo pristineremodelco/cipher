@@ -46,10 +46,6 @@ export function paletteOf(id: string): Palette {
   return PALETTES.find((palette) => palette.id === id) ?? PALETTES[0]
 }
 
-export function palettesBy(scheme: 'light' | 'dark'): Palette[] {
-  return PALETTES.filter((palette) => palette.scheme === scheme)
-}
-
 /**
  * Which palette is actually worn. With the device followed, its own light or
  * dark setting picks between the pair; otherwise the day one stands whatever

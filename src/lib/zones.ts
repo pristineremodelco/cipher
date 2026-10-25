@@ -68,9 +68,35 @@ export function zoneOf(id: string): Zone {
   return ZONES.find((zone) => zone.id === id) ?? { id, city: id.split('/').pop()?.replace(/_/g, ' ') ?? id, region: '' }
 }
 
+/**
+ * Building a formatter is the expensive part, and the clock asks for the same
+ * handful on every tick: one per place, for the time, the day and the offset.
+ * Kept, and the least recently used dropped, so a long life of adding and
+ * removing places cannot grow without a bound.
+ */
+const formatters = new Map<string, Intl.DateTimeFormat>()
+const FORMAT_CAP = 80
+
+function zoneFormat(options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = JSON.stringify(options)
+  const cached = formatters.get(key)
+  if (cached) {
+    formatters.delete(key)
+    formatters.set(key, cached)
+    return cached
+  }
+  if (formatters.size === FORMAT_CAP) {
+    const oldest = formatters.keys().next().value
+    if (oldest !== undefined) formatters.delete(oldest)
+  }
+  const made = new Intl.DateTimeFormat('en-US', options)
+  formatters.set(key, made)
+  return made
+}
+
 export function timeIn(zone: string, at: Date, hour12: boolean): string {
   try {
-    return new Intl.DateTimeFormat('en-US', {
+    return zoneFormat({
       timeZone: zone,
       hour: 'numeric',
       minute: '2-digit',
@@ -83,7 +109,7 @@ export function timeIn(zone: string, at: Date, hour12: boolean): string {
 
 export function dayIn(zone: string, at: Date): string {
   try {
-    return new Intl.DateTimeFormat('en-US', {
+    return zoneFormat({
       timeZone: zone,
       weekday: 'short',
       day: 'numeric',
@@ -102,7 +128,7 @@ export function dayIn(zone: string, at: Date): string {
  */
 export function offsetHours(zone: string, from: string, at: Date): number {
   const read = (id: string) => {
-    const parts = new Intl.DateTimeFormat('en-US', {
+    const parts = zoneFormat({
       timeZone: id,
       year: 'numeric',
       month: '2-digit',

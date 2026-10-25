@@ -45,6 +45,7 @@ export default function App() {
   const workingLine = useRef<HTMLDivElement>(null)
   const answerLine = useRef<HTMLButtonElement>(null)
   const holdTimer = useRef<number | null>(null)
+  const copiedTimer = useRef<number | null>(null)
   const cleared = useRef(false)
 
   useEffect(() => {
@@ -229,72 +230,87 @@ export default function App() {
     [buzz, result],
   )
 
-  /** Anything a keyboard can send, routed through the same rules as the pad. */
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) return
-      const target = event.target as HTMLElement | null
-      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+  /**
+   * Anything a keyboard can send, routed through the same rules as the pad.
+   * The listener stays put. The function it calls is swapped after each
+   * render, so a keystroke does not take the listener down and put it back.
+   */
+  const onKey = (event: KeyboardEvent) => {
+    if (event.metaKey || event.ctrlKey || event.altKey) return
+    const target = event.target as HTMLElement | null
+    if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
 
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        if (sciOpen) setSciOpen(false)
-        else if (tapeOpen) setTapeOpen(false)
-        else setSettingsOpen(false)
-        return
-      }
-      // The panels, the sheets and the converter are ordinary screens with their
-      // own controls; the pad should not be taking keys out from under them.
-      // With the history open, Enter on its Done button ran equals on the sum
-      // hidden behind it instead.
-      if (settingsOpen || tapeOpen || sciOpen || settings.mode !== 'calculate') return
-      // Enter on a button reached with the keyboard presses that button. After
-      // a key was tapped, focus sits on it without showing, and Enter is still
-      // equals, as it is on any calculator.
-      if (event.key === 'Enter' && target?.tagName === 'BUTTON' && target.matches(':focus-visible')) return
-      if (event.key === 'Enter' || event.key === '=') {
-        event.preventDefault()
-        equals()
-        return
-      }
-      if (settings.editInSum && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
-        event.preventDefault()
-        const shown = settled ? chunksOf(worked) : chunks
-        if (settled) {
-          setChunks(shown)
-          setSettled(false)
-        }
-        const now = settled || caret === null ? shown.length : caret
-        const to =
-          event.key === 'Home' ? 0 : event.key === 'End' ? shown.length : now + (event.key === 'ArrowLeft' ? -1 : 1)
-        const clamped = Math.max(0, Math.min(shown.length, to))
-        setCaret(clamped >= shown.length ? null : clamped)
-        return
-      }
-      if (event.key === 'Backspace') {
-        event.preventDefault()
-        rub()
-        return
-      }
-      if (event.key === 'Delete') {
-        event.preventDefault()
-        clear()
-        return
-      }
-      if (/^[0-9]$/.test(event.key)) {
-        event.preventDefault()
-        key(event.key)
-        return
-      }
-      const mapped = TYPED[event.key.toLowerCase()]
-      if (mapped) {
-        event.preventDefault()
-        key(mapped)
-      }
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      if (sciOpen) setSciOpen(false)
+      else if (tapeOpen) setTapeOpen(false)
+      else setSettingsOpen(false)
+      return
     }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [caret, chunks, clear, equals, key, rub, sciOpen, settings.editInSum, settings.mode, settingsOpen, settled, tapeOpen, worked])
+    // The panels, the sheets and the converter are ordinary screens with their
+    // own controls; the pad should not be taking keys out from under them.
+    // With the history open, Enter on its Done button ran equals on the sum
+    // hidden behind it instead.
+    if (settingsOpen || tapeOpen || sciOpen || settings.mode !== 'calculate') return
+    // Enter on a button reached with the keyboard presses that button. After
+    // a key was tapped, focus sits on it without showing, and Enter is still
+    // equals, as it is on any calculator.
+    if (event.key === 'Enter' && target?.tagName === 'BUTTON' && target.matches(':focus-visible')) return
+    if (event.key === 'Enter' || event.key === '=') {
+      event.preventDefault()
+      equals()
+      return
+    }
+    if (settings.editInSum && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+      event.preventDefault()
+      const shown = settled ? chunksOf(worked) : chunks
+      if (settled) {
+        setChunks(shown)
+        setSettled(false)
+      }
+      const now = settled || caret === null ? shown.length : caret
+      const to =
+        event.key === 'Home' ? 0 : event.key === 'End' ? shown.length : now + (event.key === 'ArrowLeft' ? -1 : 1)
+      const clamped = Math.max(0, Math.min(shown.length, to))
+      setCaret(clamped >= shown.length ? null : clamped)
+      return
+    }
+    if (event.key === 'Backspace') {
+      event.preventDefault()
+      rub()
+      return
+    }
+    if (event.key === 'Delete') {
+      event.preventDefault()
+      clear()
+      return
+    }
+    if (/^[0-9]$/.test(event.key)) {
+      event.preventDefault()
+      key(event.key)
+      return
+    }
+    const mapped = TYPED[event.key.toLowerCase()]
+    if (mapped) {
+      event.preventDefault()
+      key(mapped)
+    }
+  }
+  const onKeyRef = useRef(onKey)
+  useEffect(() => {
+    onKeyRef.current = onKey
+  })
+  useEffect(() => {
+    const listen = (event: KeyboardEvent) => onKeyRef.current(event)
+    window.addEventListener('keydown', listen)
+    return () => window.removeEventListener('keydown', listen)
+  }, [])
+  useEffect(
+    () => () => {
+      if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current)
+    },
+    [],
+  )
 
   /** Holding the rub-out clears the lot, which is the one gesture worth having. */
   function holdStart() {
@@ -320,7 +336,11 @@ export default function App() {
     try {
       await navigator.clipboard.writeText(plainNumber(result.value))
       setCopied(true)
-      window.setTimeout(() => setCopied(false), 1400)
+      if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current)
+      copiedTimer.current = window.setTimeout(() => {
+        copiedTimer.current = null
+        setCopied(false)
+      }, 1400)
     } catch {
       /* no clipboard permission: the number is on screen either way */
     }

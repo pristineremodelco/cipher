@@ -465,6 +465,10 @@ const clock = new Intl.DateTimeFormat('en-US', { hour: 'numeric', minute: '2-dig
 function SwitchBy({ settings, set }: TabProps) {
   const [locating, setLocating] = useState<Locating>('idle')
   const place = settings.sunPlace
+  // A second read, the one that keeps a place current, can answer first and
+  // retire this button's own request. The place arriving is what the line
+  // was waiting on, so it moves on once that place is known.
+  const status: Locating = place && locating === 'asking' ? 'idle' : locating
 
   function bySun() {
     set({ switchBy: 'sun' })
@@ -480,9 +484,9 @@ function SwitchBy({ settings, set }: TabProps) {
 
   let hint = ''
   if (settings.switchBy === 'sun') {
-    if (locating === 'asking') hint = 'Finding where you are…'
-    else if (locating === 'refused') hint = 'Location is blocked for this app, so the phone’s setting decides for now. Allow it in the browser’s site settings, then try again.'
-    else if (locating === 'failed' || locating === 'unsupported') hint = 'Could not find where you are, so the phone’s setting decides for now.'
+    if (status === 'asking') hint = 'Finding where you are…'
+    else if (status === 'refused') hint = 'Location is blocked for this app, so the phone’s setting decides for now. Allow it in the browser’s site settings, then try again.'
+    else if (status === 'failed' || status === 'unsupported') hint = 'Could not find where you are, so the phone’s setting decides for now.'
     else if (!place) hint = 'Needs your location once, so the phone’s setting decides for now.'
     else {
       const now = new Date()
@@ -493,7 +497,7 @@ function SwitchBy({ settings, set }: TabProps) {
         : `The sun will not ${dark ? 'rise' : 'set'} here in the next two days.`
     }
   }
-  const retry = settings.switchBy === 'sun' && locating !== 'asking' && (locating !== 'idle' || !place)
+  const retry = settings.switchBy === 'sun' && status !== 'asking' && (status !== 'idle' || !place)
 
   return (
     <div className="field">
@@ -518,7 +522,7 @@ function SwitchBy({ settings, set }: TabProps) {
       {hint ? <p className="hint sun-hint">{hint}</p> : null}
       {retry ? (
         <button className="ghost" onClick={bySun}>
-          {locating === 'idle' ? 'Use my location' : 'Try again'}
+          {status === 'idle' ? 'Use my location' : 'Try again'}
         </button>
       ) : null}
     </div>
