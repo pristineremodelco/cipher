@@ -32,7 +32,10 @@ export default defineConfig({
       // time the app opens either way; while it is open, a banner offers it
       // rather than reloading under someone in the middle of a sum.
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon.png'],
+      // The manifest's icons and the favicons are already copied into the build
+      // and picked up by the glob below. Listing them again put each file in
+      // the precache twice.
+      includeManifestIcons: false,
       manifest: {
         name: 'Cipher',
         short_name: 'Cipher',
@@ -62,6 +65,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
+        // A new build replaces the previous copy. Old precaches would otherwise
+        // stay on the phone after every update.
+        cleanupOutdatedCaches: true,
       },
     }),
   ],

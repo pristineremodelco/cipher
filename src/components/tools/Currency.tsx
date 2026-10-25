@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Field, Readout, Tool } from '../Form'
-import { ageOf, convertMoney, currencyName, fetchRates, loadRates, type Rates } from '../../lib/rates'
+import { ageOf, convertMoney, currencyName, fetchRates, loadRates, ratesAreCurrent, type Rates } from '../../lib/rates'
 import { Signal } from '../Icons'
 import { useSettings } from '../../store'
 import { readNumber } from '../../lib/amount'
@@ -8,30 +8,37 @@ import { formatMoney } from '../../lib/calc'
 
 type State = 'idle' | 'asking' | 'fresh' | 'stale' | 'nothing'
 
+/** "Just fetched" for a moment, then the age, which is what a saved set should say. */
+function when(rates: Rates, state: State): string {
+  if (state === 'asking') return 'Asking for rates'
+  if (state === 'fresh' && Date.now() - rates.fetchedAt < 2 * 60 * 1000) return `Rates for ${rates.date}, just fetched`
+  return `Rates for ${rates.date}, fetched ${ageOf(rates)}`
+}
+
 export function Currency() {
   const { settings, set } = useSettings()
   const [rates, setRates] = useState<Rates | null>(loadRates)
   /**
-   * It asks the moment it opens, so 'asking' is where it starts rather than
-   * something the mount effect has to set: a state the first render already
-   * knows about does not need a second render to arrive at.
+   * A set from the last twelve hours is already the answer, so the screen
+   * opens on it. Anything older, or nothing at all, and it asks.
    */
-  const [state, setState] = useState<State>('asking')
+  const [state, setState] = useState<State>(() => (ratesAreCurrent(loadRates()) ? 'fresh' : 'asking'))
   const [amount, setAmount] = useState('100')
   const [trouble, setTrouble] = useState('')
 
   const live = useRef<AbortController | null>(null)
 
   /** Asks once. An answer that arrives after the screen has moved on is dropped. */
-  const ask = useCallback(() => {
+  const ask = useCallback((force = false) => {
     live.current?.abort()
     const controller = new AbortController()
     live.current = controller
-    fetchRates(controller.signal).then(
+    fetchRates(controller.signal, force).then(
       (next) => {
         if (controller.signal.aborted) return
         setRates(next)
         setState('fresh')
+        setTrouble('')
       },
       (error: unknown) => {
         if (controller.signal.aborted) return
@@ -44,6 +51,7 @@ export function Currency() {
   }, [])
 
   useEffect(() => {
+    if (ratesAreCurrent(loadRates())) return
     ask()
     return () => live.current?.abort()
   }, [ask])
@@ -51,7 +59,7 @@ export function Currency() {
   function refresh() {
     setState('asking')
     setTrouble('')
-    ask()
+    ask(true)
   }
 
   const codes = rates ? Object.keys(rates.rates).sort() : []
@@ -88,13 +96,7 @@ export function Currency() {
     <Tool>
       <div className="rates-bar" data-state={state}>
         <Signal on={state === 'fresh'} />
-        <span className="rates-when">
-          {state === 'asking'
-            ? 'Asking for rates'
-            : state === 'fresh'
-              ? `Rates for ${rates.date}, just fetched`
-              : `Rates for ${rates.date}, fetched ${ageOf(rates)}`}
-        </span>
+        <span className="rates-when">{when(rates, state)}</span>
         <button className="ghost tiny" disabled={state === 'asking'} onClick={refresh}>
           Refresh
         </button>
