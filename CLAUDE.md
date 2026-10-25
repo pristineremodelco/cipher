@@ -13,10 +13,12 @@ README.md describes it.
 ## Shipping
 
 - Every push to `main` runs the tests, builds and publishes to GitHub Pages.
+  The same push builds a root copy and publishes it to Cloudflare, once
+  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are Actions secrets.
   Unfinished work stays on a branch.
-- A second copy runs on Cloudflare as static files, set up in
-  `wrangler.jsonc`. It does not update on push: run `npm run build` without
-  BASE_PATH, then `npx wrangler deploy`, after the push.
+- The Cloudflare copy is static files, set up in `wrangler.jsonc`. A hand
+  deploy, if the workflow cannot run, is `npm run build` with no BASE_PATH,
+  then `npx wrangler deploy`.
 - Before starting, `git fetch` and compare with `origin/main`. A session on
   the phone or in the cloud may have pushed. Build on it; never force push.
 - Before pushing: `npm run lint`, `npm test`, `npm run build`.
