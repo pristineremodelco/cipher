@@ -2216,7 +2216,7 @@ button.pad-part[data-active='true'] { border-color: var(--accent); box-shadow: 0
   transform: translateX(-50%);
   width: min(440px, calc(100% - 20px));
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 6px;
   padding: 6px;
   border-radius: 18px;
@@ -2226,22 +2226,29 @@ button.pad-part[data-active='true'] { border-color: var(--accent); box-shadow: 0
   animation: drop var(--base) var(--ease);
 }
 @keyframes drop { from { opacity: 0; transform: translate(-50%, -12px); } to { opacity: 1; transform: translateX(-50%); } }
-.update-go {
+.update-label {
   flex: 1;
   min-width: 0;
+  margin: 0;
+  padding: 8px 8px 8px 10px;
+  font-size: calc(15px * var(--tx));
+  font-weight: 800;
+  line-height: 1.2;
+}
+.update-go {
+  flex: none;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   border: 0;
   border-radius: 13px;
   padding: 10px 14px;
   background: var(--accent);
   color: var(--on-accent);
-  text-align: left;
+  font-weight: 800;
+  font-size: calc(14px * var(--tx));
+  white-space: nowrap;
 }
-.update-go span { display: grid; gap: 1px; min-width: 0; }
-.update-go strong { font-size: calc(15px * var(--tx)); }
-.update-go small { font-size: calc(12px * var(--tx)); font-weight: 600; opacity: 0.9; }
 .update-go:disabled { opacity: 0.85; }
 .update-later {
   flex: none;

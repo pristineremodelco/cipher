@@ -35,12 +35,10 @@ export function UpdateBanner() {
 
   return (
     <div className="update" role="status">
+      <p className="update-label">Update available</p>
       <button className="update-go" onClick={refresh} disabled={busy}>
         <Refresh />
-        <span>
-          <strong>{busy ? 'Updating…' : 'Update ready'}</strong>
-          <small>Tap to refresh. Your history and settings stay.</small>
-        </span>
+        {busy ? 'Updating…' : 'Refresh'}
       </button>
       {busy ? null : (
         <button className="update-later" onClick={() => setLater(update)}>
