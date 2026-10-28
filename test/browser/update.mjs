@@ -63,7 +63,9 @@ writeFileSync(join(out, 'sw.js'), sw.replace(/(url:"index\.html",revision:")[^"]
 // Coming back to the screen is when it looks.
 await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
 await page.waitForSelector('.update', { timeout: 20000 })
-t.ok('the banner says an update is ready', (await page.textContent('.update')).includes('Update ready'))
+const banner = await page.textContent('.update')
+t.ok('the banner says an update is available', banner.includes('Update available'))
+t.ok('and offers Refresh', (await page.textContent('.update-go')).includes('Refresh'))
 t.is('and nothing reloaded under the sum being typed', (await page.textContent('.expression')).trim(), '7')
 
 await page.click('.update-later')
