@@ -1,0 +1,5 @@
+# Built files under /assets/ carry a content hash in their names, so a new
+# build always ships new names and the old ones can be kept for a year.
+# Everything else keeps the default short cache so updates are seen.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

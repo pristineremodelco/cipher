@@ -438,6 +438,7 @@ export default function App() {
         <section className="display">
           <div
             className="expression"
+            role="group"
             aria-label="Expression"
             data-settled={settled}
             data-editable={settings.editInSum}
@@ -538,7 +539,7 @@ export default function App() {
               the desk. Narrower than that it lives behind the ⋯ key, and the
               stylesheet decides which, since the answer is the width and not
               anything worth making a setting of. */}
-          <div className="sci-pad" aria-label="Scientific functions">
+          <div className="sci-pad" role="group" aria-label="Scientific functions">
             {SCIENTIFIC.map((item) => (
               <button
                 key={item.label}
