@@ -1,6 +1,6 @@
-// Cipher on Cloudflare, as static files with no server code. `npm run build`
-// first: left without BASE_PATH it builds for the root, which is what a
-// workers.dev address serves. GitHub Pages builds its own copy for /cipher/.
+// Cipher on Cloudflare, as static files with no server code. The Cloudflare
+// workflow builds without BASE_PATH, so the app is at the root of the
+// workers.dev address. GitHub Pages builds its own copy for /cipher/.
 {
   "name": "cipher",
   "compatibility_date": "2026-10-01",
