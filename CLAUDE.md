@@ -3,6 +3,16 @@
 A calculator, converter and set of tools that run entirely in the browser.
 README.md describes it.
 
+## Shared with Grok Bot
+
+Grok Bot also works in this repo and reads AGENTS.md, which carries the same
+rules. Before starting, pull the latest from GitHub and read HANDOFF.md. When
+stopping or running low on usage, update HANDOFF.md in the same PR: goal,
+status, why, next steps, open questions, branches and PRs, and a dated log
+line naming the tool. Work on your own branch, never one Grok Bot is using.
+Every merge to main waits for the owner's OK. Never commit secrets, personal rule files (`*.mdc`), `.dev.vars` or prompt logs. No em
+dashes in files or commits.
+
 ## This repository is public
 
 - Nothing personal goes in it: no names, emails, addresses, accounts, keys,
