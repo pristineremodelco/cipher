@@ -11,13 +11,18 @@ No ads, no account, no network.
 
 ## Status (how far it got)
 
-- Main is at #4 (hashed assets cached for a year, labelled containers get a
-  group role). Before that: shorter update banner (#3) and fewer clock wakes
-  and fetches (#1).
-- Every push to `main` tests, builds and publishes to GitHub Pages.
-- A second copy runs on Cloudflare as static files. It only updates when
-  someone runs the build and `npx wrangler deploy` by hand. #2 would make
-  that automatic.
+- Main includes #2 (Cloudflare workflow on every push to main), #4 (hashed
+  assets cached for a year, labelled containers get a group role), #3
+  (shorter update banner), and #1 (fewer clock wakes and fetches).
+- Every push to `main` tests, builds and publishes to GitHub Pages at
+  https://pristineremodelco.github.io/cipher/.
+- The same push also runs the Cloudflare workflow, which builds for the
+  root and deploys to https://cipher.pristineremodelco.workers.dev. That
+  job needs two repository Actions secrets: `CLOUDFLARE_API_TOKEN` and
+  `CLOUDFLARE_ACCOUNT_ID`. Until both exist the Cloudflare job fails, and
+  Pages is unaffected. As of 2026-11-06 the secrets were still missing, so
+  the first post-merge Cloudflare run failed. The Worker was brought up to
+  date with a hand `wrangler deploy` from main the same morning.
 
 ## Why (decisions and reasons)
 
@@ -28,23 +33,31 @@ No ads, no account, no network.
 
 ## Next steps
 
-1. Review #2. It needs two repository secrets set in GitHub before merging,
-   or the new workflow fails on the next push to `main`. The steps are in
-   the PR description.
+1. Preston adds `CLOUDFLARE_API_TOKEN` (Edit Cloudflare Workers token) and
+   `CLOUDFLARE_ACCOUNT_ID` (`32906174d073aa408f9938fdbbac5b69`) as Actions
+   secrets on this repo, then re-runs the failed Cloudflare workflow (or
+   pushes any commit to main).
+2. After the secrets are in, confirm both Pages and Cloudflare succeed on
+   the same push.
+3. Optional later: attach a custom domain on the Worker under Settings,
+   then Domains.
 
 ## Open questions
 
-- Merge #2, or keep publishing the Cloudflare copy by hand?
+- Keep GitHub Pages as a second public copy, or retire it once Cloudflare
+  auto-deploy is green?
 
 ## Branches and PRs
 
-- #2 Publish the Cloudflare copy on every push to main,
-  `cursor/cloudflare-autodeploy-8a43`. Open.
+- #6 privacy, terms, and support pages: merged 2026-11-06.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
-- 2026-11-05 Grok Bot: feat/legal-pages: privacy, terms, support pages and Settings links. Support email pristineremodelco@gmail.com. PR not merged.
+- 2026-11-06 Grok Bot: #2 merged. Cloudflare Actions failed (missing
+  secrets). Hand-deployed main to cipher.pristineremodelco.workers.dev.
+  Updated this handoff. Corrected #6 as merged.
+- 2026-11-05 Grok Bot: feat/legal-pages: privacy, terms, support pages and Settings links. Support email pristineremodelco@gmail.com. Later merged as #6.
 
 - 2026-11-04 Claude Code: added HANDOFF.md, AGENTS.md and a shared section
   in CLAUDE.md. No app code changed.
