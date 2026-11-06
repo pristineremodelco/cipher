@@ -19,6 +19,7 @@ import { isDark, nextChange } from '../lib/sun'
 import { locate, stopLocating, type Locating } from '../useSun'
 import { ColourWheel, Pinwheel } from './ColourWheel'
 import { defaultSettings } from '../lib/storage'
+import { SUPPORT_MAILTO } from '../lib/support'
 import { uid } from '../lib/uid'
 import { useSettings, useSpell } from '../store'
 import { formatNumber } from '../lib/calc'
@@ -150,6 +151,12 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
           {tab === 'look' ? <LookTab settings={settings} set={set} /> : null}
           {tab === 'keys' ? <KeysTab settings={settings} set={set} /> : null}
           {tab === 'maths' ? <MathsTab settings={settings} set={set} /> : null}
+        </div>
+
+        <div className="sheet-foot legal-links">
+          <a href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy</a>
+          <a href={`${import.meta.env.BASE_URL}terms.html`}>Terms</a>
+          <a href={SUPPORT_MAILTO}>Support</a>
         </div>
 
         {/* Only here once something has been changed: a button that undoes

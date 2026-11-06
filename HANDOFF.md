@@ -44,6 +44,7 @@ No ads, no account, no network.
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-05 Grok Bot: feat/legal-pages: privacy, terms, support pages and Settings links. Support email pristineremodelco@gmail.com. PR not merged.
 
 - 2026-11-04 Claude Code: added HANDOFF.md, AGENTS.md and a shared section
   in CLAUDE.md. No app code changed.
