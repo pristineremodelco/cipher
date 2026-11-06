@@ -49,15 +49,15 @@ No ads, no account, no network.
 
 ## Branches and PRs
 
-- `feat/legal-pages`: privacy, terms, support pages. Open for review.
+- #6 privacy, terms, and support pages: merged 2026-11-06.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
 - 2026-11-06 Grok Bot: #2 merged. Cloudflare Actions failed (missing
   secrets). Hand-deployed main to cipher.pristineremodelco.workers.dev.
-  Updated this handoff.
-- 2026-11-05 Grok Bot: feat/legal-pages: privacy, terms, support pages and Settings links. Support email pristineremodelco@gmail.com. PR not merged.
+  Updated this handoff. Corrected #6 as merged.
+- 2026-11-05 Grok Bot: feat/legal-pages: privacy, terms, support pages and Settings links. Support email pristineremodelco@gmail.com. Later merged as #6.
 
 - 2026-11-04 Claude Code: added HANDOFF.md, AGENTS.md and a shared section
   in CLAUDE.md. No app code changed.
