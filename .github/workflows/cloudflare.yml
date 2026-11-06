@@ -1,0 +1,47 @@
+# Builds Cipher for the root and puts that copy on Cloudflare on every push
+# to main.
+#
+# GitHub Pages keeps its own build, under /cipher/. This one leaves BASE_PATH
+# unset, which is what a workers.dev address serves. The tests run before the
+# build, and the deploy waits on both, so a push that breaks the parser never
+# reaches a phone.
+#
+# The API token and the account id are Actions secrets. They are not in the
+# repository. Until both exist this job fails, and Pages is unaffected.
+name: Cloudflare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time, and a newer push wins: there is no sense finishing a
+# build for a commit that has already been replaced.
+concurrency:
+  group: cloudflare
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      # Pinned to the Wrangler release checked while this was written, so a
+      # later default inside the action does not change the deploy under us.
+      - uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.152.0"
+          command: deploy
+          packageManager: npm

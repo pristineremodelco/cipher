@@ -193,6 +193,13 @@ Pushing to `main` builds it and puts it on GitHub Pages, at
 `https://pristineremodelco.github.io/cipher/`. The tests run first and the
 deploy waits on them, so a push that breaks the parser never reaches a phone.
 
+The same push publishes a second copy to Cloudflare. That copy is built for
+the root, not for `/cipher/`, and is a Worker with no code of its own:
+`wrangler.jsonc` sends the `dist` folder up as static files. The workflow
+can deploy only after two Actions secrets are set on the repository,
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. Until they are, that
+workflow fails and GitHub Pages still updates.
+
 A host that gives the app a whole domain rather than a folder needs nothing
 set. One that gives it a folder needs to say so, because the manifest has to
 agree about where the app lives or the installed icon opens on a page that is
