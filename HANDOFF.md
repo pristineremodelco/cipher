@@ -26,17 +26,21 @@ No ads, no account, no network.
 
 ## Why (decisions and reasons)
 
-- The repository is public, so it holds no personal details, keys or
-  prices. PROMPT-LOG.md is ignored for that reason.
+- The repository is public, so it holds no personal details, keys,
+  prices, or env values (account ids, tokens). Secret *names* are fine;
+  values stay in GitHub Actions secrets or the Cloudflare dashboard.
+  PROMPT-LOG.md is ignored for that reason.
 - The one allowed dash character is a lone dash standing for an empty value
   in readouts and score sheets. The browser tests expect it.
 
 ## Next steps
 
-1. Preston adds `CLOUDFLARE_API_TOKEN` (Edit Cloudflare Workers token) and
-   `CLOUDFLARE_ACCOUNT_ID` (`32906174d073aa408f9938fdbbac5b69`) as Actions
-   secrets on this repo, then re-runs the failed Cloudflare workflow (or
-   pushes any commit to main).
+1. Preston adds repository Actions secrets `CLOUDFLARE_API_TOKEN` (Edit
+   Cloudflare Workers token) and `CLOUDFLARE_ACCOUNT_ID`. Copy the account
+   id from the Cloudflare dashboard (Workers and Pages overview, or Account
+   ID in the sidebar). Do not put the id, token, or other env values in this
+   public repo. Then re-run the failed Cloudflare workflow (or push any
+   commit to main).
 2. After the secrets are in, confirm both Pages and Cloudflare succeed on
    the same push.
 3. Optional later: attach a custom domain on the Worker under Settings,
@@ -54,6 +58,7 @@ No ads, no account, no network.
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-06 Grok Bot: scrubbed Cloudflare account id from this handoff; secret names only, dashboard for the id.
 - 2026-11-06 Grok Bot: #2 merged. Cloudflare Actions failed (missing
   secrets). Hand-deployed main to cipher.pristineremodelco.workers.dev.
   Updated this handoff. Corrected #6 as merged.
