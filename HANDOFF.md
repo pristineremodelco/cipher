@@ -19,28 +19,29 @@ No ads, no account, no network.
 - The same push also runs the Cloudflare workflow, which builds for the
   root and deploys to https://cipher.pristineremodelco.workers.dev. That
   job needs two repository Actions secrets: `CLOUDFLARE_API_TOKEN` and
-  `CLOUDFLARE_ACCOUNT_ID`. Until both exist the Cloudflare job fails, and
-  Pages is unaffected. As of 2026-11-06 the secrets were still missing, so
-  the first post-merge Cloudflare run failed. The Worker was brought up to
-  date with a hand `wrangler deploy` from main the same morning.
+  `CLOUDFLARE_ACCOUNT_ID` (secret names only; values live in GitHub Actions
+  or the Cloudflare dashboard, never in this public repo).
+- As of 2026-11-06 both secrets are set. The Cloudflare workflow on main
+  succeeded (tests, build, and `wrangler-action` deploy). Live check the
+  same day: workers.dev returned HTTP 200. Pages still publishes in
+  parallel.
 
 ## Why (decisions and reasons)
 
-- The repository is public, so it holds no personal details, keys or
-  prices. PROMPT-LOG.md is ignored for that reason.
+- The repository is public, so it holds no personal details, keys,
+  prices, or env values (account ids, tokens). Secret *names* are fine;
+  values stay in GitHub Actions secrets or the Cloudflare dashboard.
+  PROMPT-LOG.md is ignored for that reason.
 - The one allowed dash character is a lone dash standing for an empty value
   in readouts and score sheets. The browser tests expect it.
 
 ## Next steps
 
-1. Preston adds `CLOUDFLARE_API_TOKEN` (Edit Cloudflare Workers token) and
-   `CLOUDFLARE_ACCOUNT_ID` (`32906174d073aa408f9938fdbbac5b69`) as Actions
-   secrets on this repo, then re-runs the failed Cloudflare workflow (or
-   pushes any commit to main).
-2. After the secrets are in, confirm both Pages and Cloudflare succeed on
-   the same push.
-3. Optional later: attach a custom domain on the Worker under Settings,
+1. Optional later: attach a custom domain on the Worker under Settings,
    then Domains.
+2. Merge the open scrub PR that removes any leftover account-id wording
+   from this handoff tip once Preston says OK (Watch already passed the
+   scrub).
 
 ## Open questions
 
@@ -54,6 +55,11 @@ No ads, no account, no network.
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-07 Grok Bot: confirmed `CLOUDFLARE_API_TOKEN` and
+  `CLOUDFLARE_ACCOUNT_ID` are set as Actions secrets; latest Cloudflare
+  workflow on main succeeded and workers.dev returned 200. Updated status
+  and next steps. Still no env values in this file.
+- 2026-11-06 Grok Bot: scrubbed Cloudflare account id from this handoff; secret names only, dashboard for the id.
 - 2026-11-06 Grok Bot: #2 merged. Cloudflare Actions failed (missing
   secrets). Hand-deployed main to cipher.pristineremodelco.workers.dev.
   Updated this handoff. Corrected #6 as merged.
