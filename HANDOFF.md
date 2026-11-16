@@ -71,7 +71,7 @@ No ads, no account, no network.
 - #8 removed the Cloudflare account id from this handoff: merged 2026-11-07.
 - #9 `cursor/favicon-mark-4180`: new mark, maskable safe zone, icon cache bust.
   Open, not merged.
-- `cursor/android-capacitor-4180`: Capacitor Android app on top of #9.
+- #10 `cursor/android-capacitor-4180`: Capacitor Android app, stacked on #9.
   Open, not merged.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
