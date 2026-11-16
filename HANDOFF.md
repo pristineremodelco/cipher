@@ -59,7 +59,7 @@ No ads, no account, no network.
 
 - #6 privacy, terms, and support pages: merged 2026-11-06.
 - #8 removed the Cloudflare account id from this handoff: merged 2026-11-07.
-- `cursor/favicon-mark-4180`: new mark, maskable safe zone, icon cache bust.
+- #9 `cursor/favicon-mark-4180`: new mark, maskable safe zone, icon cache bust.
   Open, not merged.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
