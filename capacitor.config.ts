@@ -2,9 +2,10 @@ import type { CapacitorConfig } from '@capacitor/cli'
 
 /**
  * The installed app opens the public site, so the service worker and the
- * update banner stay the ones already on that site. `dist` is only what
- * shows when the site cannot be reached: the same root build, served from
- * this app. A folder build such as GitHub Pages would not match those paths.
+ * update banner stay the ones already on that site. When that site cannot
+ * be reached, only one file is shown: offline.html. Its style is inline
+ * and the legal text is in the page, because the calculator's scripts and
+ * the separate legal files are not loaded with the error page.
  */
 const site = 'https://cipher.pristineremodelco.workers.dev'
 
@@ -14,7 +15,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     url: site,
-    errorPath: 'index.html',
+    errorPath: 'offline.html',
     androidScheme: 'https',
     hostname: 'localhost',
     // The fallback copy is served from localhost. Without this, a tap inside

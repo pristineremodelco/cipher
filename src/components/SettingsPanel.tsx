@@ -19,6 +19,7 @@ import { isDark, nextChange } from '../lib/sun'
 import { locate, stopLocating, type Locating } from '../useSun'
 import { ColourWheel, Pinwheel } from './ColourWheel'
 import { defaultSettings } from '../lib/storage'
+import { isNativeApp } from '../native'
 import { SUPPORT_MAILTO } from '../lib/support'
 import { uid } from '../lib/uid'
 import { useSettings, useSpell } from '../store'
@@ -154,8 +155,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="sheet-foot legal-links">
-          <a href={`${import.meta.env.BASE_URL}privacy.html`}>Privacy</a>
-          <a href={`${import.meta.env.BASE_URL}terms.html`}>Terms</a>
+          <a href={isNativeApp() ? 'offline.html#privacy' : `${import.meta.env.BASE_URL}privacy.html`}>Privacy</a>
+          <a href={isNativeApp() ? 'offline.html#terms' : `${import.meta.env.BASE_URL}terms.html`}>Terms</a>
           <a href={SUPPORT_MAILTO}>Support</a>
         </div>
 
