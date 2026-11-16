@@ -17,6 +17,10 @@ No ads, no account, no network.
 - The favicon and app icons are being swapped to the thinner mark (cream
   strokes at 4.2, equals disc unchanged) on `cursor/favicon-mark-4180`.
   Not merged, so nothing has been deployed from that branch.
+- A sideloadable Android app is on `cursor/android-capacitor-4180`, stacked
+  on that favicon branch. It opens the public site so the update banner
+  keeps working, and falls back to the bundled copy when the site cannot
+  be reached. Not merged, and not deployed.
 - Every push to `main` tests, builds and publishes to GitHub Pages at
   https://pristineremodelco.github.io/cipher/.
 - The same push also runs the Cloudflare workflow, which builds for the
@@ -42,11 +46,17 @@ No ads, no account, no network.
   the manifest put `?v=` on icon addresses so a browser that caches a
   favicon by its URL fetches the new drawing; the service worker ignores
   that parameter and still serves the precached file.
+- The Android app loads the public site rather than only the files in the
+  APK, because that is the origin the update banner already watches. The
+  bundled files are the offline fallback. Release signing is read from
+  environment variables or a gitignored `keystore.properties`. No keystore
+  is in the repository.
 
 ## Next steps
 
-1. Merge the favicon branch only after an explicit OK. A merge to main
-   publishes.
+1. Merge the favicon branch only after an explicit OK, then the Android
+   branch. A merge to main publishes the site. Neither branch has been
+   deployed.
 2. Optional later: attach a custom domain on the Worker under Settings,
    then Domains.
 
@@ -61,10 +71,13 @@ No ads, no account, no network.
 - #8 removed the Cloudflare account id from this handoff: merged 2026-11-07.
 - #9 `cursor/favicon-mark-4180`: new mark, maskable safe zone, icon cache bust.
   Open, not merged.
+- `cursor/android-capacitor-4180`: Capacitor Android app on top of #9.
+  Open, not merged.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-16 Cursor: added a Capacitor Android app that opens the public site, falls back to the bundled copy offline, and signs release builds only from the environment or a gitignored properties file.
 - 2026-11-16 Cursor: swapped the favicon and app icons to the thinner mark, held the maskable glyphs inside the centre 80% circle, and added `?v=2` so an icon change still trips the update banner and a reload fetches the new drawing.
 - 2026-11-07 Grok Bot: confirmed `CLOUDFLARE_API_TOKEN` and
   `CLOUDFLARE_ACCOUNT_ID` are set as Actions secrets; latest Cloudflare

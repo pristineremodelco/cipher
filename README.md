@@ -277,6 +277,27 @@ addresses in the page, the legal pages and the manifest carry `?v=2`. Bump
 that in the same change: a browser can keep a favicon by its address, and the
 service worker ignores the parameter so the precached file still matches.
 
+## Android
+
+A sideloadable app. It opens the public site at
+`https://cipher.pristineremodelco.workers.dev`, so the service worker and the
+update banner are the ones that site already has. The copy of `dist` inside
+the app is what shows when that site cannot be reached. Links that leave the
+site open in the system browser. Back walks the web view, then leaves the
+app. Copy uses the Android clipboard, and Share uses the Android share sheet.
+
+```bash
+npm run android:debug
+npm run android:release
+```
+
+The debug APK is signed with the debug keystore on the machine that builds
+it. A release build reads `CIPHER_KEYSTORE_FILE`, `CIPHER_KEYSTORE_PASSWORD`,
+`CIPHER_KEY_ALIAS` and `CIPHER_KEY_PASSWORD`, or the same four fields in
+`android/keystore.properties` (see `android/keystore.properties.example`).
+`storeFile` is relative to the `android` directory, or an absolute path.
+That properties file and any keystore stay off the repository.
+
 ## Layout
 
 ```
