@@ -14,6 +14,9 @@ No ads, no account, no network.
 - Main includes #2 (Cloudflare workflow on every push to main), #4 (hashed
   assets cached for a year, labelled containers get a group role), #3
   (shorter update banner), and #1 (fewer clock wakes and fetches).
+- The favicon and app icons are being swapped to the thinner mark (cream
+  strokes at 4.2, equals disc unchanged) on `cursor/favicon-mark-4180`.
+  Not merged, so nothing has been deployed from that branch.
 - Every push to `main` tests, builds and publishes to GitHub Pages at
   https://pristineremodelco.github.io/cipher/.
 - The same push also runs the Cloudflare workflow, which builds for the
@@ -34,14 +37,18 @@ No ads, no account, no network.
   PROMPT-LOG.md is ignored for that reason.
 - The one allowed dash character is a lone dash standing for an empty value
   in readouts and score sheets. The browser tests expect it.
+- Maskable icons keep the glyphs inside the centre circle of diameter 80%
+  (the safe zone) and let the espresso tile fill the bleed. The page and
+  the manifest put `?v=` on icon addresses so a browser that caches a
+  favicon by its URL fetches the new drawing; the service worker ignores
+  that parameter and still serves the precached file.
 
 ## Next steps
 
-1. Optional later: attach a custom domain on the Worker under Settings,
+1. Merge the favicon branch only after an explicit OK. A merge to main
+   publishes.
+2. Optional later: attach a custom domain on the Worker under Settings,
    then Domains.
-2. Merge the open scrub PR that removes any leftover account-id wording
-   from this handoff tip once Preston says OK (Watch already passed the
-   scrub).
 
 ## Open questions
 
@@ -51,10 +58,14 @@ No ads, no account, no network.
 ## Branches and PRs
 
 - #6 privacy, terms, and support pages: merged 2026-11-06.
+- #8 removed the Cloudflare account id from this handoff: merged 2026-11-07.
+- `cursor/favicon-mark-4180`: new mark, maskable safe zone, icon cache bust.
+  Open, not merged.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-16 Cursor: swapped the favicon and app icons to the thinner mark, held the maskable glyphs inside the centre 80% circle, and added `?v=2` so an icon change still trips the update banner and a reload fetches the new drawing.
 - 2026-11-07 Grok Bot: confirmed `CLOUDFLARE_API_TOKEN` and
   `CLOUDFLARE_ACCOUNT_ID` are set as Actions secrets; latest Cloudflare
   workflow on main succeeded and workers.dev returned 200. Updated status

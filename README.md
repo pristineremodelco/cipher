@@ -269,9 +269,13 @@ Three sources in `icons/`, rasterised into every size the platforms ask for.
 `mark.svg` is the mark as drawn, with its own rounded corner, for anywhere the
 icon is used as-is. `mark-square.svg` is square to the edge for iOS, which cuts
 its own corners but does not crop. `mark-maskable.svg` is square too and eased
-down to 0.74, because Android guarantees only the inner circle of radius 21.3
-survives its mask and the far edge of the cinnabar disc sits 28.8 out from the
-centre. The output is committed; run this only when the mark changes.
+down to 0.88, because a maskable icon only promises the centre circle of
+diameter 80% (radius 25.6) and the far edge of the cinnabar disc sits 28.8 out
+from the centre. The tile colour fills the bleed, which the launcher may crop.
+The output is committed; run this only when the mark changes. The icon
+addresses in the page, the legal pages and the manifest carry `?v=2`. Bump
+that in the same change: a browser can keep a favicon by its address, and the
+service worker ignores the parameter so the precached file still matches.
 
 ## Layout
 

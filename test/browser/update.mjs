@@ -86,6 +86,47 @@ await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle' }), page.cl
 t.is('tapping the banner brings up the new version', await page.getAttribute('meta[name="cipher-build"]', 'content'), 'three')
 t.is('with the banner gone', await page.$('.update'), null)
 
+// A release that changes an icon and nothing else. The page stays as it is;
+// the precache revision of that file is what tells an open app to look. The
+// v query on the link has to be ignored by the worker, or this fetch would
+// miss the precache and fail once the network is gone.
+const iconHref = await page.getAttribute('link[rel="icon"][sizes="32x32"]', 'href')
+const iconName = new URL(iconHref, url).pathname.slice(1)
+const iconPath = join(out, iconName)
+const originalIcon = readFileSync(iconPath)
+const tweaked = Buffer.from(originalIcon)
+const flipAt = tweaked.length - 20
+tweaked[flipAt] ^= 0x5a
+writeFileSync(iconPath, tweaked)
+const swNow = readFileSync(join(out, 'sw.js'), 'utf8')
+const iconRev = new RegExp(`(url:"${iconName.replace('.', '\\.')}",revision:")[^"]+`)
+t.ok('the icon is in the precache', iconRev.test(swNow))
+writeFileSync(join(out, 'sw.js'), swNow.replace(iconRev, '$1icon-next'))
+const iconByte = (bytes) => `${bytes.length}:${bytes[flipAt]}`
+const before = await page.evaluate(async (href) => {
+  const bytes = new Uint8Array(await (await fetch(href)).arrayBuffer())
+  return `${bytes.length}:${bytes[bytes.length - 20]}`
+}, iconHref)
+t.is('the open app is still on the previous icon', before, iconByte(originalIcon))
+await page.evaluate(() => navigator.serviceWorker.getRegistration().then((r) => r.update()))
+await page.waitForSelector('.update', { timeout: 20000 })
+t.ok('a changed icon brings the banner back', (await page.textContent('.update')).includes('Update available'))
+await Promise.all([page.waitForNavigation({ waitUntil: 'networkidle' }), page.click('.update-go')])
+await context.setOffline(true)
+const after = await page.evaluate(async (href) => {
+  try {
+    const res = await fetch(href)
+    if (!res.ok) return `status ${res.status}`
+    const bytes = new Uint8Array(await res.arrayBuffer())
+    return `${bytes.length}:${bytes[bytes.length - 20]}`
+  } catch (error) {
+    return `error ${error}`
+  }
+}, iconHref)
+await context.setOffline(false)
+t.is('offline, the reloaded app has the new icon', after, iconByte(tweaked))
+t.is('and the banner is gone again', await page.$('.update'), null)
+
 t.done()
 await context.close()
 await browser.close()
