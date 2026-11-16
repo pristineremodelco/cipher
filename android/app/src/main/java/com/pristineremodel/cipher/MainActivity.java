@@ -17,7 +17,7 @@ public class MainActivity extends BridgeActivity {
         WebView webView = getBridge().getWebView();
         // After each page, including the bundled fallback. The bridge is already
         // in the page by then, and a tap has not happened yet.
-        webView.setWebViewClient(new CipherWebViewClient(getBridge(), readAsset("cipher-native.js")));
+        getBridge().setWebViewClient(new CipherWebViewClient(getBridge(), readAsset("cipher-native.js")));
         // Back walks the web view, then leaves the app. The plugin's own
         // handler is switched off because it consumes the press at the root
         // and the activity never finishes.
