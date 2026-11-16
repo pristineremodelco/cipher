@@ -77,6 +77,7 @@ No ads, no account, no network.
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-16 Cursor: on #10, the offline page says the network cannot be reached and Try again opens the public site.
 - 2026-11-16 Cursor: on #10, the offline fallback is one self-contained page with the privacy and terms text in the page.
 - 2026-11-16 Cursor: on #10, privacy wording now fits both the website and the Android app. Public and bundled copies match.
 - 2026-11-16 Cursor: on #10, turned off Android backup, removed the unused file provider, and set the web view client through the bridge. Privacy text matches the bundled copy.

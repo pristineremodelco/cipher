@@ -28,12 +28,24 @@
     ul { padding-left: 1.2rem; }
     nav { margin: 1.25rem 0 0; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.95rem; }
     nav a { margin-right: 1rem; }
+    button {
+      margin-top: 1rem;
+      background: var(--brass);
+      color: var(--bg);
+      border: 0;
+      border-radius: 12px;
+      padding: 0.7rem 1.1rem;
+      font: inherit;
+      font-weight: 700;
+    }
     section { margin-top: 2.5rem; }
   </style>
 </head>
 <body>
   <main>
-    <p class="muted">Cipher is not on the network. What you already saved stays on this device.</p>
+    <p class="muted">Cipher can't reach the network right now.</p>
+    <!-- This page is only the fallback, so a reload would stay here. Try again opens the public site the app uses. -->
+    <button type="button" onclick="location.replace('https://cipher.pristineremodelco.workers.dev')">Try again</button>
     <nav>
       <a href="#privacy">Privacy</a>
       <a href="#terms">Terms</a>
