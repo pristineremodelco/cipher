@@ -1,5 +1,7 @@
 // Rasterises the three source marks into every size the platforms actually
 // ask for. Run it only when the mark changes; the output is committed.
+// Bump the ?v= on the icon links and in the manifest in the same change, or
+// a browser can keep showing the previous mark after the update banner reloads.
 //
 //   npm i --no-save sharp png-to-ico && node icons/generate.mjs
 //

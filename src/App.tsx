@@ -10,6 +10,7 @@ import { Converter } from './components/Converter'
 import { Confirm } from './components/Confirm'
 import { fitToWidth, onReflow } from './components/fit'
 import { Tools } from './components/Tools'
+import { copyText, isNativeApp, shareText } from './native'
 import { useBuzz, useSettings, useSpell } from './store'
 
 export default function App() {
@@ -334,7 +335,7 @@ export default function App() {
   async function copyAnswer() {
     if (!result.ok) return
     try {
-      await navigator.clipboard.writeText(plainNumber(result.value))
+      await copyText(plainNumber(result.value))
       setCopied(true)
       if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current)
       copiedTimer.current = window.setTimeout(() => {
@@ -343,6 +344,15 @@ export default function App() {
       }, 1400)
     } catch {
       /* no clipboard permission: the number is on screen either way */
+    }
+  }
+
+  async function shareAnswer() {
+    if (!result.ok) return
+    try {
+      await shareText(plainNumber(result.value))
+    } catch {
+      /* the share sheet was closed */
     }
   }
 
@@ -473,6 +483,14 @@ export default function App() {
             <p className="error">{result.error}</p>
           ) : null}
           <div className="utility">
+            {/* Share is only offered inside the installed app. On the site the
+                answer is already the copy button, and a second control there
+                would be in the way. */}
+            {isNativeApp() && result.ok ? (
+              <button className="util" type="button" data-cipher-share onClick={shareAnswer}>
+                Share
+              </button>
+            ) : null}
             {/* Degrees or radians sits with the maths rather than in the bar:
                 it means nothing until a trig key is pressed, and the key that
                 opens those is the one beside it. */}

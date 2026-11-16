@@ -55,12 +55,12 @@ export default defineConfig({
         // corners of the plain mark would be shaved off. The maskable pair are
         // square to the edge and let Android cut its own shape.
         icons: [
-          { src: 'pwa-64.png', sizes: '64x64', type: 'image/png', purpose: 'any' },
-          { src: 'pwa-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-          { src: 'pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-          { src: 'maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
-          { src: 'maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
-          { src: 'favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+          { src: 'pwa-64.png?v=2', sizes: '64x64', type: 'image/png', purpose: 'any' },
+          { src: 'pwa-192.png?v=2', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: 'pwa-512.png?v=2', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: 'maskable-192.png?v=2', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
+          { src: 'maskable-512.png?v=2', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'favicon.svg?v=2', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
         ],
       },
       workbox: {
@@ -68,6 +68,10 @@ export default defineConfig({
         // A new build replaces the previous copy. Old precaches would otherwise
         // stay on the phone after every update.
         cleanupOutdatedCaches: true,
+        // Icon addresses carry ?v= so a browser that caches a favicon by its
+        // URL fetches the new mark. The precache key is the file itself, and
+        // this list replaces workbox's defaults, so those two patterns stay.
+        ignoreURLParametersMatching: [/^utm_/, /^fbclid$/, /^v$/],
       },
     }),
   ],

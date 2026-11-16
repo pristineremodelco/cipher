@@ -1,0 +1,101 @@
+apply plugin: 'com.android.application'
+
+// Release signing comes from the environment, or from android/keystore.properties,
+// which is gitignored. A blank value is the same as an absent one. Nothing here
+// has a default password.
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+def pickSecret = { String envName, String propertyName ->
+    def fromEnv = System.getenv(envName)
+    if (fromEnv != null && !fromEnv.trim().isEmpty()) {
+        return fromEnv.trim()
+    }
+    def fromFile = keystoreProperties.getProperty(propertyName)
+    if (fromFile != null && !fromFile.trim().isEmpty()) {
+        return fromFile.trim()
+    }
+    return null
+}
+
+def releaseStore = pickSecret('CIPHER_KEYSTORE_FILE', 'storeFile')
+def releaseStorePassword = pickSecret('CIPHER_KEYSTORE_PASSWORD', 'storePassword')
+def releaseKeyAlias = pickSecret('CIPHER_KEY_ALIAS', 'keyAlias')
+def releaseKeyPassword = pickSecret('CIPHER_KEY_PASSWORD', 'keyPassword')
+
+android {
+    namespace = "com.pristineremodel.cipher"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.pristineremodel.cipher"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            if (releaseStore != null) {
+                // Paths are relative to the android directory, or absolute.
+                storeFile rootProject.file(releaseStore)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (releaseStore != null) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    def wantsRelease = graph.allTasks.any { it.name == 'assembleRelease' || it.name == 'bundleRelease' }
+    if (wantsRelease && releaseStore == null) {
+        throw new GradleException('Release signing is not set. Provide CIPHER_KEYSTORE_FILE, CIPHER_KEYSTORE_PASSWORD, CIPHER_KEY_ALIAS and CIPHER_KEY_PASSWORD, or android/keystore.properties.')
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
