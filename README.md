@@ -36,12 +36,18 @@ an app opened to work something out opens on it.
   ten percent of the two hundred beside it. Beside a times or a divide it is a
   plain hundredth, so `200×10%` is 20
 - **Memory**: MC, MR, M+, M-
-- **History**: the last 200 answers, each with the working that produced it.
-  Tap the working to put it back on the display, or the answer to carry it into
-  the next sum. Nothing expires with time: the 201st sum pushes the oldest off
-  and that is the only way one leaves, short of Clear. Turning history off
-  stops new answers being written down and hides the list; what was already
-  there is kept, and comes back if it is turned on again
+- **History**: the last 200 answers, each with the working that produced it,
+  filed under the day it was worked out with the time beside it. Tap the
+  working to put it back on the display, or the answer to carry it into the
+  next sum. Search finds an entry by its working, its answer or its note.
+  **Save** keeps an entry at the top, apart from the 200, and Clear leaves it
+  there; up to 100 can be saved. **Note** gives an entry a one line label, and
+  **Delete** takes one entry off. Nothing expires with time: the 201st unsaved
+  sum pushes the oldest unsaved one off and that is the only way one leaves,
+  short of Clear or Delete. Turning history off stops new answers being
+  written down and hides the list; what was already there is kept, and comes
+  back if it is turned on again. All of it is kept in the browser on the
+  device, and nowhere else
 - **Hold the rub-out** to clear the lot
 - **Tap the answer** to copy it
 - **Tap inside the sum** to put a cursor there and change one part of it, even
@@ -228,7 +234,7 @@ npm test
 ```
 
 The sums, run under node with no test framework and no dependency: node runs
-TypeScript and ships a test runner, so there is nothing to install. 280 of
+TypeScript and ships a test runner, so there is nothing to install. 297 of
 them, covering the expression parser, what each key does to what is already on
 the display, every answer carried on reading back as itself, all 127 unit
 factors with every pair round tripped, what typing a unit finds, and every one
@@ -310,7 +316,8 @@ src/
   lib/
     calc.ts          the expression parser and the number formatter
     calcinput.ts     what each key does to what is already on the display
-    calctape.ts      the history and the memory register
+    calctape.ts      the history and the memory register, and saving, notes,
+                     search and days for the history
     units.ts         what one unit is in terms of another
     unitsearch.ts    finding a unit, or a pair, by what was typed
     tools.ts         the sums behind the tools, and nothing that draws
@@ -331,6 +338,7 @@ src/
     keys.ts          what is on the pad, and nothing about how it is drawn
     Converter.tsx    by category or simple: a pair, a picker, and a pad
     Confirm.tsx      a button that asks once before it does what cannot be undone
+    History.tsx      the history list: search, saved entries, days, notes
     Mend.tsx         what shows instead of a blank page if something breaks
     ColourWheel.tsx  the colour wheel the accent and a palette's colours are chosen on
     Tools.tsx        the grid, and one screen at a time
