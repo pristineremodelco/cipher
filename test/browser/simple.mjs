@@ -73,7 +73,7 @@ await page.keyboard.press('Enter')
 await page.waitForSelector('.picker-sheet[aria-label="Convert to"]')
 await page.click('.picker-head button:has-text("Cancel")')
 t.is('a new kind on top clears a bottom it cannot reach', await unit(2), 'Choose a unit')
-t.is('and the result says so rather than guessing', await reading(2), '—')
+t.is('and the result says so rather than guessing', await reading(2), '-')
 // The pad's swap key is always there; with one unit missing it does nothing
 // rather than moving the top unit to the bottom and leaving the top empty.
 await page.click('.convert-pad .key[aria-label="Swap the two units"]')

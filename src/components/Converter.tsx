@@ -352,7 +352,7 @@ function SimpleConverter() {
 
   function reading(which: 'from' | 'to'): string {
     if (which === side) return entry || '0'
-    return show(result) || '—'
+    return show(result) || '-'
   }
 
   function row(which: 'from' | 'to', found: Found | undefined) {

@@ -86,7 +86,7 @@ function Table({ players, head, children, foot }: { players: Player[]; head: (p:
 function HeadCell({ player, total, note, front, out }: { player: Player; total?: ReactNode; note?: ReactNode; front?: boolean; out?: boolean }) {
   return (
     <div className="score-head" data-front={front} data-out={out}>
-      <span className="score-name">{player.name || '—'}</span>
+      <span className="score-name">{player.name || '-'}</span>
       {total !== undefined ? <strong>{total}</strong> : null}
       {note ? <small>{note}</small> : null}
     </div>
@@ -443,7 +443,7 @@ export function CountersBoard({ sheet, players, data, change }: BoardProps<Count
       <div className="counter-grid" data-shared={Boolean(sheet.shared)}>
         {players.map((p) => (
           <section key={p.id} className="counter-card" data-out={result.out[p.id]} data-front={result.leaders.includes(p.id) || result.winners.includes(p.id)}>
-            {sheet.shared ? null : <h3>{p.name || '—'}</h3>}
+            {sheet.shared ? null : <h3>{p.name || '-'}</h3>}
             {sheet.counters.map((c) => {
               const v = valueOf(c.id, p.id)
               return (
