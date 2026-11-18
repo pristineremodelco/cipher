@@ -11,16 +11,12 @@ No ads, no account, no network.
 
 ## Status (how far it got)
 
-- Main includes #2 (Cloudflare workflow on every push to main), #4 (hashed
-  assets cached for a year, labelled containers get a group role), #3
-  (shorter update banner), and #1 (fewer clock wakes and fetches).
-- The favicon and app icons are being swapped to the thinner mark (cream
-  strokes at 4.2, equals disc unchanged) on `cursor/favicon-mark-4180`.
-  Not merged, so nothing has been deployed from that branch.
-- A sideloadable Android app is on `cursor/android-capacitor-4180`, stacked
-  on that favicon branch. It opens the public site so the update banner
-  keeps working, and falls back to the bundled copy when the site cannot
-  be reached. Not merged, and not deployed.
+- Main (2026-11-18) includes #1 through #12: fewer clock wakes (#1), the
+  Cloudflare workflow (#2), the shorter update banner (#3), long cache for
+  hashed assets (#4), shared handoff notes (#5), legal pages (#6, #7, #8),
+  the thinner favicon mark (#9), the sideloadable Android app (#10) and a
+  hyphen instead of an em dash for empty values (#12). #13 adds a Children
+  section to the privacy policy.
 - Every push to `main` tests, builds and publishes to GitHub Pages at
   https://pristineremodelco.github.io/cipher/.
 - The same push also runs the Cloudflare workflow, which builds for the
@@ -54,9 +50,8 @@ No ads, no account, no network.
 
 ## Next steps
 
-1. Merge the favicon branch only after an explicit OK, then the Android
-   branch. A merge to main publishes the site. Neither branch has been
-   deployed.
+1. Test the Android app on a phone (sideload a debug build) before a
+   release build.
 2. Optional later: attach a custom domain on the Worker under Settings,
    then Domains.
 
@@ -70,22 +65,28 @@ No ads, no account, no network.
 - #6 privacy, terms, and support pages: merged 2026-11-06.
 - #8 removed the Cloudflare account id from this handoff: merged 2026-11-07.
 - #9 `cursor/favicon-mark-4180`: new mark, maskable safe zone, icon cache bust.
-  Open, not merged.
-- #10 `cursor/android-capacitor-4180`: Capacitor Android app, stacked on #9.
-  Open, not merged.
+  Merged 2026-11-16.
+- #10 `cursor/android-capacitor-4180`: Capacitor Android app. Merged 2026-11-16.
+- #12 `fix/copy`: hyphen for empty values. Merged 2026-11-18.
+- #13 `docs/children-privacy`: Children section in the privacy policy and the
+  offline copy, effective November 18, 2026.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-18 Grok Bot: Children section (not meant for under 13, email to
+  delete) in public/privacy.html and the privacy part of public/offline.html,
+  effective November 18, 2026. Status, next steps and PR list brought up to
+  date. PR #13.
 - 2026-11-17 Grok Bot: on #12, added an empty `previews` block to
   `wrangler.jsonc`. The Workers Builds branch check was red because
   `npx wrangler preview` refused to run without that block, after
   `npm run build` had already succeeded. Same failure as #9 and #10.
-  Not merged.
+  Merged with #12 on 2026-11-18.
 - 2026-11-17 Grok Bot: the empty-value placeholder is a plain hyphen `-`
   instead of an em dash in the converter, form readouts and game boards
   (brief 05). The pasted em dash to minus conversion in `calc.ts` stays.
-  PR #12, not merged.
+  PR #12, merged 2026-11-18.
 - 2026-11-16 Cursor: on #10, the offline page says the network cannot be reached and Try again opens the public site.
 - 2026-11-16 Cursor: on #10, the offline fallback is one self-contained page with the privacy and terms text in the page.
 - 2026-11-16 Cursor: on #10, privacy wording now fits both the website and the Android app. Public and bundled copies match.
