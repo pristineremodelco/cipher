@@ -7,5 +7,9 @@
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
-  }
+  },
+  // Pull request and branch builds run `npx wrangler preview`. That command
+  // requires this block. An empty block is enough. Cipher has no database
+  // or secrets, so a preview is only the built static files.
+  "previews": {}
 }
