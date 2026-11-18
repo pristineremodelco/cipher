@@ -24,6 +24,7 @@ import { SUPPORT_MAILTO } from '../lib/support'
 import { uid } from '../lib/uid'
 import { useSettings, useSpell } from '../store'
 import { formatNumber } from '../lib/calc'
+import { KEYBOARD } from './keys'
 import type { CustomPalette, Settings } from '../types'
 
 const TABS = [
@@ -78,10 +79,10 @@ function same(a: unknown, b: unknown): boolean {
   return a === b
 }
 
-export function SettingsPanel({ onClose }: { onClose: () => void }) {
+export function SettingsPanel({ onClose, startTab = 'look' }: { onClose: () => void; startTab?: TabId }) {
   const { settings, set } = useSettings()
   const t = useSpell()
-  const [tab, setTab] = useState<TabId>('look')
+  const [tab, setTab] = useState<TabId>(startTab)
   const fresh = defaultSettings()
   const resettable = (Object.keys(fresh) as (keyof Settings)[]).filter((key) => !KEPT.includes(key))
   const changed = resettable.some((key) => !same(settings[key], fresh[key]))
@@ -592,8 +593,21 @@ function Swatches({
 }
 
 function KeysTab({ settings, set }: TabProps) {
+  const t = useSpell()
   return (
     <>
+      <div className="field keyboard-list">
+        <span>Keyboard</span>
+        <dl>
+          {KEYBOARD.map((item) => (
+            <div key={item.keys}>
+              <dt>{item.keys}</dt>
+              <dd>{t(item.does)}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+
       <div className="field">
         <span>Key style</span>
         <div className="style-grid">

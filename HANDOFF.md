@@ -54,10 +54,17 @@ No ads, no account, no network.
   environment variables or a gitignored `keystore.properties`. No keystore
   is in the repository.
 
+- Themes, keyboard and desktop layout (brief 28) are on branch
+  `claude/project-thread-53tiv9-themes`, stacked on #14, not merged. Two
+  brand palettes, Brass (light) and Roast (dark). Escape clears, Ctrl or Cmd
+  C copies the answer, a paste is read as keys, `?` opens the keyboard list
+  under Settings, Keys. At 1100 by 640 and up the history is a panel beside
+  the keypad, shown or hidden with the clock button (`historyPanel`).
+
 ## Next steps
 
-1. Brief 28: themes (a brand palette pair), keyboard keys and a desktop
-   layout, as a second pull request.
+1. Look at #14 and the themes PR on a laptop and on the phone before
+   merging; neither was seen on a screen by the session that wrote them.
 2. Test the Android app on a phone (sideload a debug build) before a
    release build.
 3. Optional later: attach a custom domain on the Worker under Settings,
@@ -80,10 +87,17 @@ No ads, no account, no network.
   offline copy, effective November 18, 2026.
 - #14 `claude/project-thread-53tiv9`: saved history (brief 27). Open, waiting on
   the owner's OK.
+- `claude/project-thread-53tiv9-themes`: themes, keyboard keys and desktop
+  layout (brief 28), stacked on #14. Waiting on the owner's OK.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-18 Claude Code: brief 28 (file not available, worked from the
+  request). Brass and Roast palettes, keyboard Escape, copy, paste and `?`,
+  history docked beside the keypad on wide screens. Unit test for reading a
+  paste in `test/input.test.ts`; browser checks added to
+  `test/browser/keys.mjs`, not run here (no browser in the session).
 - 2026-11-18 Claude Code: saved history (brief 27). The brief file was not
   available, so this works from the request: keep past calculations on the
   device to see and reuse. History already did that; this adds day headings

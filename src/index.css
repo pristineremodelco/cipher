@@ -23,6 +23,14 @@
   --text: #241c13; --muted: #6d6049; --line: #d8c9a9;
   --accent: #8c3b26; --on-accent: #fbf6ea; --danger: #9d2c22;
 }
+/* Brass: cream ground, paper keys, espresso type and a brass accent. Brass is
+   too light to read as a glyph on paper, so the operators are drawn in the
+   darker brass the store works out, and equals keeps espresso on brass. */
+[data-palette='brass'] {
+  --bg: #f1ebe0; --panel: #f6f2ea; --key: #fbf8f2;
+  --text: #2b1e16; --muted: #6e5f4f; --line: #ddd3c2;
+  --accent: #bc9a5e; --on-accent: #2b1e16; --danger: #9d2c22;
+}
 [data-palette='winter'] {
   --bg: #eef0f3; --panel: #ffffff; --key: #ffffff;
   --text: #16181c; --muted: #61686f; --line: #dee2e7;
@@ -49,6 +57,7 @@
 /* The dark ones share one shadow scale: a soft shadow on a dark ground reads
    as fog, so they lean on the key face being lighter than the ground instead. */
 [data-palette='espresso'],
+[data-palette='roast'],
 [data-palette='graphite'],
 [data-palette='carbon'],
 [data-palette='midnight'],
@@ -62,6 +71,13 @@
   --bg: #191309; --panel: #241c13; --key: #2e241a;
   --text: #efe6d0; --muted: #a2937a; --line: #3a2e20;
   --accent: #b4502f; --on-accent: #fff3e6; --danger: #e0705a;
+}
+/* Roast: the same four colours after dark. Espresso ground, cream type, and
+   brass for the operators and equals. */
+[data-palette='roast'] {
+  --bg: #2b1e16; --panel: #33251c; --key: #3d2d22;
+  --text: #f1ebe0; --muted: #b3a38d; --line: #4a382b;
+  --accent: #bc9a5e; --on-accent: #2b1e16; --danger: #e8806a;
 }
 [data-palette='graphite'] {
   --bg: #131416; --panel: #1b1d20; --key: #24272b;
@@ -318,6 +334,17 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
   flex-direction: column;
   gap: 10px;
 }
+/* The calculator's own column: display, memory and keypad. On its own it
+   behaves exactly as .work did; beside the history it is the left of two. */
+.calc {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dock { display: none; }
 
 /* ============================================================
    Display
@@ -724,6 +751,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 .tape-expr span[data-kind='operator'] { padding: 0 2px; }
 .tape-note {
   display: block;
+  min-height: 30px;
   border: 0;
   background: none;
   padding: 2px 0;
@@ -760,6 +788,27 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 .tape-act[aria-pressed='true'] { color: var(--accent-ink); }
 .tape-act[data-armed='true'] { color: var(--danger); }
 .tape-sheet { min-height: 40dvh; }
+
+/* The keyboard list under Settings, Keys. A phone with no keyboard has no
+   use for it, so it shows only where there is a mouse or trackpad. */
+.keyboard-list dl { margin: 0; display: grid; gap: 2px; }
+.keyboard-list dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.keyboard-list dt {
+  font-weight: 800;
+  white-space: pre;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-ink);
+}
+.keyboard-list dd { margin: 0; color: var(--muted); text-align: right; }
+@media (hover: none) and (pointer: coarse) {
+  .keyboard-list { display: none; }
+}
 
 /* ============================================================
    Settings
@@ -1415,6 +1464,38 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
    four, so the column opens up to match. */
 @media (min-width: 900px) and (min-height: 640px) {
   .work { max-width: 980px; }
+}
+
+/* A desk-sized screen: the history sits beside the keypad as a panel rather
+   than in a sheet over it, so a past answer is one click away while typing.
+   The numbers match WIDE in useWide.ts. */
+@media (min-width: 1100px) and (min-height: 640px) {
+  .app[data-dock='true'] { max-width: 1440px; }
+  .app[data-dock='true'] .work {
+    max-width: 1340px;
+    flex-direction: row;
+    gap: 14px;
+  }
+  .app[data-dock='true'] .dock {
+    flex: 0 0 clamp(300px, 28vw, 380px);
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 12px 12px 8px;
+  }
+  .dock-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .dock-head h2 { margin: 0; font-size: calc(17px * var(--tx)); letter-spacing: -0.03em; }
+  .dock .hint { margin: 4px 0; }
 }
 
 /* A phone on its side. Almost all the height is gone, so the display gives up

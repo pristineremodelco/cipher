@@ -118,3 +118,49 @@ export const TYPED: Record<string, string> = {
   '%': '%',
   '!': '!',
 }
+
+/** What the physical keyboard does on the calculator, as listed under Settings. */
+export const KEYBOARD: { keys: string; does: string }[] = [
+  { keys: '0 to 9  .', does: 'Digits and the point' },
+  { keys: '+  -  *  /', does: 'Plus, minus, times, divide' },
+  { keys: '^  %  !  ( )', does: 'Power, percent, factorial, brackets' },
+  { keys: 'Enter  =', does: 'Equals' },
+  { keys: 'Backspace', does: 'Rub out one' },
+  { keys: 'Delete  Esc', does: 'Clear' },
+  { keys: '← →  Home  End', does: 'Move the cursor in the sum' },
+  { keys: 'Ctrl C  ⌘C', does: 'Copy the answer' },
+  { keys: 'Ctrl V  ⌘V', does: 'Paste a sum' },
+  { keys: '?', does: 'This list' },
+]
+
+/**
+ * The keys a pasted piece of text stands for, in order.
+ *
+ * Only what a keypad could have typed is kept: digits, the point, the
+ * operators, brackets, percent and powers. Thousands commas are dropped, so
+ * 1,200 is twelve hundred, and an x between two numbers is a times. Other
+ * letters and words are skipped rather than guessed at.
+ */
+export function pastedKeys(text: string): string[] {
+  const clean = text
+    // 1,200 and 12,500,000: a comma before exactly three digits groups them.
+    .replace(/(\d),(?=\d{3}(?!\d))/g, '$1')
+    .replace(/(\d)\s*[xX]\s*(?=[\d(.])/g, '$1×')
+  const keys: string[] = []
+  for (const char of clean) {
+    if (/^[0-9]$/.test(char)) keys.push(char)
+    else if (GLYPHS[char]) keys.push(GLYPHS[char])
+    else if (char !== 'x' && TYPED[char]) keys.push(TYPED[char])
+  }
+  return keys
+}
+
+/** Operators as they are drawn, and the dashes prose and spreadsheets use for minus. */
+const GLYPHS: Record<string, string> = {
+  '×': '×',
+  '÷': '÷',
+  '−': '−',
+  '–': '−',
+  '²': '²',
+  '³': '³',
+}
