@@ -18,7 +18,7 @@ No ads, no account, no network.
   hyphen instead of an em dash for empty values (#12). #13 adds a Children
   section to the privacy policy.
 - Saved history (brief 27) is on branch `claude/project-thread-53tiv9`,
-  open as a pull request, not merged. History rows sit under the day they
+  open as #14, not merged. History rows sit under the day they
   were worked out, with the time. Search, Save (kept apart from the 200 and
   left alone by Clear, up to 100), a one line Note, and Delete per row. Still
   stored only in the browser, under `calculator.tape.v1`; old saves load
@@ -78,7 +78,7 @@ No ads, no account, no network.
 - #12 `fix/copy`: hyphen for empty values. Merged 2026-11-18.
 - #13 `docs/children-privacy`: Children section in the privacy policy and the
   offline copy, effective November 18, 2026.
-- `claude/project-thread-53tiv9`: saved history (brief 27). Open, waiting on
+- #14 `claude/project-thread-53tiv9`: saved history (brief 27). Open, waiting on
   the owner's OK.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
@@ -91,6 +91,7 @@ No ads, no account, no network.
   `src/lib/calctape.ts` with `test/tape.test.ts`; the list is
   `src/components/History.tsx`. Browser checks added to
   `test/browser/behaviour.mjs` but not run here (no browser in the session).
+  PR #14.
 - 2026-11-18 Grok Bot: Children section (not meant for under 13, email to
   delete) in public/privacy.html and the privacy part of public/offline.html,
   effective November 18, 2026. Status, next steps and PR list brought up to
