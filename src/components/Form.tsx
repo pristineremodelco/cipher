@@ -157,7 +157,7 @@ export function Readout({ rows, note }: { rows: Row[]; note?: ReactNode }) {
       {rows.map((row) => (
         <div className="readout-row" key={row.label} data-lead={row.lead}>
           <span className="readout-label">{t(row.label)}</span>
-          <span className="readout-value">{row.value || '—'}</span>
+          <span className="readout-value">{row.value || '-'}</span>
           {row.note ? <span className="readout-note">{t(row.note)}</span> : null}
         </div>
       ))}

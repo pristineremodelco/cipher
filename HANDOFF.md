@@ -77,6 +77,15 @@ No ads, no account, no network.
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-17 Grok Bot: on #12, added an empty `previews` block to
+  `wrangler.jsonc`. The Workers Builds branch check was red because
+  `npx wrangler preview` refused to run without that block, after
+  `npm run build` had already succeeded. Same failure as #9 and #10.
+  Not merged.
+- 2026-11-17 Grok Bot: the empty-value placeholder is a plain hyphen `-`
+  instead of an em dash in the converter, form readouts and game boards
+  (brief 05). The pasted em dash to minus conversion in `calc.ts` stays.
+  PR #12, not merged.
 - 2026-11-16 Cursor: on #10, the offline page says the network cannot be reached and Try again opens the public site.
 - 2026-11-16 Cursor: on #10, the offline fallback is one self-contained page with the privacy and terms text in the page.
 - 2026-11-16 Cursor: on #10, privacy wording now fits both the website and the Android app. Public and bundled copies match.
