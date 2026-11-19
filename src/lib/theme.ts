@@ -24,12 +24,14 @@ export type Palette = {
 
 export const PALETTES: Palette[] = [
   { id: 'paper', name: 'Paper', hint: 'Warm stock, espresso ink', scheme: 'light', swatch: ['#EDE4D0', '#FBF6EA', '#241C13', '#8C3B26'] },
+  { id: 'brass', name: 'Brass', hint: 'Cream, paper keys, brass', scheme: 'light', swatch: ['#F1EBE0', '#FBF8F2', '#2B1E16', '#BC9A5E'] },
   { id: 'winter', name: 'Winter', hint: 'Plain white, graphite type', scheme: 'light', swatch: ['#EEF0F3', '#FFFFFF', '#16181C', '#2F6FEB'] },
   { id: 'cobblestone', name: 'Cobblestone', hint: 'Grey-green stone', scheme: 'light', swatch: ['#D2DAD6', '#E9EFEC', '#172220', '#356B60'] },
   // Named Linen; its id is newsprint because linen was Cobblestone's, and a
   // phone that saved linen meant the stone one.
   { id: 'newsprint', name: 'Linen', hint: 'Newsprint, ink and tan', scheme: 'light', swatch: ['#E2DCCD', '#F5F2EA', '#1C1B18', '#7C5F3A'] },
   { id: 'espresso', name: 'Espresso', hint: "The mark's own ground", scheme: 'dark', swatch: ['#191309', '#2E241A', '#EFE6D0', '#B4502F'] },
+  { id: 'roast', name: 'Roast', hint: 'Espresso, cream type, brass', scheme: 'dark', swatch: ['#2B1E16', '#3D2D22', '#F1EBE0', '#BC9A5E'] },
   { id: 'graphite', name: 'Graphite', hint: 'Neutral dark', scheme: 'dark', swatch: ['#131416', '#24272B', '#EDEFF2', '#7AA2F7'] },
   { id: 'carbon', name: 'Carbon', hint: 'True black, for OLED', scheme: 'dark', swatch: ['#000000', '#161616', '#F4F4F4', '#FF8A3D'] },
   { id: 'midnight', name: 'Midnight', hint: 'Blue black', scheme: 'dark', swatch: ['#0B1020', '#1A2440', '#E7ECFA', '#5AC8FA'] },

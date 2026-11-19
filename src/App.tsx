@@ -3,7 +3,7 @@ import { calculate, formatNumber, plainNumber } from './lib/calc'
 import { backspaceAt, chunkRuns, chunksOf, expressionOf, kindOf, pressAt, pressValue, seed, type Caret } from './lib/calcinput'
 import { addEntry, clearUnsaved, loadTape, saveTape, type Tape, type TapeEntry } from './lib/calctape'
 import { uid } from './lib/uid'
-import { ROWS, SCIENTIFIC, TYPED, type Key } from './components/keys'
+import { ROWS, SCIENTIFIC, TYPED, pastedKeys, type Key } from './components/keys'
 import { Backspace, Clock, Gear, Mark } from './components/Icons'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Converter } from './components/Converter'
@@ -13,6 +13,12 @@ import { fitToWidth, onReflow } from './components/fit'
 import { Tools } from './components/Tools'
 import { copyText, isNativeApp, shareText } from './native'
 import { useBuzz, useSettings, useSpell } from './store'
+import { useWide } from './useWide'
+
+/** Typing into a field is that field's business, not the keypad's. */
+function isField(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+}
 
 export default function App() {
   const { settings, set } = useSettings()
@@ -24,6 +30,14 @@ export default function App() {
   const [sciOpen, setSciOpen] = useState(false)
   const [tapeOpen, setTapeOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  /** Which tab Settings opens on: the keyboard list opens it on Keys. */
+  const [settingsTab, setSettingsTab] = useState<'look' | 'keys' | 'maths'>('look')
+  /**
+   * On a wide screen the history sits beside the keypad instead of in a
+   * sheet over it, and the clock button shows or hides that panel.
+   */
+  const wide = useWide()
+  const docked = wide && settings.keepHistory && settings.historyPanel && settings.mode === 'calculate'
   const [copied, setCopied] = useState(false)
   /**
    * True from an equals until the next press. A digit then starts a new sum,
@@ -246,7 +260,9 @@ export default function App() {
       event.preventDefault()
       if (sciOpen) setSciOpen(false)
       else if (tapeOpen) setTapeOpen(false)
-      else setSettingsOpen(false)
+      else if (settingsOpen) setSettingsOpen(false)
+      // With nothing open, Escape clears the sum, as it does on a desktop calculator.
+      else if (settings.mode === 'calculate') clear()
       return
     }
     // The panels, the sheets and the converter are ordinary screens with their
@@ -254,6 +270,12 @@ export default function App() {
     // With the history open, Enter on its Done button ran equals on the sum
     // hidden behind it instead.
     if (settingsOpen || tapeOpen || sciOpen || settings.mode !== 'calculate') return
+    if (event.key === '?') {
+      event.preventDefault()
+      setSettingsTab('keys')
+      setSettingsOpen(true)
+      return
+    }
     // Enter on a button reached with the keyboard presses that button. After
     // a key was tapped, focus sits on it without showing, and Enter is still
     // equals, as it is on any calculator.
@@ -314,6 +336,57 @@ export default function App() {
     [],
   )
 
+  /**
+   * Copy and paste on the calculator itself. Ctrl or Cmd with C copies the
+   * answer unless some text is selected, which copies as usual. A paste puts
+   * the digits and operators it holds onto the display at the cursor. Fields,
+   * sheets and the other two surfaces keep the browser's own behaviour.
+   */
+  const calculatorHasKeys = () => !settingsOpen && !tapeOpen && !sciOpen && settings.mode === 'calculate'
+  const onCopy = (event: ClipboardEvent) => {
+    if (!calculatorHasKeys() || !result.ok) return
+    if (window.getSelection()?.toString()) return
+    if (isField(event.target)) return
+    event.clipboardData?.setData('text/plain', plainNumber(result.value))
+    event.preventDefault()
+    setCopied(true)
+    if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current)
+    copiedTimer.current = window.setTimeout(() => {
+      copiedTimer.current = null
+      setCopied(false)
+    }, 1400)
+  }
+  const onPaste = (event: ClipboardEvent) => {
+    if (!calculatorHasKeys() || isField(event.target)) return
+    const keys = pastedKeys(event.clipboardData?.getData('text/plain') ?? '')
+    if (!keys.length) return
+    event.preventDefault()
+    // After an answer, a pasted sum starts again unless it opens with an
+    // operator, which carries the answer on, the same as a key would.
+    const carry = kindOf(keys[0]) === 'operator'
+    let edit = { chunks: settled && !carry ? [] : chunks, caret: settled ? null : caret }
+    for (const pressed of keys) edit = pressAt(edit.chunks, edit.caret, pressed)
+    setChunks(edit.chunks)
+    setCaret(edit.caret)
+    setSettled(false)
+    setAsked(false)
+    setCopied(false)
+  }
+  const clipboardRef = useRef({ onCopy, onPaste })
+  useEffect(() => {
+    clipboardRef.current = { onCopy, onPaste }
+  })
+  useEffect(() => {
+    const copy = (event: ClipboardEvent) => clipboardRef.current.onCopy(event)
+    const paste = (event: ClipboardEvent) => clipboardRef.current.onPaste(event)
+    window.addEventListener('copy', copy)
+    window.addEventListener('paste', paste)
+    return () => {
+      window.removeEventListener('copy', copy)
+      window.removeEventListener('paste', paste)
+    }
+  }, [])
+
   /** Holding the rub-out clears the lot, which is the one gesture worth having. */
   function holdStart() {
     cleared.current = false
@@ -360,6 +433,37 @@ export default function App() {
   const answer = result.ok ? formatNumber(result.value, format) : ''
   const unsaved = tape.entries.filter((entry) => !entry.saved).length
 
+  /** A history row's working, back on the display in the pieces it was typed as, to be edited. */
+  function putWorking(entry: TapeEntry) {
+    setChunks(chunksOf(entry.expression))
+    setCaret(null)
+    setSettled(false)
+    setAsked(false)
+    setTapeOpen(false)
+  }
+
+  /** A history row's answer, on the display under its working, ready to carry on from. */
+  function putAnswer(entry: TapeEntry) {
+    setChunks(seed(plainNumber(entry.value)))
+    setCaret(null)
+    setWorked(entry.expression)
+    setSettled(true)
+    setAsked(false)
+    // The answer on show is the one Ans means.
+    setLastAnswer(entry.value)
+    setTapeOpen(false)
+  }
+
+  const clearButton = (
+    <Confirm
+      ask={unsaved === tape.entries.length ? `Clear all ${unsaved}?` : `Clear ${unsaved} unsaved?`}
+      disabled={!unsaved}
+      onConfirm={() => setTape(clearUnsaved)}
+    >
+      Clear
+    </Confirm>
+  )
+
   function renderKey(item: Key) {
     const label = item.label
     const send = item.press ?? label
@@ -383,7 +487,7 @@ export default function App() {
   }
 
   return (
-    <div className="app">
+    <div className="app" data-dock={docked}>
       <header className="bar">
         <div className="brand">
           <Mark />
@@ -426,17 +530,25 @@ export default function App() {
           {settings.keepHistory ? (
             <button
               className="chip"
-              aria-pressed={tapeOpen}
+              aria-pressed={wide ? docked : tapeOpen}
               aria-label="History"
               title="History"
               data-placeholder={settings.mode !== 'calculate'}
               inert={settings.mode !== 'calculate'}
-              onClick={() => setTapeOpen((open) => !open)}
+              onClick={() => (wide ? set({ historyPanel: !settings.historyPanel }) : setTapeOpen((open) => !open))}
             >
               <Clock />
             </button>
           ) : null}
-          <button className="chip" aria-label="Settings" title="Settings" onClick={() => setSettingsOpen(true)}>
+          <button
+            className="chip"
+            aria-label="Settings"
+            title="Settings"
+            onClick={() => {
+              setSettingsTab('look')
+              setSettingsOpen(true)
+            }}
+          >
             <Gear />
           </button>
         </div>
@@ -447,6 +559,7 @@ export default function App() {
         {settings.mode === 'tools' ? <Tools /> : null}
         {settings.mode === 'calculate' ? (
         <>
+        <div className="calc">
         <section className="display">
           <div
             className="expression"
@@ -585,6 +698,16 @@ export default function App() {
             ))}
           </div>
         </div>
+        </div>
+        {docked ? (
+          <aside className="dock" aria-label="History">
+            <div className="dock-head">
+              <h2>History</h2>
+              {clearButton}
+            </div>
+            <HistoryList tape={tape} setTape={setTape} format={format} onWorking={putWorking} onAnswer={putAnswer} />
+          </aside>
+        ) : null}
         </>
         ) : null}
       </main>
@@ -621,45 +744,18 @@ export default function App() {
             <div className="sheet-head">
               <h2>History</h2>
               <div className="sheet-head-actions">
-                <Confirm
-                  ask={unsaved === tape.entries.length ? `Clear all ${unsaved}?` : `Clear ${unsaved} unsaved?`}
-                  disabled={!unsaved}
-                  onConfirm={() => setTape(clearUnsaved)}
-                >
-                  Clear
-                </Confirm>
+                {clearButton}
                 <button className="ghost" onClick={() => setTapeOpen(false)}>
                   Done
                 </button>
               </div>
             </div>
-            <HistoryList
-              tape={tape}
-              setTape={setTape}
-              format={format}
-              onWorking={(entry) => {
-                // Back in the pieces it was typed as, so it can be edited
-                // rather than only rubbed out whole.
-                setChunks(chunksOf(entry.expression))
-                setCaret(null)
-                setSettled(false)
-                setTapeOpen(false)
-              }}
-              onAnswer={(entry) => {
-                setChunks(seed(plainNumber(entry.value)))
-                setCaret(null)
-                setWorked(entry.expression)
-                setSettled(true)
-                // The answer on show is the one Ans means.
-                setLastAnswer(entry.value)
-                setTapeOpen(false)
-              }}
-            />
+            <HistoryList tape={tape} setTape={setTape} format={format} onWorking={putWorking} onAnswer={putAnswer} />
           </div>
         </div>
       ) : null}
 
-      {settingsOpen ? <SettingsPanel onClose={() => setSettingsOpen(false)} /> : null}
+      {settingsOpen ? <SettingsPanel startTab={settingsTab} onClose={() => setSettingsOpen(false)} /> : null}
     </div>
   )
 }

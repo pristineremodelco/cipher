@@ -41,6 +41,7 @@ export function defaultSettings(): Settings {
     haptics: true,
     keepHistory: true,
     memoryRow: false,
+    historyPanel: true,
 
     mode: 'calculate',
     tool: '',
@@ -137,6 +138,7 @@ export function migrateSettings(raw: unknown): Settings {
   merged.haptics = merged.haptics !== false
   merged.keepHistory = merged.keepHistory !== false
   merged.memoryRow = Boolean(merged.memoryRow)
+  merged.historyPanel = merged.historyPanel !== false
 
   if (!['calculate', 'convert', 'tools'].includes(merged.mode)) merged.mode = base.mode
   merged.tool = typeof merged.tool === 'string' && TOOLS.some((t) => t.id === merged.tool) ? merged.tool : ''

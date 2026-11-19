@@ -17,8 +17,7 @@ No ads, no account, no network.
   the thinner favicon mark (#9), the sideloadable Android app (#10) and a
   hyphen instead of an em dash for empty values (#12). #13 adds a Children
   section to the privacy policy.
-- Saved history (brief 27) is on branch `claude/project-thread-53tiv9`,
-  open as #14, not merged. History rows sit under the day they
+- Saved history (brief 27) merged as #14 on 2026-11-19. History rows sit under the day they
   were worked out, with the time. Search, Save (kept apart from the 200 and
   left alone by Clear, up to 100), a one line Note, and Delete per row. Still
   stored only in the browser, under `calculator.tape.v1`; old saves load
@@ -54,10 +53,19 @@ No ads, no account, no network.
   environment variables or a gitignored `keystore.properties`. No keystore
   is in the repository.
 
+- Themes, keyboard and desktop layout (brief 28) are on branch
+  `claude/project-thread-53tiv9`, restarted from main after #14 merged, not
+  merged. Two
+  brand palettes, Brass (light) and Roast (dark). Escape clears, Ctrl or Cmd
+  C copies the answer, a paste is read as keys, `?` opens the keyboard list
+  under Settings, Keys. At 1100 by 640 and up the history is a panel beside
+  the keypad, shown or hidden with the clock button (`historyPanel`).
+
 ## Next steps
 
-1. Brief 28: themes (a brand palette pair), keyboard keys and a desktop
-   layout, as a second pull request.
+1. Look at the themes PR on a laptop and on the phone before merging, and
+   at saved history on the live site; neither was seen on a screen by the
+   session that wrote them.
 2. Test the Android app on a phone (sideload a debug build) before a
    release build.
 3. Optional later: attach a custom domain on the Worker under Settings,
@@ -78,12 +86,18 @@ No ads, no account, no network.
 - #12 `fix/copy`: hyphen for empty values. Merged 2026-11-18.
 - #13 `docs/children-privacy`: Children section in the privacy policy and the
   offline copy, effective November 18, 2026.
-- #14 `claude/project-thread-53tiv9`: saved history (brief 27). Open, waiting on
-  the owner's OK.
+- #14 `claude/project-thread-53tiv9`: saved history (brief 27). Merged 2026-11-19.
+- `claude/project-thread-53tiv9`: themes, keyboard keys and desktop layout
+  (brief 28), on main after #14. Open, waiting on the owner's OK.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-18 Claude Code: brief 28 (file not available, worked from the
+  request). Brass and Roast palettes, keyboard Escape, copy, paste and `?`,
+  history docked beside the keypad on wide screens. Unit test for reading a
+  paste in `test/input.test.ts`; browser checks added to
+  `test/browser/keys.mjs`, not run here (no browser in the session).
 - 2026-11-18 Claude Code: saved history (brief 27). The brief file was not
   available, so this works from the request: keep past calculations on the
   device to see and reuse. History already did that; this adds day headings

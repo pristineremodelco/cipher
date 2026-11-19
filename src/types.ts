@@ -82,6 +82,8 @@ export type Settings = {
   keepHistory: boolean
   /** The memory row: MC, MR, M+, M-. */
   memoryRow: boolean
+  /** On a wide screen, whether the history sits beside the keypad. */
+  historyPanel: boolean
 
   /** Which surface is showing. */
   mode: 'calculate' | 'convert' | 'tools'

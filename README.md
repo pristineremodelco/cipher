@@ -54,9 +54,14 @@ an app opened to work something out opens on it.
   after equals. Keys and the rub-out work at the cursor. It is a setting, for
   anyone who would rather a finished answer could not be reopened by a stray tap
 - A **keyboard** works: digits, `+ - * / ^ ( ) . %`, Enter for equals,
-  Backspace, Delete to clear, and the arrow keys, Home and End to move the
-  cursor. Letters are deliberately not bound; the named functions are one tap
-  away instead
+  Backspace, Delete or Escape to clear, and the arrow keys, Home and End to
+  move the cursor. Ctrl or Cmd with C copies the answer, and a paste puts the
+  digits and operators it holds onto the display, so `1,200 x 3` lands as
+  1200×3. `?` opens the list of keys under Settings, Keys. Letters are
+  deliberately not bound; the named functions are one tap away instead
+- **On a wide screen** (1100 by 640 and up) the history sits in a panel
+  beside the keypad instead of in a sheet over it, with the scientific keys
+  out on the desk as well. The clock button shows or hides the panel
 
 ## Converting
 
@@ -157,7 +162,8 @@ question the device can already answer, daylight saving included.
 
 ## What it looks like
 
-Ten palettes, four light and six dark. A day and a night palette are switched
+Twelve palettes, five light and seven dark. Brass and Roast are the
+brand's own: cream, paper, espresso and brass, by day and after dark. A day and a night palette are switched
 between by the phone's own light or dark setting, or by sunset and sunrise
 where the phone is: the location is asked for once, kept to about a kilometre
 on the phone, worked into the sun's position there with no service asked, and
@@ -234,7 +240,7 @@ npm test
 ```
 
 The sums, run under node with no test framework and no dependency: node runs
-TypeScript and ships a test runner, so there is nothing to install. 297 of
+TypeScript and ships a test runner, so there is nothing to install. 298 of
 them, covering the expression parser, what each key does to what is already on
 the display, every answer carried on reading back as itself, all 127 unit
 factors with every pair round tripped, what typing a unit finds, and every one
@@ -311,6 +317,7 @@ src/
   App.tsx            the display, the pad, the sheets, and the keying
   SettingsProvider.tsx  settings, persistence, and applying them to :root
   store.ts           reading the settings from anywhere below it
+  useWide.ts         whether the screen has room for the history beside the pad
   index.css          palettes first, then everything reading from them
   types.ts           what a setting can be
   lib/
@@ -335,7 +342,7 @@ src/
     colour.ts        hue, strength and brightness, for the colour wheel
     eyedropper.ts    a colour off the screen, where the browser allows it
   components/
-    keys.ts          what is on the pad, and nothing about how it is drawn
+    keys.ts          what is on the pad, the keyboard list, and reading a paste
     Converter.tsx    by category or simple: a pair, a picker, and a pad
     Confirm.tsx      a button that asks once before it does what cannot be undone
     History.tsx      the history list: search, saved entries, days, notes

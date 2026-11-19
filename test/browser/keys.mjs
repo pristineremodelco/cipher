@@ -117,6 +117,34 @@ await tap('sin⁻¹')
 await tap('5')
 t.ok('an impossible inverse sine is refused', (await page.textContent('.error')).includes('no answer'))
 
+// The physical keyboard: Escape clears, a paste is read as keys, ? lists them.
+await clear()
+await page.keyboard.type('12+3')
+await page.keyboard.press('Escape')
+t.is('Escape clears the sum', await expression(), '')
+await page.evaluate(() => {
+  const data = new DataTransfer()
+  data.setData('text/plain', '1,200 x 3')
+  window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true }))
+})
+t.is('a paste lands as the sum it holds', await expression(), '1200×3')
+t.is('and is worked out', await answer(), '3,600')
+await page.keyboard.press('Escape')
+await page.keyboard.press('Shift+Slash')
+t.ok('? opens the keyboard list', await page.isVisible('.keyboard-list'))
+await page.keyboard.press('Escape')
+
+// Wide enough, as this suite is, the history sits beside the keypad and the
+// clock button hides it.
+t.ok('a laptop shows the history beside the keypad', await page.isVisible('aside.dock'))
+await page.click('button[aria-label="History"]')
+t.is('the clock button hides it', await page.$$eval('aside.dock', (e) => e.length), 0)
+await page.click('button[aria-label="History"]')
+t.ok('and shows it again', await page.isVisible('aside.dock'))
+await page.setViewportSize({ width: 1000, height: 800 })
+await page.waitForTimeout(150)
+t.is('narrower, it goes back to a sheet', await page.$$eval('aside.dock', (e) => e.length), 0)
+
 t.done(noise)
 await context.close()
 await browser.close()

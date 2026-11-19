@@ -236,3 +236,20 @@ test('a carried negative inside a sum stays one signed number when recalled', ()
   const runs = displayRuns('5×-3', false)
   assert.deepEqual(runs.map((r) => r.kind), ['digit', 'operator', 'digit'])
 })
+
+test('a pasted sum is read as the keys it stands for', async () => {
+  const { pastedKeys } = await import('../src/components/keys.ts')
+  const typed = (text: string) => {
+    let chunks: string[] = []
+    for (const key of pastedKeys(text)) chunks = press(chunks, key)
+    return expressionOf(chunks)
+  }
+  assert.equal(typed('12 * 100'), '12×100')
+  assert.equal(typed('1,200 / 4'), '1200÷4')
+  assert.equal(typed('$45.50 x 3'), '45.50×3')
+  assert.equal(typed('(2+3)^2'), '(2+3)^2')
+  assert.equal(typed('10 - 4'), '10−4')
+  assert.equal(typed('200+10%'), '200+10%')
+  assert.equal(typed('Total: 7 boxes'), '7')
+  assert.equal(typed('1,5'), '1.5', 'a comma that is not grouping is a decimal comma')
+})
