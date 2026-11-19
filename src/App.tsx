@@ -1,13 +1,14 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { calculate, formatNumber, plainNumber } from './lib/calc'
-import { backspaceAt, chunkRuns, chunksOf, displayRuns, expressionOf, kindOf, pressAt, pressValue, seed, type Caret } from './lib/calcinput'
-import { MAX_TAPE, loadTape, saveTape, type Tape, type TapeEntry } from './lib/calctape'
+import { backspaceAt, chunkRuns, chunksOf, expressionOf, kindOf, pressAt, pressValue, seed, type Caret } from './lib/calcinput'
+import { addEntry, clearUnsaved, loadTape, saveTape, type Tape, type TapeEntry } from './lib/calctape'
 import { uid } from './lib/uid'
 import { ROWS, SCIENTIFIC, TYPED, type Key } from './components/keys'
 import { Backspace, Clock, Gear, Mark } from './components/Icons'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Converter } from './components/Converter'
 import { Confirm } from './components/Confirm'
+import { HistoryList } from './components/History'
 import { fitToWidth, onReflow } from './components/fit'
 import { Tools } from './components/Tools'
 import { copyText, isNativeApp, shareText } from './native'
@@ -213,7 +214,7 @@ export default function App() {
       at: Date.now(),
     }
     if (settings.keepHistory) {
-      setTape((current) => ({ ...current, entries: [entry, ...current.entries].slice(0, MAX_TAPE) }))
+      setTape((current) => addEntry(current, entry))
     }
     setChunks(seed(plainNumber(result.value)))
     setCaret(null)
@@ -357,6 +358,7 @@ export default function App() {
   }
 
   const answer = result.ok ? formatNumber(result.value, format) : ''
+  const unsaved = tape.entries.filter((entry) => !entry.saved).length
 
   function renderKey(item: Key) {
     const label = item.label
@@ -620,9 +622,9 @@ export default function App() {
               <h2>History</h2>
               <div className="sheet-head-actions">
                 <Confirm
-                  ask={`Clear all ${tape.entries.length}?`}
-                  disabled={!tape.entries.length}
-                  onConfirm={() => setTape((current) => ({ ...current, entries: [] }))}
+                  ask={unsaved === tape.entries.length ? `Clear all ${unsaved}?` : `Clear ${unsaved} unsaved?`}
+                  disabled={!unsaved}
+                  onConfirm={() => setTape(clearUnsaved)}
                 >
                   Clear
                 </Confirm>
@@ -631,49 +633,28 @@ export default function App() {
                 </button>
               </div>
             </div>
-            {tape.entries.length ? (
-              <ul className="tape-list">
-                {tape.entries.map((entry) => (
-                  <li key={entry.id}>
-                    <button
-                      className="tape-expr"
-                      title="Put this back on the display"
-                      onClick={() => {
-                        // Back in the pieces it was typed as, so it can be
-                        // edited rather than only rubbed out whole.
-                        setChunks(chunksOf(entry.expression))
-                        setCaret(null)
-                        setSettled(false)
-                        setTapeOpen(false)
-                      }}
-                    >
-                      {displayRuns(entry.expression, settings.grouping).map((run, index) => (
-                        <span key={index} data-kind={run.kind}>
-                          {run.text}
-                        </span>
-                      ))}
-                    </button>
-                    <button
-                      className="tape-value"
-                      title="Use this answer"
-                      onClick={() => {
-                        setChunks(seed(plainNumber(entry.value)))
-                        setCaret(null)
-                        setWorked(entry.expression)
-                        setSettled(true)
-                        // The answer on show is the one Ans means.
-                        setLastAnswer(entry.value)
-                        setTapeOpen(false)
-                      }}
-                    >
-                      {formatNumber(entry.value, format)}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="hint">Nothing worked out yet. Answers land here as you go.</p>
-            )}
+            <HistoryList
+              tape={tape}
+              setTape={setTape}
+              format={format}
+              onWorking={(entry) => {
+                // Back in the pieces it was typed as, so it can be edited
+                // rather than only rubbed out whole.
+                setChunks(chunksOf(entry.expression))
+                setCaret(null)
+                setSettled(false)
+                setTapeOpen(false)
+              }}
+              onAnswer={(entry) => {
+                setChunks(seed(plainNumber(entry.value)))
+                setCaret(null)
+                setWorked(entry.expression)
+                setSettled(true)
+                // The answer on show is the one Ans means.
+                setLastAnswer(entry.value)
+                setTapeOpen(false)
+              }}
+            />
           </div>
         </div>
       ) : null}

@@ -643,14 +643,63 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
    the last row sat half under the cancel button on a 393 by 852 screen. */
 .sci-sheet .key { min-height: 46px; font-size: calc(17px * var(--tx)); }
 
+/* The history: a search, then the saved entries, then everything else by day.
+   Each entry is its working and answer on one line, then a quieter line with
+   the time and what can be done to it. */
+.tape-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tape-search,
+.tape-note-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-size: calc(15px * var(--tx));
+  -webkit-user-select: text;
+  user-select: text;
+}
+.tape-search { flex: none; }
+.tape-search::placeholder,
+.tape-note-input::placeholder { color: var(--muted); }
+.tape-search:focus-visible,
+.tape-note-input:focus-visible { border-color: var(--accent); }
+.tape-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+.tape-day + .tape-day { margin-top: 14px; }
+.tape-day h3 {
+  margin: 0 0 2px;
+  font-size: calc(11.5px * var(--tx));
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 .tape-list { list-style: none; margin: 0; padding: 0; }
 .tape-list li {
+  padding: 6px 2px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.tape-list li[data-saved='true'] {
+  border-left: 3px solid var(--accent);
+  padding-left: 9px;
+}
+.tape-main {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  padding: 6px 2px;
-  border-bottom: 1px solid var(--line);
 }
 .tape-expr {
   border: 0;
@@ -673,7 +722,43 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 }
 .tape-expr:hover, .tape-value:hover { color: var(--accent-ink); }
 .tape-expr span[data-kind='operator'] { padding: 0 2px; }
-.tape-sheet .sheet-body, .tape-sheet ul { min-height: 0; }
+.tape-note {
+  display: block;
+  border: 0;
+  background: none;
+  padding: 2px 0;
+  color: var(--text);
+  font-size: calc(13px * var(--tx));
+  font-weight: 700;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.tape-note-input { margin: 4px 0; padding: 7px 10px; font-size: calc(14px * var(--tx)); }
+.tape-meta {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 32px;
+}
+.tape-time {
+  flex: 1;
+  color: var(--muted);
+  font-size: calc(11.5px * var(--tx));
+  font-variant-numeric: tabular-nums;
+}
+.tape-act {
+  border: 0;
+  background: none;
+  color: var(--muted);
+  border-radius: 8px;
+  padding: 7px 9px;
+  min-height: 32px;
+  font-size: calc(12px * var(--tx));
+  font-weight: 700;
+}
+.tape-act:hover { color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.tape-act[aria-pressed='true'] { color: var(--accent-ink); }
+.tape-act[data-armed='true'] { color: var(--danger); }
 .tape-sheet { min-height: 40dvh; }
 
 /* ============================================================
