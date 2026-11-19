@@ -17,12 +17,15 @@ No ads, no account, no network.
   the thinner favicon mark (#9), the sideloadable Android app (#10) and a
   hyphen instead of an em dash for empty values (#12). #13 adds a Children
   section to the privacy policy.
-- Saved history (brief 27) is on branch `claude/project-thread-53tiv9`,
-  open as #14, not merged. History rows sit under the day they
+- Saved history (brief 27), #14, merged to main 2026-11-19. History rows sit under the day they
   were worked out, with the time. Search, Save (kept apart from the 200 and
   left alone by Clear, up to 100), a one line Note, and Delete per row. Still
   stored only in the browser, under `calculator.tape.v1`; old saves load
   unchanged because the two new fields are optional.
+- Branch `claude/project-thread-xwbxcf` (draft PR #15, not merged) rewrites
+  the privacy policy and terms for what Cipher actually does. It leaves
+  four bracketed placeholders for the owner: effective date, children
+  wording, liability cap and where disputes are heard.
 - Every push to `main` tests, builds and publishes to GitHub Pages at
   https://pristineremodelco.github.io/cipher/.
 - The same push also runs the Cloudflare workflow, which builds for the
@@ -65,6 +68,16 @@ No ads, no account, no network.
 
 ## Open questions
 
+- Legal pages (draft PR): all ages or "not meant for children under 13";
+  liability cap of $50 or 12 months of fees (that second one comes to zero
+  while Cipher is free); disputes in the state courts of the company's home
+  county or small claims where the user lives, no arbitration; effective
+  date. Fill all four in the three copies (privacy.html, terms.html and
+  offline.html) before merging.
+- `src/lib/rates.ts` still asks `api.frankfurter.app`, which now redirects
+  to `api.frankfurter.dev/v1`. It works with the extra hop. Moving the
+  address is a separate change.
+
 - Keep GitHub Pages as a second public copy, or retire it once Cloudflare
   auto-deploy is green?
 
@@ -84,6 +97,19 @@ No ads, no account, no network.
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-19 Claude Code: privacy and terms rewritten for Cipher, checked
+  against the code on main. Privacy now lists every stored key (settings,
+  the 200-entry tape and memory, score sheets and player names, cached
+  rates, the app's own files), the sunset location setting (rounded,
+  kept on the device, forgotten when switched off), that health tool
+  inputs are never saved, Frankfurter at frankfurter.dev, both hosts, and
+  Android backup exclusion. Terms add result limits per tool family,
+  including that Ovulation is not birth control. Owner decisions left as
+  brackets. public/privacy.html, public/terms.html and the matching
+  sections of public/offline.html carry identical text. Draft PR #15.
+  After #14 merged, main was merged in and the privacy text now covers
+  saved history: up to 100 saved entries with notes, kept apart from the
+  200, and dates and times on each entry.
 - 2026-11-18 Claude Code: saved history (brief 27). The brief file was not
   available, so this works from the request: keep past calculations on the
   device to see and reuse. History already did that; this adds day headings
