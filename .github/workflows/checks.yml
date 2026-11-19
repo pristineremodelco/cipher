@@ -31,8 +31,11 @@ jobs:
   # tests above do not, so they run on their own against the dev server.
   # Playwright is installed here rather than kept in the project, for the
   # reason given in test/browser/harness.mjs.
+  # The runner is pinned to the Ubuntu that this Playwright supports: on
+  # ubuntu-latest (26.04) it refuses to install a browser. Move both
+  # together.
   screens:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
