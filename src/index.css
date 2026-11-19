@@ -45,6 +45,13 @@
   --text: #1c1b18; --muted: #67614f; --line: #cfc6b3;
   --accent: #7c5f3a; --on-accent: #fbf8f1; --danger: #a8322a;
 }
+/* Brass: the brand's day colours. Cream ground, espresso type, and a brass
+   dark enough to read as a glyph on the cream keys, not only as a fill. */
+[data-palette='brass'] {
+  --bg: #f1eadb; --panel: #f8f3e8; --key: #fffcf5;
+  --text: #241c13; --muted: #6a5940; --line: #ddd0b6;
+  --accent: #7f6028; --on-accent: #fffbf2; --danger: #9d2c22;
+}
 
 /* The dark ones share one shadow scale: a soft shadow on a dark ground reads
    as fog, so they lean on the key face being lighter than the ground instead. */
@@ -53,7 +60,8 @@
 [data-palette='carbon'],
 [data-palette='midnight'],
 [data-palette='moss'],
-[data-palette='plum'] {
+[data-palette='plum'],
+[data-palette='roast'] {
   --lift: 0 1px 2px rgba(0, 0, 0, 0.34), 0 2px 8px rgba(0, 0, 0, 0.28);
   --lift-high: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
@@ -96,6 +104,13 @@
   --bg: #16101f; --panel: #1f1730; --key: #29203d;
   --text: #f0e9f8; --muted: #a897be; --line: #362b4d;
   --accent: #f5a8f0; --on-accent: #180f24; --danger: #ff6b9d;
+}
+/* Roast: the brand's night colours. Darker than Espresso and brass where
+   Espresso has rust, so the two read as different palettes at a glance. */
+[data-palette='roast'] {
+  --bg: #140f09; --panel: #1f1810; --key: #2a2016;
+  --text: #f3ead6; --muted: #a69575; --line: #382b1d;
+  --accent: #d2a75b; --on-accent: #1c140a; --danger: #e5735c;
 }
 
 /* ============================================================
@@ -503,7 +518,15 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
     flex: 0 1 auto;
   }
   .sci-pad .key { font-size: calc(15px * var(--tx)); }
-  .more { visibility: hidden; }
+  /* The scientific set is out on the desk, so the key that opens it goes
+     altogether rather than leaving a gap: hidden but still holding its place,
+     it pushed the power key out into the middle of the display. */
+  .more { display: none; }
+  .utility { justify-content: flex-end; }
+  .util.angle { margin-right: auto; }
+  /* A tall monitor would otherwise stretch every key to the height of a
+     paperback. Past this the keys stop growing and the room goes below. */
+  .pads { max-height: 600px; }
 }
 
 .key {
@@ -2359,3 +2382,62 @@ button.pad-part[data-active='true'] { border-color: var(--accent); box-shadow: 0
   text-decoration: underline;
   text-underline-offset: 2px;
 }
+
+
+/* ============================================================
+   Desk and keyboard
+   The calculator and, on a wide screen, the history beside it.
+   ============================================================ */
+.desk {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 14px;
+}
+.desk > .work { flex: 1 1 auto; min-width: 0; }
+.side-history {
+  flex: 0 0 340px;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.side-history h2 { margin: 0; font-size: calc(17px * var(--tx)); letter-spacing: -0.03em; }
+@media (min-width: 1180px) and (min-height: 640px) {
+  .app { max-width: 1400px; }
+  /* Beside the history the calculator sits against it rather than centred in
+     whatever is left, so the two read as one desk. */
+  .desk:has(.side-history) > .work { margin: 0; }
+}
+
+/* A sheet takes focus when it opens so the keyboard is inside it. The sheet
+   itself is not a control, so it draws no ring of its own. */
+.sheet:focus { outline: none; }
+
+.key-list { margin: 0; display: grid; gap: 2px; overflow-y: auto; min-height: 0; }
+.key-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: 12px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+}
+.key-list dt, .key-list dd { margin: 0; }
+.key-list dd { color: var(--muted); font-size: calc(13.5px * var(--tx)); }
+.key-list kbd {
+  font: inherit;
+  font-weight: 800;
+  font-size: calc(13px * var(--tx));
+  white-space: pre-wrap;
+}
+.key-help summary {
+  cursor: pointer;
+  font-weight: 800;
+  font-size: calc(13.5px * var(--tx));
+}
+.key-help .key-list { margin-top: 8px; }

@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Confirm } from './Confirm'
+import { KeyList } from './KeyList'
+import { useSheetFocus } from './useSheet'
 import {
   FONTS,
   KEY_SHAPES,
@@ -82,6 +84,8 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
   const { settings, set } = useSettings()
   const t = useSpell()
   const [tab, setTab] = useState<TabId>('look')
+  const sheet = useRef<HTMLDivElement>(null)
+  useSheetFocus(sheet)
   const fresh = defaultSettings()
   const resettable = (Object.keys(fresh) as (keyof Settings)[]).filter((key) => !KEPT.includes(key))
   const changed = resettable.some((key) => !same(settings[key], fresh[key]))
@@ -94,7 +98,15 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="scrim" onClick={onClose}>
-      <div className="sheet settings-sheet" role="dialog" aria-label="Settings" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={sheet}
+        className="sheet settings-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Settings"
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="sheet-head">
           <h2>Settings</h2>
           <button className="ghost" onClick={onClose}>
@@ -660,6 +672,11 @@ function KeysTab({ settings, set }: TabProps) {
         <input type="checkbox" checked={settings.haptics} onChange={(e) => set({ haptics: e.target.checked })} />
         A short buzz under each key
       </label>
+
+      <details className="field key-help">
+        <summary>Keyboard keys, on a computer</summary>
+        <KeyList />
+      </details>
     </>
   )
 }

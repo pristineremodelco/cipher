@@ -23,6 +23,15 @@ No ads, no account, no network.
   left alone by Clear, up to 100), a one line Note, and Delete per row. Still
   stored only in the browser, under `calculator.tape.v1`; old saves load
   unchanged because the two new fields are optional.
+- Themes, keyboard keys and desktop (brief 28) are on branch
+  `claude/project-thread-ilpszx`, a draft pull request built on top of #14,
+  not merged. Brass (light) and Roast (dark) palettes. Delete removes the
+  piece after the cursor and Escape clears; Ctrl or Cmd C and V copy the
+  answer and paste a typed sum; Alt 1, 2, 3 switch screens, Alt H shows
+  history, `?` lists the keys. Pop-up sheets take focus and give it back,
+  and the page behind them is inert. At 1180 by 640 and up, history sits
+  beside the keypad. Pull requests now also run the browser suites on
+  GitHub (the `screens` job in `checks.yml`).
 - Every push to `main` tests, builds and publishes to GitHub Pages at
   https://pristineremodelco.github.io/cipher/.
 - The same push also runs the Cloudflare workflow, which builds for the
@@ -56,17 +65,24 @@ No ads, no account, no network.
 
 ## Next steps
 
-1. Brief 28: themes (a brand palette pair), keyboard keys and a desktop
-   layout, as a second pull request.
-2. Test the Android app on a phone (sideload a debug build) before a
+1. Merge #14, then review the brief 28 draft once its `screens` job is
+   green, and look at it on a laptop before it goes live.
+2. Pick one deploy path. Both the Cloudflare workflow and Cloudflare's own
+   Workers Builds publish each merge to main; check in the dashboard whether
+   Workers Builds runs the tests, and turn one of them off.
+3. `src/lib/rates.ts` asks api.frankfurter.app, which now redirects to
+   api.frankfurter.dev/v1. Point it at the new address.
+4. Test the Android app on a phone (sideload a debug build) before a
    release build.
-3. Optional later: attach a custom domain on the Worker under Settings,
+5. Optional later: attach a custom domain on the Worker under Settings,
    then Domains.
 
 ## Open questions
 
 - Keep GitHub Pages as a second public copy, or retire it once Cloudflare
   auto-deploy is green?
+- Make Brass and Roast the default day and night palettes for new installs,
+  or keep Paper and Espresso?
 
 ## Branches and PRs
 
@@ -80,10 +96,20 @@ No ads, no account, no network.
   offline copy, effective November 18, 2026.
 - #14 `claude/project-thread-53tiv9`: saved history (brief 27). Open, waiting on
   the owner's OK.
+- `claude/project-thread-ilpszx`: themes, keyboard keys and desktop (brief 28).
+  Draft pull request on top of #14; merge #14 first.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-19 Claude Code: themes, keyboard keys and desktop (brief 28). The
+  brief file was not available; scope came from a review of the repo and
+  was approved by the owner. Rebuilt the Brass and Roast palettes and the
+  keys an earlier session described but never pushed. Delete and paste
+  helpers in `src/lib/calcinput.ts` with tests; a shared `Sheet` component
+  moves focus in and out; the `screens` job runs the browser suites on pull
+  requests. Unit tests, lint and both builds pass here; the browser suites
+  could not run in this session, so the `screens` job is their first run.
 - 2026-11-18 Claude Code: saved history (brief 27). The brief file was not
   available, so this works from the request: keep past calculations on the
   device to see and reuse. History already did that; this adds day headings

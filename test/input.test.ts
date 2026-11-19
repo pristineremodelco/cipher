@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { backspace, backspaceAt, chunkRuns, chunksOf, displayRuns, expressionOf, press, pressAt, pressValue } from '../src/lib/calcinput.ts'
+import { backspace, backspaceAt, chunkRuns, chunksOf, deleteAt, displayRuns, expressionOf, pastedKeys, press, pressAt, pressValue } from '../src/lib/calcinput.ts'
 import { calculate } from '../src/lib/calc.ts'
 
 /** Runs a sequence of presses, where `<` is the rub-out. */
@@ -235,4 +235,34 @@ test('a carried negative inside a sum stays one signed number when recalled', ()
   assert.deepEqual(chunksOf('5×-3'), ['5', '×', '-3'])
   const runs = displayRuns('5×-3', false)
   assert.deepEqual(runs.map((r) => r.kind), ['digit', 'operator', 'digit'])
+})
+
+test('Delete takes the piece after the cursor and leaves the cursor where it is', () => {
+  assert.deepEqual(deleteAt(['1', '2', '+', '3'], 1), { chunks: ['1', '+', '3'], caret: 1 })
+  assert.deepEqual(deleteAt(['1', '2', '+', '3'], 0), { chunks: ['2', '+', '3'], caret: 0 })
+  // The last piece gone, the cursor is at the end again.
+  assert.deepEqual(deleteAt(['1', '2'], 1), { chunks: ['1'], caret: null })
+})
+
+test('Delete at the end of the sum changes nothing', () => {
+  const chunks = ['1', '2']
+  assert.equal(deleteAt(chunks, null).chunks, chunks)
+  assert.equal(deleteAt(chunks, 2).chunks, chunks)
+})
+
+const typed = (keys: string[]) => keys.reduce<string[]>((chunks, key) => press(chunks, key), [])
+
+test('a pasted sum is pressed in the way it would be typed', () => {
+  assert.equal(expressionOf(typed(pastedKeys('12*(3+4)')!)), '12×(3+4)')
+  assert.equal(expressionOf(typed(pastedKeys(' 1,250 / 5 - 2 ')!)), '1250÷5−2')
+  assert.equal(expressionOf(typed(pastedKeys('3x4')!)), '3×4')
+  assert.equal(expressionOf(typed(pastedKeys('2^3')!)), '2^3')
+})
+
+test('text that is not a sum is not pasted at all', () => {
+  assert.equal(pastedKeys('hello'), null)
+  assert.equal(pastedKeys('$45.00'), null)
+  assert.equal(pastedKeys('sin(30)'), null)
+  assert.equal(pastedKeys(''), null)
+  assert.equal(pastedKeys('+-'), null)
 })

@@ -25,3 +25,30 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /cipher/
+
+  # The browser suites in test/browser: every key pressed, every screen size,
+  # the update banner, the settings. They need a real browser, which the unit
+  # tests above do not, so they run on their own against the dev server.
+  # Playwright is installed here rather than kept in the project, for the
+  # reason given in test/browser/harness.mjs.
+  screens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm i --no-save playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - name: Start the app
+        run: |
+          npm run dev -- --port 5174 --strictPort > dev.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:5174/ > /dev/null && exit 0
+            sleep 1
+          done
+          cat dev.log
+          exit 1
+      - run: npm run test:browser

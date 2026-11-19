@@ -1,14 +1,17 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { calculate, formatNumber, plainNumber } from './lib/calc'
-import { backspaceAt, chunkRuns, chunksOf, expressionOf, kindOf, pressAt, pressValue, seed, type Caret } from './lib/calcinput'
+import { backspaceAt, chunkRuns, chunksOf, deleteAt, expressionOf, kindOf, pastedKeys, pressAt, pressValue, seed, type Caret } from './lib/calcinput'
 import { addEntry, clearUnsaved, loadTape, saveTape, type Tape, type TapeEntry } from './lib/calctape'
 import { uid } from './lib/uid'
-import { ROWS, SCIENTIFIC, TYPED, type Key } from './components/keys'
+import { KEY_HINTS, ROWS, SCIENTIFIC, TYPED, type Key } from './components/keys'
+import { KeyList } from './components/KeyList'
 import { Backspace, Clock, Gear, Mark } from './components/Icons'
 import { SettingsPanel } from './components/SettingsPanel'
 import { Converter } from './components/Converter'
 import { Confirm } from './components/Confirm'
 import { HistoryList } from './components/History'
+import { Sheet } from './components/Sheet'
+import { useMedia } from './components/useSheet'
 import { fitToWidth, onReflow } from './components/fit'
 import { Tools } from './components/Tools'
 import { copyText, isNativeApp, shareText } from './native'
@@ -24,6 +27,14 @@ export default function App() {
   const [sciOpen, setSciOpen] = useState(false)
   const [tapeOpen, setTapeOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  /** The list of keyboard keys, opened with the ? key. */
+  const [keysOpen, setKeysOpen] = useState(false)
+  /**
+   * Wide enough, and tall enough, that the history can sit beside the keypad
+   * rather than over it. A laptop, a desktop, a tablet on its side.
+   */
+  const wide = useMedia('(min-width: 1180px) and (min-height: 640px)')
+  const besideOn = wide && settings.keepHistory && settings.historyBeside
   const [copied, setCopied] = useState(false)
   /**
    * True from an equals until the next press. A digit then starts a new sum,
@@ -162,6 +173,40 @@ export default function App() {
     setSettled(false)
   }, [buzz, caret, chunks, settled])
 
+  /** The Delete key: the piece after the cursor goes, and the cursor stays put. */
+  const rubForward = useCallback(() => {
+    if (settled) return
+    const next = deleteAt(chunks, caret)
+    if (next.chunks === chunks) return
+    buzz()
+    setCopied(false)
+    setAsked(false)
+    setChunks(next.chunks)
+    setCaret(next.caret)
+  }, [buzz, caret, chunks, settled])
+
+  /**
+   * A pasted sum, pressed in key by key at the cursor so it follows the same
+   * rules as typing it would. After an answer it starts a new sum, the way a
+   * digit does. Returns false when the text was not a sum at all.
+   */
+  const paste = useCallback(
+    (text: string): boolean => {
+      const keys = pastedKeys(text)
+      if (!keys) return false
+      let edit = settled ? { chunks: [] as string[], caret: null as Caret } : { chunks, caret }
+      for (const pressed of keys) edit = pressAt(edit.chunks, edit.caret, pressed)
+      buzz()
+      setCopied(false)
+      setAsked(false)
+      setChunks(edit.chunks)
+      setCaret(edit.caret)
+      setSettled(false)
+      return true
+    },
+    [buzz, caret, chunks, settled],
+  )
+
   /**
    * A tap in the working line puts the caret at the nearest gap between two
    * pieces of the sum. After equals the working is still on show, and a tap
@@ -238,22 +283,59 @@ export default function App() {
    * render, so a keystroke does not take the listener down and put it back.
    */
   const onKey = (event: KeyboardEvent) => {
+    // Alt with a number or H moves between screens from anywhere, a text box
+    // included, by the key's place rather than its character: on a Mac,
+    // Option and 1 types a character of its own.
+    if (event.altKey && !event.ctrlKey && !event.metaKey) {
+      if (settingsOpen) return
+      const to = ({ Digit1: 'calculate', Digit2: 'convert', Digit3: 'tools' } as const)[event.code as 'Digit1']
+      if (to) {
+        event.preventDefault()
+        setSciOpen(false)
+        setTapeOpen(false)
+        setKeysOpen(false)
+        set({ mode: to })
+        return
+      }
+      if (event.code === 'KeyH' && settings.keepHistory) {
+        event.preventDefault()
+        setSciOpen(false)
+        setKeysOpen(false)
+        if (settings.mode !== 'calculate') set({ mode: 'calculate' })
+        toggleHistory()
+      }
+      return
+    }
     if (event.metaKey || event.ctrlKey || event.altKey) return
-    const target = event.target as HTMLElement | null
-    if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
 
-    if (event.key === 'Escape') {
+    // Escape closes the sheet on top, from wherever focus is inside it.
+    if (event.key === 'Escape' && (keysOpen || sciOpen || tapeOpen || settingsOpen)) {
       event.preventDefault()
-      if (sciOpen) setSciOpen(false)
+      if (keysOpen) setKeysOpen(false)
+      else if (sciOpen) setSciOpen(false)
       else if (tapeOpen) setTapeOpen(false)
       else setSettingsOpen(false)
       return
     }
+    const target = event.target as HTMLElement | null
+    if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
     // The panels, the sheets and the converter are ordinary screens with their
     // own controls; the pad should not be taking keys out from under them.
     // With the history open, Enter on its Done button ran equals on the sum
     // hidden behind it instead.
-    if (settingsOpen || tapeOpen || sciOpen || settings.mode !== 'calculate') return
+    if (settingsOpen || tapeOpen || sciOpen || keysOpen || settings.mode !== 'calculate') return
+    if (event.key === '?') {
+      event.preventDefault()
+      setKeysOpen(true)
+      return
+    }
+    // With nothing open, Escape is the clear key, as it is on a desktop
+    // calculator.
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      if (chunks.length || settled) clear()
+      return
+    }
     // Enter on a button reached with the keyboard presses that button. After
     // a key was tapped, focus sits on it without showing, and Enter is still
     // equals, as it is on any calculator.
@@ -284,7 +366,7 @@ export default function App() {
     }
     if (event.key === 'Delete') {
       event.preventDefault()
-      clear()
+      rubForward()
       return
     }
     if (/^[0-9]$/.test(event.key)) {
@@ -314,6 +396,51 @@ export default function App() {
     [],
   )
 
+  /**
+   * Copy and paste with the keyboard. Taken as the browser's own copy and
+   * paste rather than as Ctrl and C, so the menus, Cmd on a Mac and a phone's
+   * paste all land here too, and no permission is asked for. Copy gives the
+   * answer only when nothing is selected: a selected stretch of the working is
+   * copied as it would be anywhere else.
+   */
+  const onClip = (event: ClipboardEvent) => {
+    if (settingsOpen || tapeOpen || sciOpen || keysOpen || settings.mode !== 'calculate') return
+    const focus = document.activeElement
+    if (focus && ['INPUT', 'TEXTAREA', 'SELECT'].includes(focus.tagName)) return
+    if (event.type === 'copy') {
+      if (window.getSelection()?.toString() || !result.ok || !event.clipboardData) return
+      event.clipboardData.setData('text/plain', plainNumber(result.value))
+      event.preventDefault()
+      flashCopied()
+      return
+    }
+    const text = event.clipboardData?.getData('text/plain') ?? ''
+    if (paste(text)) event.preventDefault()
+  }
+  const onClipRef = useRef(onClip)
+  useEffect(() => {
+    onClipRef.current = onClip
+  })
+  useEffect(() => {
+    const listen = (event: ClipboardEvent) => onClipRef.current(event)
+    window.addEventListener('copy', listen)
+    window.addEventListener('paste', listen)
+    return () => {
+      window.removeEventListener('copy', listen)
+      window.removeEventListener('paste', listen)
+    }
+  }, [])
+
+  /**
+   * The history button. On a wide screen it shows or hides the panel beside
+   * the keypad, and that choice is remembered; anywhere else it opens the
+   * sheet.
+   */
+  function toggleHistory() {
+    if (wide) set({ historyBeside: !settings.historyBeside })
+    else setTapeOpen((open) => !open)
+  }
+
   /** Holding the rub-out clears the lot, which is the one gesture worth having. */
   function holdStart() {
     cleared.current = false
@@ -333,16 +460,20 @@ export default function App() {
     }
   }
 
+  function flashCopied() {
+    setCopied(true)
+    if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current)
+    copiedTimer.current = window.setTimeout(() => {
+      copiedTimer.current = null
+      setCopied(false)
+    }, 1400)
+  }
+
   async function copyAnswer() {
     if (!result.ok) return
     try {
       await copyText(plainNumber(result.value))
-      setCopied(true)
-      if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current)
-      copiedTimer.current = window.setTimeout(() => {
-        copiedTimer.current = null
-        setCopied(false)
-      }, 1400)
+      flashCopied()
     } catch {
       /* no clipboard permission: the number is on screen either way */
     }
@@ -371,6 +502,8 @@ export default function App() {
         data-kind={item.kind}
         data-span={settings.zeroKey === 'wide' && label === '0' ? 'two' : undefined}
         aria-label={t(item.aria ?? label)}
+        // The keyboard key that does the same, for a pointer resting on it.
+        title={KEY_HINTS[label] ? `${t(item.aria ?? label)} (${KEY_HINTS[label]})` : undefined}
         // Equals stays live on an expression that is merely unfinished, so
         // pressing it gets an answer to why rather than nothing at all. A dead
         // key on a touchscreen tells you neither that it did nothing nor why.
@@ -382,9 +515,38 @@ export default function App() {
     )
   }
 
+  /** A sheet is over the app, so what is behind it is out of reach of Tab and of a screen reader. */
+  const covered = sciOpen || tapeOpen || settingsOpen || keysOpen
+
+  /** Back in the pieces it was typed as, so it can be edited rather than only rubbed out whole. */
+  function putWorking(entry: TapeEntry) {
+    setChunks(chunksOf(entry.expression))
+    setCaret(null)
+    setSettled(false)
+    setTapeOpen(false)
+  }
+  function putAnswer(entry: TapeEntry) {
+    setChunks(seed(plainNumber(entry.value)))
+    setCaret(null)
+    setWorked(entry.expression)
+    setSettled(true)
+    // The answer on show is the one Ans means.
+    setLastAnswer(entry.value)
+    setTapeOpen(false)
+  }
+  const clearHistory = (
+    <Confirm
+      ask={unsaved === tape.entries.length ? `Clear all ${unsaved}?` : `Clear ${unsaved} unsaved?`}
+      disabled={!unsaved}
+      onConfirm={() => setTape(clearUnsaved)}
+    >
+      Clear
+    </Confirm>
+  )
+
   return (
     <div className="app">
-      <header className="bar">
+      <header className="bar" inert={covered}>
         <div className="brand">
           <Mark />
           <h1>Cipher</h1>
@@ -426,12 +588,12 @@ export default function App() {
           {settings.keepHistory ? (
             <button
               className="chip"
-              aria-pressed={tapeOpen}
+              aria-pressed={wide ? besideOn : tapeOpen}
               aria-label="History"
               title="History"
               data-placeholder={settings.mode !== 'calculate'}
               inert={settings.mode !== 'calculate'}
-              onClick={() => setTapeOpen((open) => !open)}
+              onClick={toggleHistory}
             >
               <Clock />
             </button>
@@ -442,6 +604,7 @@ export default function App() {
         </div>
       </header>
 
+      <div className="desk" inert={covered}>
       <main className="work">
         {settings.mode === 'convert' ? <Converter /> : null}
         {settings.mode === 'tools' ? <Tools /> : null}
@@ -588,78 +751,72 @@ export default function App() {
         </>
         ) : null}
       </main>
+      {/* On a wide screen the history stays open beside the keypad, so an
+          answer from earlier is a glance away rather than a sheet away. */}
+      {besideOn && settings.mode === 'calculate' ? (
+        <aside className="side-history" aria-label="History">
+          <div className="sheet-head">
+            <h2>History</h2>
+            <div className="sheet-head-actions">{clearHistory}</div>
+          </div>
+          <HistoryList tape={tape} setTape={setTape} format={format} onWorking={putWorking} onAnswer={putAnswer} />
+        </aside>
+      ) : null}
+      </div>
 
       {sciOpen ? (
-        <div className="scrim" onClick={() => setSciOpen(false)}>
-          <div className="sheet sci-sheet" role="dialog" aria-label="Scientific functions" onClick={(e) => e.stopPropagation()}>
-            <div className="sci-grid">
-              {SCIENTIFIC.map((item) => (
-                <button
-                  key={item.label}
-                  className="key"
-                  data-kind="action"
-                  aria-label={item.aria ?? item.label}
-                  onClick={() => {
-                    key(item.press)
-                    setSciOpen(false)
-                  }}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
-            <button className="ghost" onClick={() => setSciOpen(false)}>
-              Cancel
-            </button>
+        <Sheet className="sci-sheet" label="Scientific functions" onClose={() => setSciOpen(false)}>
+          <div className="sci-grid">
+            {SCIENTIFIC.map((item) => (
+              <button
+                key={item.label}
+                className="key"
+                data-kind="action"
+                aria-label={item.aria ?? item.label}
+                onClick={() => {
+                  key(item.press)
+                  setSciOpen(false)
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
-        </div>
+          <button className="ghost" onClick={() => setSciOpen(false)}>
+            Cancel
+          </button>
+        </Sheet>
       ) : null}
 
-      {tapeOpen ? (
-        <div className="scrim" onClick={() => setTapeOpen(false)}>
-          <div className="sheet tape-sheet" role="dialog" aria-label="History" onClick={(e) => e.stopPropagation()}>
-            <div className="sheet-head">
-              <h2>History</h2>
-              <div className="sheet-head-actions">
-                <Confirm
-                  ask={unsaved === tape.entries.length ? `Clear all ${unsaved}?` : `Clear ${unsaved} unsaved?`}
-                  disabled={!unsaved}
-                  onConfirm={() => setTape(clearUnsaved)}
-                >
-                  Clear
-                </Confirm>
-                <button className="ghost" onClick={() => setTapeOpen(false)}>
-                  Done
-                </button>
-              </div>
+      {tapeOpen && !besideOn ? (
+        <Sheet className="tape-sheet" label="History" onClose={() => setTapeOpen(false)}>
+          <div className="sheet-head">
+            <h2>History</h2>
+            <div className="sheet-head-actions">
+              {clearHistory}
+              <button className="ghost" onClick={() => setTapeOpen(false)}>
+                Done
+              </button>
             </div>
-            <HistoryList
-              tape={tape}
-              setTape={setTape}
-              format={format}
-              onWorking={(entry) => {
-                // Back in the pieces it was typed as, so it can be edited
-                // rather than only rubbed out whole.
-                setChunks(chunksOf(entry.expression))
-                setCaret(null)
-                setSettled(false)
-                setTapeOpen(false)
-              }}
-              onAnswer={(entry) => {
-                setChunks(seed(plainNumber(entry.value)))
-                setCaret(null)
-                setWorked(entry.expression)
-                setSettled(true)
-                // The answer on show is the one Ans means.
-                setLastAnswer(entry.value)
-                setTapeOpen(false)
-              }}
-            />
           </div>
-        </div>
+          <HistoryList tape={tape} setTape={setTape} format={format} onWorking={putWorking} onAnswer={putAnswer} />
+        </Sheet>
+      ) : null}
+
+      {keysOpen ? (
+        <Sheet className="keys-sheet" label="Keyboard keys" onClose={() => setKeysOpen(false)}>
+          <div className="sheet-head">
+            <h2>Keyboard keys</h2>
+            <button className="ghost" onClick={() => setKeysOpen(false)}>
+              Done
+            </button>
+          </div>
+          <KeyList />
+        </Sheet>
       ) : null}
 
       {settingsOpen ? <SettingsPanel onClose={() => setSettingsOpen(false)} /> : null}
     </div>
   )
 }
+

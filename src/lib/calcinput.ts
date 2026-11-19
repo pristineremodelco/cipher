@@ -345,6 +345,18 @@ export function backspaceAt(chunks: string[], caret: Caret): Edit {
 }
 
 /**
+ * The Delete key: the piece after the caret goes and the caret stays where it
+ * is. At the end of the sum there is nothing after it, so nothing changes.
+ * It used to clear the whole sum, which is not what Delete means on a
+ * keyboard, and one press in the middle of an edit lost all of it.
+ */
+export function deleteAt(chunks: string[], caret: Caret): Edit {
+  if (caret === null || caret >= chunks.length) return { chunks, caret: null }
+  const next = [...chunks.slice(0, caret), ...chunks.slice(caret + 1)]
+  return { chunks: next, caret: caret >= next.length ? null : Math.max(0, caret) }
+}
+
+/**
  * What the display draws, one run per chunk, so a tap on any of them can be
  * turned back into a place in the sum. Numbers are grouped into thousands
  * across the chunks they were typed as, each comma going with the digit
@@ -389,4 +401,30 @@ export function chunkRuns(chunks: string[], grouping: boolean): Run[] {
 /** An answer carried into the next sum arrives as one chunk, so it rubs out whole. */
 export function seed(value: string): string[] {
   return [value]
+}
+
+/**
+ * A sum pasted in from somewhere else, as the keys that would have typed it,
+ * or null when it is not a sum. Pressing them one by one puts it through the
+ * same rules as the keypad, so a paste can never leave the display holding
+ * something a person could not have typed. Only digits, the operators, the
+ * brackets, a point, percent and factorial are taken, in any of the spellings
+ * a keyboard or a page might use; a comma is read as a thousands separator and
+ * dropped. Anything else, a word or a currency sign, means it was not meant
+ * for the calculator, and nothing is put on the display rather than half of it.
+ */
+export function pastedKeys(text: string): string[] | null {
+  const plain = text
+    .trim()
+    // Dashes pasted from prose are minus signs. Written as escapes because
+    // the project keeps the characters themselves out of its files.
+    .replace(/[-\u2013\u2014\u2212]/g, '\u2212')
+    .replace(/[*xX\u00b7]/g, '\u00d7')
+    .replace(/[/]/g, '\u00f7')
+    .replace(/,/g, '')
+    .replace(/\s+/g, '')
+  if (!plain || plain.length > 200) return null
+  if (!/^[0-9.+\u2212\u00d7\u00f7^()%!]+$/.test(plain)) return null
+  if (!/[0-9]/.test(plain)) return null
+  return [...plain]
 }
