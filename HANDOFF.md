@@ -17,15 +17,16 @@ No ads, no account, no network.
   the thinner favicon mark (#9), the sideloadable Android app (#10) and a
   hyphen instead of an em dash for empty values (#12). #13 adds a Children
   section to the privacy policy.
-- Saved history (brief 27) is on branch `claude/project-thread-53tiv9`,
-  open as #14, not merged. History rows sit under the day they
+- Saved history (brief 27) merged as #14 on 2026-11-19. History rows sit under the day they
   were worked out, with the time. Search, Save (kept apart from the 200 and
   left alone by Clear, up to 100), a one line Note, and Delete per row. Still
   stored only in the browser, under `calculator.tape.v1`; old saves load
   unchanged because the two new fields are optional.
 - Themes, keyboard keys and desktop (brief 28) are on branch
-  `claude/project-thread-ilpszx`, a draft pull request built on top of #14,
-  not merged. Brass (light) and Roast (dark) palettes. Delete removes the
+  `claude/project-thread-ilpszx`, draft #16 against main, not merged.
+  #17 (`claude/project-thread-53tiv9`) is a second take on the same brief
+  from another session; the two touch the same files, so only one should
+  be merged. Brass (light) and Roast (dark) palettes. Delete removes the
   piece after the cursor and Escape clears; Ctrl or Cmd C and V copy the
   answer and paste a typed sum; Alt 1, 2, 3 switch screens, Alt H shows
   history, `?` lists the keys. Pop-up sheets take focus and give it back,
@@ -65,8 +66,8 @@ No ads, no account, no network.
 
 ## Next steps
 
-1. Merge #14, then review the brief 28 draft once its `screens` job is
-   green, and look at it on a laptop before it goes live.
+1. Choose between #16 and #17 for brief 28 and close the other. Look at
+   the chosen one on a laptop before it goes live.
 2. Pick one deploy path. Both the Cloudflare workflow and Cloudflare's own
    Workers Builds publish each merge to main; check in the dashboard whether
    Workers Builds runs the tests, and turn one of them off.
@@ -94,10 +95,11 @@ No ads, no account, no network.
 - #12 `fix/copy`: hyphen for empty values. Merged 2026-11-18.
 - #13 `docs/children-privacy`: Children section in the privacy policy and the
   offline copy, effective November 18, 2026.
-- #14 `claude/project-thread-53tiv9`: saved history (brief 27). Open, waiting on
-  the owner's OK.
-- `claude/project-thread-ilpszx`: themes, keyboard keys and desktop (brief 28).
-  Draft pull request on top of #14; merge #14 first.
+- #14 `claude/project-thread-53tiv9`: saved history (brief 27). Merged 2026-11-19.
+- #16 `claude/project-thread-ilpszx`: themes, keyboard keys and desktop
+  (brief 28), draft against main.
+- #17 `claude/project-thread-53tiv9` (reused after #14 merged): another take
+  on brief 28. Overlaps #16.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
 
