@@ -4,7 +4,7 @@ A calculator that works the whole expression out. No ads, no account, no
 network. Everything stays in the browser it runs in.
 
 It is its own app: its own build, its own service worker, its own icon on the
-home screen. It shares a repository with Almanac and nothing else.
+home screen.
 
 ## The name
 
@@ -47,16 +47,22 @@ an app opened to work something out opens on it.
   short of Clear or Delete. Turning history off stops new answers being
   written down and hides the list; what was already there is kept, and comes
   back if it is turned on again. All of it is kept in the browser on the
-  device, and nowhere else
+  device, and nowhere else. On a wide screen the history stays open beside
+  the keypad; the History button shows or hides it
 - **Hold the rub-out** to clear the lot
 - **Tap the answer** to copy it
 - **Tap inside the sum** to put a cursor there and change one part of it, even
   after equals. Keys and the rub-out work at the cursor. It is a setting, for
   anyone who would rather a finished answer could not be reopened by a stray tap
-- A **keyboard** works: digits, `+ - * / ^ ( ) . %`, Enter for equals,
-  Backspace, Delete to clear, and the arrow keys, Home and End to move the
-  cursor. Letters are deliberately not bound; the named functions are one tap
-  away instead
+- A **keyboard** works: digits, `+ - * / ^ ( ) . % !`, Enter for equals,
+  Backspace, Delete for the piece after the cursor, Escape to clear (or to
+  close whatever is open), and the arrow keys, Home and End to move the
+  cursor. Ctrl or Cmd with C copies the answer when nothing is selected, and
+  with V pastes a typed sum such as `12*(3+4)` or `$1,200 x 3`; a paste
+  that opens with an operator works on from the answer. Alt with 1, 2 or 3 switches
+  between Calculate, Convert and Tools, Alt with H shows the history, and `?`
+  lists every key. Hovering a key shows its keyboard key. Letters are
+  deliberately not bound; the named functions are one tap away instead
 
 ## Converting
 
@@ -157,7 +163,9 @@ question the device can already answer, daylight saving included.
 
 ## What it looks like
 
-Ten palettes, four light and six dark. A day and a night palette are switched
+Twelve palettes, five light and seven dark, among them Brass and Roast, a
+pair in espresso, cream and brass meant to be worn together by day and by
+night. A day and a night palette are switched
 between by the phone's own light or dark setting, or by sunset and sunrise
 where the phone is: the location is asked for once, kept to about a kilometre
 on the phone, worked into the sun's position there with no service asked, and

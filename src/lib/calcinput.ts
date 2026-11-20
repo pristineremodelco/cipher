@@ -345,6 +345,18 @@ export function backspaceAt(chunks: string[], caret: Caret): Edit {
 }
 
 /**
+ * The Delete key: the piece after the caret goes and the caret stays where it
+ * is. At the end of the sum there is nothing after it, so nothing changes.
+ * It used to clear the whole sum, which is not what Delete means on a
+ * keyboard, and one press in the middle of an edit lost all of it.
+ */
+export function deleteAt(chunks: string[], caret: Caret): Edit {
+  if (caret === null || caret >= chunks.length) return { chunks, caret: null }
+  const next = [...chunks.slice(0, caret), ...chunks.slice(caret + 1)]
+  return { chunks: next, caret: caret >= next.length ? null : Math.max(0, caret) }
+}
+
+/**
  * What the display draws, one run per chunk, so a tap on any of them can be
  * turned back into a place in the sum. Numbers are grouped into thousands
  * across the chunks they were typed as, each comma going with the digit
@@ -389,4 +401,42 @@ export function chunkRuns(chunks: string[], grouping: boolean): Run[] {
 /** An answer carried into the next sum arrives as one chunk, so it rubs out whole. */
 export function seed(value: string): string[] {
   return [value]
+}
+
+/**
+ * A sum pasted in from somewhere else, as the keys that would have typed it,
+ * or null when it is not a sum. Pressing them one by one puts it through the
+ * same rules as the keypad, so a paste can never leave the display holding
+ * something a person could not have typed.
+ *
+ * Taken: digits, the operators, brackets, a point, percent, factorial and
+ * squared or cubed, in any of the spellings a keyboard or a page might use.
+ * A currency sign is dropped, so $45.50 x 3 is a sum. A comma before exactly
+ * three digits groups thousands and is dropped (1,200); any other comma is a
+ * decimal comma (1,5). An x between two numbers is a times.
+ *
+ * Any other letter means it was not only a sum, and nothing is put on the
+ * display rather than part of it: dropping the sin from sin(30) would leave
+ * (30), a different sum that looks right.
+ */
+export function pastedKeys(text: string): string[] | null {
+  const plain = text
+    .trim()
+    // Currency signs: dollar, euro, pound, yen.
+    .replace(/[$\u20ac\u00a3\u00a5]/g, '')
+    // 1,200 and 12,500,000: a comma before exactly three digits groups them.
+    .replace(/(\d),(?=\d{3}(?!\d))/g, '$1')
+    .replace(/,/g, '.')
+    // Dashes pasted from prose are minus signs. Written as escapes because
+    // the project keeps the characters themselves out of its files.
+    .replace(/[-\u2013\u2014\u2212]/g, '\u2212')
+    // An x is a times only between numbers, so 3 x 4 and 2x(1+1) are sums.
+    .replace(/([\d.)])\s*[xX]\s*(?=[\d.(])/g, '$1\u00d7')
+    .replace(/[*\u00b7]/g, '\u00d7')
+    .replace(/[/]/g, '\u00f7')
+    .replace(/\s+/g, '')
+  if (!plain || plain.length > 200) return null
+  if (!/^[0-9.+\u2212\u00d7\u00f7^()%!\u00b2\u00b3]+$/.test(plain)) return null
+  if (!/[0-9]/.test(plain)) return null
+  return [...plain]
 }

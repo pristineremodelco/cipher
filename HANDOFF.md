@@ -17,12 +17,23 @@ No ads, no account, no network.
   the thinner favicon mark (#9), the sideloadable Android app (#10) and a
   hyphen instead of an em dash for empty values (#12). #13 adds a Children
   section to the privacy policy.
-- Saved history (brief 27) is on branch `claude/project-thread-53tiv9`,
-  open as #14, not merged. History rows sit under the day they
+- Saved history (brief 27) merged as #14 on 2026-11-19. History rows sit under the day they
   were worked out, with the time. Search, Save (kept apart from the 200 and
   left alone by Clear, up to 100), a one line Note, and Delete per row. Still
   stored only in the browser, under `calculator.tape.v1`; old saves load
   unchanged because the two new fields are optional.
+- Themes, keyboard keys and desktop (brief 28) are on branch
+  `claude/project-thread-ilpszx`, draft #16 against main, not merged.
+  #17 (`claude/project-thread-53tiv9`) is a second take on the same brief
+  from another session; the two touch the same files, so only one should
+  be merged. What was unique to #17 has been folded into #16 (2026-11-20),
+  so #16 alone covers both. Brass (light) and Roast (dark) palettes. Delete removes the
+  piece after the cursor and Escape clears; Ctrl or Cmd C and V copy the
+  answer and paste a typed sum; Alt 1, 2, 3 switch screens, Alt H shows
+  history, `?` lists the keys. Pop-up sheets take focus and give it back,
+  and the page behind them is inert. At 1180 by 640 and up, history sits
+  beside the keypad. Pull requests now also run the browser suites on
+  GitHub (the `screens` job in `checks.yml`).
 - Every push to `main` tests, builds and publishes to GitHub Pages at
   https://pristineremodelco.github.io/cipher/.
 - The same push also runs the Cloudflare workflow, which builds for the
@@ -56,17 +67,24 @@ No ads, no account, no network.
 
 ## Next steps
 
-1. Brief 28: themes (a brand palette pair), keyboard keys and a desktop
-   layout, as a second pull request.
-2. Test the Android app on a phone (sideload a debug build) before a
+1. Choose between #16 and #17 for brief 28 and close the other. Look at
+   the chosen one on a laptop before it goes live.
+2. Pick one deploy path. Both the Cloudflare workflow and Cloudflare's own
+   Workers Builds publish each merge to main; check in the dashboard whether
+   Workers Builds runs the tests, and turn one of them off.
+3. `src/lib/rates.ts` asks api.frankfurter.app, which now redirects to
+   api.frankfurter.dev/v1. Point it at the new address.
+4. Test the Android app on a phone (sideload a debug build) before a
    release build.
-3. Optional later: attach a custom domain on the Worker under Settings,
+5. Optional later: attach a custom domain on the Worker under Settings,
    then Domains.
 
 ## Open questions
 
 - Keep GitHub Pages as a second public copy, or retire it once Cloudflare
   auto-deploy is green?
+- Make Brass and Roast the default day and night palettes for new installs,
+  or keep Paper and Espresso?
 
 ## Branches and PRs
 
@@ -78,12 +96,30 @@ No ads, no account, no network.
 - #12 `fix/copy`: hyphen for empty values. Merged 2026-11-18.
 - #13 `docs/children-privacy`: Children section in the privacy policy and the
   offline copy, effective November 18, 2026.
-- #14 `claude/project-thread-53tiv9`: saved history (brief 27). Open, waiting on
-  the owner's OK.
+- #14 `claude/project-thread-53tiv9`: saved history (brief 27). Merged 2026-11-19.
+- #16 `claude/project-thread-ilpszx`: themes, keyboard keys and desktop
+  (brief 28), draft against main.
+- #17 `claude/project-thread-53tiv9` (reused after #14 merged): another take
+  on brief 28. Overlaps #16.
 - `cursor/performance-audit-8a43` and `cursor/update-banner-copy-f442` look
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-20 Claude Code: folded what was unique to #17 into #16. Paste now
+  drops currency signs, reads 1,200 as thousands and 1,5 as a decimal
+  comma, takes x as times only between numbers, and accepts squared and
+  cubed; a paste that opens with an operator after an answer works on from
+  it. The keyboard list follows the spelling setting and is hidden under
+  Settings on touch-only devices; history notes are at least 30px tall.
+  Kept #16's own palettes, 1180 breakpoint, setting name and ? sheet.
+- 2026-11-19 Claude Code: themes, keyboard keys and desktop (brief 28). The
+  brief file was not available; scope came from a review of the repo and
+  was approved by the owner. Rebuilt the Brass and Roast palettes and the
+  keys an earlier session described but never pushed. Delete and paste
+  helpers in `src/lib/calcinput.ts` with tests; a shared `Sheet` component
+  moves focus in and out; the `screens` job runs the browser suites on pull
+  requests. Unit tests, lint and both builds pass here; the browser suites
+  could not run in this session, so the `screens` job is their first run.
 - 2026-11-18 Claude Code: saved history (brief 27). The brief file was not
   available, so this works from the request: keep past calculations on the
   device to see and reuse. History already did that; this adds day headings

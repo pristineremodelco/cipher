@@ -86,7 +86,7 @@ await page.reload({ waitUntil: 'networkidle' })
 for (let i = 1; i <= 210; i += 1) {
   await page.keyboard.type(`${i}+1`)
   await page.keyboard.press('Enter')
-  await page.keyboard.press('Delete')
+  await page.keyboard.press('Escape')
 }
 const kept = await page.evaluate(() => JSON.parse(localStorage.getItem('calculator.tape.v1')).entries)
 t.is('the history keeps two hundred', kept.length, 200)
@@ -116,7 +116,7 @@ await page.keyboard.press('Escape')
 for (const sum of ['12*100', '7-2']) {
   await page.keyboard.type(sum)
   await page.keyboard.press('Enter')
-  await page.keyboard.press('Delete')
+  await page.keyboard.press('Escape')
 }
 await page.click('button[aria-label="History"]')
 t.is('entries sit under the day they were worked out', (await page.textContent('.tape-day h3')).trim(), 'Today')
@@ -208,7 +208,9 @@ await tap('Clear')
 for (const key of ['2', 'Plus', '3', 'Equals']) await tap(key)
 await page.click('button[aria-label="Scientific functions"]')
 await page.click('.sci-sheet .key[aria-label="Pi"]')
-await page.keyboard.press('Escape')
+// A key in the sheet closes it, so nothing is left for Escape to close, and
+// Escape on the bare keypad now clears the sum. Check the sheet went instead.
+t.is('the sheet closes on a key', await page.$$eval('.sci-sheet', (e) => e.length), 0)
 t.is('pi after an answer starts again', await expression(), 'π')
 
 // The rub-out answers a keyboard or a screen reader, which press without a pointer.

@@ -29,12 +29,16 @@ export const PALETTES: Palette[] = [
   // Named Linen; its id is newsprint because linen was Cobblestone's, and a
   // phone that saved linen meant the stone one.
   { id: 'newsprint', name: 'Linen', hint: 'Newsprint, ink and tan', scheme: 'light', swatch: ['#E2DCCD', '#F5F2EA', '#1C1B18', '#7C5F3A'] },
+  // A pair from the mark's own family: espresso, cream and brass. Brass by
+  // day and Roast after dark are meant to be worn together.
+  { id: 'brass', name: 'Brass', hint: 'Cream and brass, espresso ink', scheme: 'light', swatch: ['#F1EADB', '#FFFCF5', '#241C13', '#7F6028'] },
   { id: 'espresso', name: 'Espresso', hint: "The mark's own ground", scheme: 'dark', swatch: ['#191309', '#2E241A', '#EFE6D0', '#B4502F'] },
   { id: 'graphite', name: 'Graphite', hint: 'Neutral dark', scheme: 'dark', swatch: ['#131416', '#24272B', '#EDEFF2', '#7AA2F7'] },
   { id: 'carbon', name: 'Carbon', hint: 'True black, for OLED', scheme: 'dark', swatch: ['#000000', '#161616', '#F4F4F4', '#FF8A3D'] },
   { id: 'midnight', name: 'Midnight', hint: 'Blue black', scheme: 'dark', swatch: ['#0B1020', '#1A2440', '#E7ECFA', '#5AC8FA'] },
   { id: 'moss', name: 'Moss', hint: 'Deep green', scheme: 'dark', swatch: ['#0E1512', '#1E2B24', '#E6F0E9', '#7FBF6A'] },
   { id: 'plum', name: 'Plum', hint: 'Late harvest', scheme: 'dark', swatch: ['#16101F', '#29203D', '#F0E9F8', '#F5A8F0'] },
+  { id: 'roast', name: 'Roast', hint: 'Dark roast and brass', scheme: 'dark', swatch: ['#140F09', '#2A2016', '#F3EAD6', '#D2A75B'] },
 ]
 
 export const PALETTE_IDS = PALETTES.map((palette) => palette.id)
@@ -71,7 +75,7 @@ export function filedUnder(id: string, customPalettes: CustomPalette[]): Partial
   return schemeOfPalette(id, customPalettes) === 'dark' ? { nightPalette: id } : { palette: id }
 }
 
-/** Every palette on offer, the nine that ship and any that were made here. */
+/** Every palette on offer, the ones that ship and any that were made here. */
 export function allPalettes(settings: Settings): Palette[] {
   return [...PALETTES, ...settings.customPalettes.map(asPalette)]
 }
