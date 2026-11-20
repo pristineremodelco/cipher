@@ -1,7 +1,9 @@
+import { useSpell } from '../store'
 import { KEYBOARD } from './keys'
 
 /** What each keyboard key does, for the ? sheet and the Keys tab in Settings. */
 export function KeyList() {
+  const t = useSpell()
   return (
     <dl className="key-list">
       {KEYBOARD.map((row) => (
@@ -9,7 +11,7 @@ export function KeyList() {
           <dt>
             <kbd>{row.keys}</kbd>
           </dt>
-          <dd>{row.does}</dd>
+          <dd>{t(row.does)}</dd>
         </div>
       ))}
     </dl>

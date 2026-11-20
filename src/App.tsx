@@ -194,7 +194,10 @@ export default function App() {
     (text: string): boolean => {
       const keys = pastedKeys(text)
       if (!keys) return false
-      let edit = settled ? { chunks: [] as string[], caret: null as Caret } : { chunks, caret }
+      // After an answer, a pasted sum starts again, unless it opens with an
+      // operator, which works on from the answer the way a key would.
+      const carry = kindOf(keys[0]) === 'operator'
+      let edit = settled ? { chunks: carry ? chunks : [], caret: null as Caret } : { chunks, caret }
       for (const pressed of keys) edit = pressAt(edit.chunks, edit.caret, pressed)
       buzz()
       setCopied(false)

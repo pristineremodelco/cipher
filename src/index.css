@@ -747,6 +747,7 @@ body, .display, .convert-row, .sheet, .preview, .chip, .modes, .category {
 .tape-expr span[data-kind='operator'] { padding: 0 2px; }
 .tape-note {
   display: block;
+  min-height: 30px;
   border: 0;
   background: none;
   padding: 2px 0;
@@ -2441,3 +2442,8 @@ button.pad-part[data-active='true'] { border-color: var(--accent); box-shadow: 0
   font-size: calc(13.5px * var(--tx));
 }
 .key-help .key-list { margin-top: 8px; }
+/* A phone with no keyboard has no use for the list under Settings, so it
+   shows only where there is a mouse or trackpad. The ? sheet still has it. */
+@media (hover: none) and (pointer: coarse) {
+  .key-help { display: none; }
+}

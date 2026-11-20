@@ -58,7 +58,8 @@ an app opened to work something out opens on it.
   Backspace, Delete for the piece after the cursor, Escape to clear (or to
   close whatever is open), and the arrow keys, Home and End to move the
   cursor. Ctrl or Cmd with C copies the answer when nothing is selected, and
-  with V pastes a typed sum such as `12*(3+4)`. Alt with 1, 2 or 3 switches
+  with V pastes a typed sum such as `12*(3+4)` or `$1,200 x 3`; a paste
+  that opens with an operator works on from the answer. Alt with 1, 2 or 3 switches
   between Calculate, Convert and Tools, Alt with H shows the history, and `?`
   lists every key. Hovering a key shows its keyboard key. Letters are
   deliberately not bound; the named functions are one tap away instead

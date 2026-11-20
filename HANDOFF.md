@@ -26,7 +26,8 @@ No ads, no account, no network.
   `claude/project-thread-ilpszx`, draft #16 against main, not merged.
   #17 (`claude/project-thread-53tiv9`) is a second take on the same brief
   from another session; the two touch the same files, so only one should
-  be merged. Brass (light) and Roast (dark) palettes. Delete removes the
+  be merged. What was unique to #17 has been folded into #16 (2026-11-20),
+  so #16 alone covers both. Brass (light) and Roast (dark) palettes. Delete removes the
   piece after the cursor and Escape clears; Ctrl or Cmd C and V copy the
   answer and paste a typed sum; Alt 1, 2, 3 switch screens, Alt H shows
   history, `?` lists the keys. Pop-up sheets take focus and give it back,
@@ -104,6 +105,13 @@ No ads, no account, no network.
   like leftovers of merged PRs. Check before deleting.
 
 ## Log
+- 2026-11-20 Claude Code: folded what was unique to #17 into #16. Paste now
+  drops currency signs, reads 1,200 as thousands and 1,5 as a decimal
+  comma, takes x as times only between numbers, and accepts squared and
+  cubed; a paste that opens with an operator after an answer works on from
+  it. The keyboard list follows the spelling setting and is hidden under
+  Settings on touch-only devices; history notes are at least 30px tall.
+  Kept #16's own palettes, 1180 breakpoint, setting name and ? sheet.
 - 2026-11-19 Claude Code: themes, keyboard keys and desktop (brief 28). The
   brief file was not available; scope came from a review of the repo and
   was approved by the owner. Rebuilt the Brass and Roast palettes and the

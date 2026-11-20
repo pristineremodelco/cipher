@@ -407,24 +407,36 @@ export function seed(value: string): string[] {
  * A sum pasted in from somewhere else, as the keys that would have typed it,
  * or null when it is not a sum. Pressing them one by one puts it through the
  * same rules as the keypad, so a paste can never leave the display holding
- * something a person could not have typed. Only digits, the operators, the
- * brackets, a point, percent and factorial are taken, in any of the spellings
- * a keyboard or a page might use; a comma is read as a thousands separator and
- * dropped. Anything else, a word or a currency sign, means it was not meant
- * for the calculator, and nothing is put on the display rather than half of it.
+ * something a person could not have typed.
+ *
+ * Taken: digits, the operators, brackets, a point, percent, factorial and
+ * squared or cubed, in any of the spellings a keyboard or a page might use.
+ * A currency sign is dropped, so $45.50 x 3 is a sum. A comma before exactly
+ * three digits groups thousands and is dropped (1,200); any other comma is a
+ * decimal comma (1,5). An x between two numbers is a times.
+ *
+ * Any other letter means it was not only a sum, and nothing is put on the
+ * display rather than part of it: dropping the sin from sin(30) would leave
+ * (30), a different sum that looks right.
  */
 export function pastedKeys(text: string): string[] | null {
   const plain = text
     .trim()
+    // Currency signs: dollar, euro, pound, yen.
+    .replace(/[$\u20ac\u00a3\u00a5]/g, '')
+    // 1,200 and 12,500,000: a comma before exactly three digits groups them.
+    .replace(/(\d),(?=\d{3}(?!\d))/g, '$1')
+    .replace(/,/g, '.')
     // Dashes pasted from prose are minus signs. Written as escapes because
     // the project keeps the characters themselves out of its files.
     .replace(/[-\u2013\u2014\u2212]/g, '\u2212')
-    .replace(/[*xX\u00b7]/g, '\u00d7')
+    // An x is a times only between numbers, so 3 x 4 and 2x(1+1) are sums.
+    .replace(/([\d.)])\s*[xX]\s*(?=[\d.(])/g, '$1\u00d7')
+    .replace(/[*\u00b7]/g, '\u00d7')
     .replace(/[/]/g, '\u00f7')
-    .replace(/,/g, '')
     .replace(/\s+/g, '')
   if (!plain || plain.length > 200) return null
-  if (!/^[0-9.+\u2212\u00d7\u00f7^()%!]+$/.test(plain)) return null
+  if (!/^[0-9.+\u2212\u00d7\u00f7^()%!\u00b2\u00b3]+$/.test(plain)) return null
   if (!/[0-9]/.test(plain)) return null
   return [...plain]
 }

@@ -147,6 +147,14 @@ await page.evaluate(() => {
   window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
 })
 t.is('pasted words leave the sum alone', await expression(), '12×(3+4)')
+await page.keyboard.press('Enter')
+await page.evaluate(() => {
+  const data = new DataTransfer()
+  data.setData('text/plain', '*2')
+  window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+})
+t.is('after an answer, a paste that opens with an operator works on from it', await expression(), '84×2')
+t.is('and is worked out', await answer(), '168')
 await page.keyboard.press('Escape')
 
 // ? lists the keys, and the list takes focus so Tab stays inside it.
@@ -166,6 +174,11 @@ await page.click('button[aria-label="History"]')
 t.is('the history button puts it away', await page.$('.side-history'), null)
 await page.click('button[aria-label="History"]')
 t.ok('and brings it back', Boolean(await page.$('.side-history')))
+await page.setViewportSize({ width: 1000, height: 800 })
+await page.waitForTimeout(150)
+t.is('narrower, the history goes back to a sheet', await page.$('.side-history'), null)
+await page.setViewportSize({ width: 1280, height: 900 })
+await page.waitForTimeout(150)
 
 // Alt with a number moves between the three screens.
 await page.keyboard.press('Alt+Digit2')
