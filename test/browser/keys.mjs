@@ -147,7 +147,10 @@ await page.evaluate(() => {
   window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
 })
 t.is('pasted words leave the sum alone', await expression(), '12×(3+4)')
-await page.keyboard.press('Enter')
+// = rather than Enter: focus is still on the Clear key clicked above, and
+// Enter on a focused key presses that key.
+await page.keyboard.press('=')
+t.is('= gives the answer', await answer(), '84')
 await page.evaluate(() => {
   const data = new DataTransfer()
   data.setData('text/plain', '*2')
