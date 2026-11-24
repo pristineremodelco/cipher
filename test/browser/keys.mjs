@@ -117,6 +117,78 @@ await tap('sin⁻¹')
 await tap('5')
 t.ok('an impossible inverse sine is refused', (await page.textContent('.error')).includes('no answer'))
 
+// The keyboard. Escape clears, Delete takes what is after the cursor, and
+// copy and paste go through the answer and the sum.
+await clear()
+await page.keyboard.type('12+3')
+await page.keyboard.press('Escape')
+t.is('Escape clears the sum', await expression(), '')
+await page.keyboard.type('123')
+await page.keyboard.press('Home')
+await page.keyboard.press('Delete')
+t.is('Delete takes the piece after the cursor', await expression(), '23')
+await page.keyboard.press('Escape')
+await page.evaluate(() => {
+  const data = new DataTransfer()
+  data.setData('text/plain', '12*(3+4)')
+  window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+})
+t.is('a pasted sum lands on the display', await expression(), '12×(3+4)')
+t.is('and is worked out', await answer(), '84')
+const copied = await page.evaluate(() => {
+  const data = new DataTransfer()
+  window.dispatchEvent(new ClipboardEvent('copy', { clipboardData: data, bubbles: true, cancelable: true }))
+  return data.getData('text/plain')
+})
+t.is('copy with nothing selected copies the answer', copied, '84')
+await page.evaluate(() => {
+  const data = new DataTransfer()
+  data.setData('text/plain', 'not a sum')
+  window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+})
+t.is('pasted words leave the sum alone', await expression(), '12×(3+4)')
+// = rather than Enter: focus is still on the Clear key clicked above, and
+// Enter on a focused key presses that key.
+await page.keyboard.press('=')
+t.is('= gives the answer', await answer(), '84')
+await page.evaluate(() => {
+  const data = new DataTransfer()
+  data.setData('text/plain', '*2')
+  window.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
+})
+t.is('after an answer, a paste that opens with an operator works on from it', await expression(), '84×2')
+t.is('and is worked out', await answer(), '168')
+await page.keyboard.press('Escape')
+
+// ? lists the keys, and the list takes focus so Tab stays inside it.
+await page.keyboard.press('?')
+t.ok('? opens the list of keys', Boolean(await page.$('.keys-sheet')))
+t.is('the list has the focus', await page.evaluate(() => document.activeElement?.classList.contains('keys-sheet')), true)
+t.ok('the app behind it is out of reach', await page.$eval('.desk', (el) => el.inert))
+await page.keyboard.press('Escape')
+t.is('Escape closes it', await page.$('.keys-sheet'), null)
+
+// Wide enough, the history sits beside the keypad, and the button hides it.
+await page.keyboard.type('6*7')
+await page.keyboard.press('Enter')
+t.ok('the history is beside the keypad', Boolean(await page.$('.side-history')))
+t.ok('with the answer just worked out', (await page.textContent('.side-history')).includes('42'))
+await page.click('button[aria-label="History"]')
+t.is('the history button puts it away', await page.$('.side-history'), null)
+await page.click('button[aria-label="History"]')
+t.ok('and brings it back', Boolean(await page.$('.side-history')))
+await page.setViewportSize({ width: 1000, height: 800 })
+await page.waitForTimeout(150)
+t.is('narrower, the history goes back to a sheet', await page.$('.side-history'), null)
+await page.setViewportSize({ width: 1280, height: 900 })
+await page.waitForTimeout(150)
+
+// Alt with a number moves between the three screens.
+await page.keyboard.press('Alt+Digit2')
+t.is('Alt+2 opens Convert', await page.getAttribute('html', 'data-mode'), 'convert')
+await page.keyboard.press('Alt+Digit1')
+t.is('Alt+1 comes back', await page.getAttribute('html', 'data-mode'), 'calculate')
+
 t.done(noise)
 await context.close()
 await browser.close()

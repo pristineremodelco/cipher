@@ -118,3 +118,36 @@ export const TYPED: Record<string, string> = {
   '%': '%',
   '!': '!',
 }
+
+/**
+ * The physical key for a key on the pad, shown when a pointer rests on it, so
+ * someone at a computer finds the keyboard works without being told.
+ */
+export const KEY_HINTS: Record<string, string> = {
+  C: 'Esc',
+  '( )': '( or )',
+  '%': '%',
+  '÷': '/',
+  '×': '*',
+  '−': '-',
+  '+': '+',
+  '=': 'Enter',
+  '.': '.',
+}
+
+/** What the keyboard does, for the list behind the ? key. */
+export const KEYBOARD: { keys: string; does: string }[] = [
+  { keys: '0 to 9, .', does: 'Digits and the point' },
+  { keys: '+  -  *  /  ^', does: 'Plus, minus, times, divide, power' },
+  { keys: '(  )  %  !', does: 'Brackets, percent, factorial' },
+  { keys: 'Enter or =', does: 'Equals' },
+  { keys: 'Backspace', does: 'Rub out the piece before the cursor' },
+  { keys: 'Delete', does: 'Rub out the piece after the cursor' },
+  { keys: 'Esc', does: 'Clear the sum, or close what is open' },
+  { keys: 'Left, Right, Home, End', does: 'Move the cursor in the sum' },
+  { keys: 'Ctrl+C or Cmd+C', does: 'Copy the answer' },
+  { keys: 'Ctrl+V or Cmd+V', does: 'Paste a sum' },
+  { keys: 'Alt+1, Alt+2, Alt+3', does: 'Calculate, Convert, Tools' },
+  { keys: 'Alt+H', does: 'Show or hide the history' },
+  { keys: '?', does: 'This list' },
+]
